@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.db
+*.sqlite
+
+# Virtual environments
+venv/
+venv_mlx/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+pdf_processing.log
+streamlit.log
+
+# Data (keep structure, ignore large files)
+data/vectorstore/
+data/pdfs/*.pdf
+data/pdfs/*.acsm
+
+# Known corrupted files (all zeros, not recoverable)
+data/pdfs/thePaleoSolution_FoodMatrix.pdf
+
+# Jupyter
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.bak
+tmp/
+temp/
