@@ -31,9 +31,193 @@ An AI system that:
 - User achieves target outcomes (lose fat, gain muscle, improve performance)
 - System makes timely, helpful adjustments when progress stalls
 
-## Core User Journey
+## Visual Overview
 
-### 1. Onboarding & Assessment
+### System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "User Interface"
+        UI[Streamlit Web UI]
+    end
+
+    subgraph "Core Systems"
+        Profile[Profile Manager<br/>src/profile.py]
+        Calc[Calculation Engine<br/>src/calculations.py]
+        Tracker[Progress Tracker<br/>src/tracker.py]
+        RAG[RAG System<br/>src/rag_system.py]
+        ProgGen[Program Generator<br/>src/program_generator.py]
+        Analyzer[Progress Analyzer<br/>src/analyzer.py]
+    end
+
+    subgraph "Data Storage"
+        ProfileDB[(User Profile<br/>JSON)]
+        ProgressDB[(Progress Data<br/>SQLite)]
+        VectorDB[(Vector Store<br/>ChromaDB)]
+        PDFs[(Expert PDFs<br/>RP/Nippard/BFFM)]
+    end
+
+    UI --> Profile
+    UI --> Tracker
+    UI --> RAG
+    UI --> ProgGen
+
+    Profile --> ProfileDB
+    Profile --> Calc
+
+    Calc --> RAG
+    Calc --> ProfileDB
+
+    Tracker --> ProgressDB
+    Tracker --> Analyzer
+
+    RAG --> VectorDB
+    VectorDB --> PDFs
+
+    ProgGen --> RAG
+    ProgGen --> Profile
+
+    Analyzer --> ProgressDB
+    Analyzer --> RAG
+
+    style UI fill:#e1f5ff
+    style Profile fill:#fff4e1
+    style Calc fill:#fff4e1
+    style Tracker fill:#fff4e1
+    style RAG fill:#e8f5e9
+    style ProgGen fill:#f3e5f5
+    style Analyzer fill:#f3e5f5
+```
+
+### User Journey Flow
+
+```mermaid
+flowchart TD
+    Start([User Opens HealthRAG]) --> HasProfile{Profile<br/>Exists?}
+
+    HasProfile -->|No| Onboard[Onboarding:<br/>Input Stats & Goals]
+    HasProfile -->|Yes| Dashboard[Dashboard:<br/>View Key Metrics]
+
+    Onboard --> CalcTDEE[Calculate TDEE<br/>& Macros]
+    CalcTDEE --> GenProgram[Generate Training<br/>& Nutrition Program]
+    GenProgram --> Dashboard
+
+    Dashboard --> DailyUse{User Action?}
+
+    DailyUse -->|View Workout| ShowWorkout[Display Today's<br/>Training Plan]
+    DailyUse -->|Log Data| LogData[Log Weight/<br/>Workout/Nutrition]
+    DailyUse -->|Ask Question| AskRAG[Query RAG System]
+    DailyUse -->|Check Progress| ViewProgress[View Trends<br/>& Analytics]
+
+    ShowWorkout --> DailyUse
+    LogData --> UpdateDB[(Update Progress DB)]
+    UpdateDB --> DailyUse
+
+    AskRAG --> RAGResponse[Profile-Aware<br/>Response]
+    RAGResponse --> DailyUse
+
+    ViewProgress --> Analyze[Analyze Trends]
+    Analyze --> NeedAdjust{Progress<br/>On Track?}
+
+    NeedAdjust -->|Yes| Feedback[Positive Feedback]
+    NeedAdjust -->|No| Adjust[Suggest Adjustments<br/>Calories/Volume]
+
+    Feedback --> DailyUse
+    Adjust --> UpdateProgram[Update Program]
+    UpdateProgram --> DailyUse
+
+    style Start fill:#e1f5ff
+    style Dashboard fill:#e8f5e9
+    style CalcTDEE fill:#fff4e1
+    style GenProgram fill:#f3e5f5
+    style Analyze fill:#ffe0b2
+    style Adjust fill:#ffcdd2
+```
+
+### Phase 2 Component Diagram
+
+```mermaid
+graph LR
+    subgraph "Week 1: Profile System"
+        P1[Profile Manager]
+        P2[Profile Storage JSON]
+        P3[Profile UI]
+    end
+
+    subgraph "Week 2: Calculations"
+        C1[TDEE Calculator]
+        C2[Macro Calculator]
+        C3[RAG Query<br/>for Formulas]
+    end
+
+    subgraph "Week 3: Tracker"
+        T1[SQLite Database]
+        T2[Logging Functions]
+        T3[Trend Calculator]
+    end
+
+    subgraph "Week 4: Integration"
+        I1[Dashboard UI]
+        I2[Profile-Aware RAG]
+        I3[Complete Flow Test]
+    end
+
+    P1 --> P2
+    P3 --> P1
+
+    P1 --> C1
+    C1 --> C2
+    C2 --> C3
+
+    T2 --> T1
+    T1 --> T3
+
+    P1 --> I2
+    C2 --> I1
+    T3 --> I1
+    I2 --> I3
+
+    style P1 fill:#e3f2fd
+    style C1 fill:#fff9c4
+    style T1 fill:#f1f8e9
+    style I1 fill:#fce4ec
+```
+
+### Data Flow: TDEE Calculation Example
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Streamlit UI
+    participant Profile as Profile Manager
+    participant Calc as Calculation Engine
+    participant RAG as RAG System
+    participant PDFs as Expert PDFs
+
+    User->>UI: Input: Weight, Height, Age, Sex
+    UI->>Profile: Save Profile Data
+    Profile-->>UI: Profile Saved
+
+    UI->>Calc: Calculate TDEE(profile)
+    Calc->>Calc: Mifflin-St Jeor Formula:<br/>BMR = 10×W + 6.25×H - 5×A + S
+
+    Calc->>RAG: Query: "Activity level multipliers"
+    RAG->>PDFs: Search RP/BFFM docs
+    PDFs-->>RAG: Multipliers: Sedentary=1.2,<br/>Moderate=1.5, Active=1.7
+    RAG-->>Calc: Activity Multipliers
+
+    Calc->>Calc: TDEE = BMR × Activity Level
+    Calc->>RAG: Query: "Macro split for cutting"
+    RAG->>PDFs: Search RP diet protocols
+    PDFs-->>RAG: Protein: 1g/lb,<br/>Fat: 20-25%, Carbs: remainder
+    RAG-->>Calc: Macro Recommendations
+
+    Calc->>Calc: Calculate Macros
+    Calc-->>UI: TDEE: 2400 cal<br/>P: 180g, F: 60g, C: 205g
+    UI-->>User: Display Results with Citations
+```
+
+## Core User Journey
 ```
 Input:
 - Personal stats: weight, height, age, sex
