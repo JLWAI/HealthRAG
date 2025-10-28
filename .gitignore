@@ -57,3 +57,4 @@ data/pdfs/thePaleoSolution_FoodMatrix.pdf
 *.bak
 tmp/
 temp/
+.DS_Store
