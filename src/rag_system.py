@@ -8,10 +8,10 @@ try:
     MLX_AVAILABLE = True
 except ImportError:
     MLX_AVAILABLE = False
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
 from langchain.schema import BaseRetriever
 from langchain.prompts import PromptTemplate
 import chromadb
