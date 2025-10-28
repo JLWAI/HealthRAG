@@ -36,6 +36,9 @@ data/vectorstore/
 data/pdfs/*.pdf
 data/pdfs/*.acsm
 
+# Known corrupted files (all zeros, not recoverable)
+data/pdfs/thePaleoSolution_FoodMatrix.pdf
+
 # Jupyter
 .ipynb_checkpoints
 
