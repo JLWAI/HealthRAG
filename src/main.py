@@ -6,6 +6,8 @@ from rag_system import HealthRAG, MLX_AVAILABLE
 from profile import UserProfile, EQUIPMENT_PRESETS
 from calculations import calculate_nutrition_plan, get_expected_rate_text, get_phase_explanation
 from program_generator import ProgramGenerator, format_workout, format_week
+from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
+import json
 
 load_dotenv()
 
@@ -389,6 +391,244 @@ Your program will be customized based on:
                 )
 
 
+def render_workout_logging():
+    """
+    Render workout logging interface.
+
+    Allows users to:
+    - Log today's workout (sets, reps, weight, RIR)
+    - Add feedback (pump, soreness, difficulty)
+    - View workout history
+    - Track exercise progress
+    """
+    st.markdown("---")
+    st.subheader("📝 Log Workout")
+
+    logger = WorkoutLogger()
+
+    # Tabs for Log vs History
+    tab1, tab2, tab3 = st.tabs(["📝 Log Today's Workout", "📊 Workout History", "📈 Exercise Progress"])
+
+    with tab1:
+        st.markdown("### Log Today's Workout")
+
+        # Check if program exists to pre-populate workout names
+        program_file = "data/current_program.json"
+        workout_names = []
+
+        if os.path.exists(program_file):
+            with open(program_file, 'r') as f:
+                program_data = json.load(f)
+                # Extract unique workout names
+                for week in program_data['weeks']:
+                    for workout in week['workouts']:
+                        if workout['day_name'] not in workout_names:
+                            workout_names.append(workout['day_name'])
+
+        # Workout metadata
+        col1, col2 = st.columns(2)
+        with col1:
+            if workout_names:
+                workout_name = st.selectbox("Workout Name", workout_names)
+            else:
+                workout_name = st.text_input("Workout Name", value="", placeholder="e.g., Upper A, Push Day")
+
+        with col2:
+            workout_date = st.date_input("Workout Date", value=date.today())
+
+        # Exercise logging
+        st.markdown("#### Add Sets")
+        st.markdown("Log each set as you complete it")
+
+        # Initialize session state for sets
+        if 'current_workout_sets' not in st.session_state:
+            st.session_state.current_workout_sets = []
+
+        # Add set form
+        with st.form("add_set_form", clear_on_submit=True):
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                exercise = st.text_input("Exercise", placeholder="e.g., Barbell Bench Press")
+            with col2:
+                weight = st.number_input("Weight (lbs)", min_value=0.0, max_value=1000.0, value=0.0, step=2.5)
+            with col3:
+                reps = st.number_input("Reps", min_value=1, max_value=50, value=8)
+            with col4:
+                rir = st.selectbox("RIR", [0, 1, 2, 3, 4], index=2)
+
+            set_notes = st.text_input("Set Notes (optional)", placeholder="e.g., Felt strong, struggled on last rep")
+
+            submitted = st.form_submit_button("➕ Add Set")
+            if submitted and exercise:
+                workout_set = WorkoutSet(
+                    exercise_name=exercise,
+                    weight_lbs=weight,
+                    reps=reps,
+                    rir=rir,
+                    notes=set_notes if set_notes else None
+                )
+                st.session_state.current_workout_sets.append(workout_set)
+                st.success(f"✅ Added: {exercise} - {weight} lbs × {reps} @ {rir} RIR")
+                st.rerun()
+
+        # Display current sets
+        if st.session_state.current_workout_sets:
+            st.markdown("#### Current Workout Sets")
+
+            for i, workout_set in enumerate(st.session_state.current_workout_sets):
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.markdown(f"""
+**Set {i+1}: {workout_set.exercise_name}**
+- {workout_set.weight_lbs} lbs × {workout_set.reps} reps @ {workout_set.rir} RIR
+{f"- Notes: {workout_set.notes}" if workout_set.notes else ""}
+                    """)
+                with col2:
+                    if st.button("🗑️", key=f"delete_{i}"):
+                        st.session_state.current_workout_sets.pop(i)
+                        st.rerun()
+
+            # Workout completion
+            st.markdown("---")
+            st.markdown("#### Complete Workout")
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                duration = st.number_input("Duration (min)", min_value=1, max_value=300, value=60)
+            with col2:
+                pump = st.slider("Pump 💪", min_value=1, max_value=5, value=3, help="1=No pump, 5=Huge pump")
+            with col3:
+                soreness = st.slider("Soreness 🔥", min_value=1, max_value=5, value=3, help="1=No soreness, 5=Very sore")
+            with col4:
+                difficulty = st.slider("Difficulty 😅", min_value=1, max_value=5, value=3, help="1=Too easy, 5=Too hard")
+
+            workout_notes = st.text_area("Workout Notes", placeholder="Overall thoughts, energy level, sleep quality, etc.")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Save Workout", type="primary"):
+                    if not workout_name:
+                        st.error("Please enter a workout name")
+                    else:
+                        workout_log = WorkoutLog(
+                            workout_id=None,
+                            date=workout_date.isoformat(),
+                            workout_name=workout_name,
+                            sets=st.session_state.current_workout_sets,
+                            duration_minutes=duration,
+                            overall_pump=pump,
+                            overall_soreness=soreness,
+                            overall_difficulty=difficulty,
+                            notes=workout_notes if workout_notes else None,
+                            completed=True
+                        )
+
+                        workout_id = logger.log_workout(workout_log)
+                        st.success(f"🎉 Workout saved successfully! (ID: {workout_id})")
+                        st.session_state.current_workout_sets = []
+                        st.rerun()
+
+            with col2:
+                if st.button("🗑️ Clear All Sets"):
+                    st.session_state.current_workout_sets = []
+                    st.rerun()
+
+        else:
+            st.info("👆 Add sets using the form above to start logging your workout")
+
+    with tab2:
+        st.markdown("### Workout History")
+
+        # Date range selector
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            days_back = st.selectbox("View Last", [7, 14, 30, 60, 90], index=2)
+        with col2:
+            st.metric("Days", days_back)
+
+        # Get workout stats
+        stats = logger.get_workout_stats(days=days_back)
+
+        if 'error' not in stats:
+            st.markdown("#### Summary Statistics")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Workouts", stats['total_workouts'])
+            with col2:
+                st.metric("Total Sets", stats['total_sets'])
+            with col3:
+                st.metric("Total Volume", f"{stats['total_volume_lbs']:,.0f} lbs")
+            with col4:
+                st.metric("Avg Duration", f"{stats['avg_duration_minutes']:.0f} min")
+
+            st.markdown("---")
+
+            # Recent workouts
+            recent_workouts = logger.get_recent_workouts(limit=10)
+
+            if recent_workouts:
+                st.markdown("#### Recent Workouts")
+
+                for workout in recent_workouts:
+                    with st.expander(f"📅 {workout.date} - {workout.workout_name} ({len(workout.sets)} sets)", expanded=False):
+                        st.markdown(f"""
+**Duration:** {workout.duration_minutes} minutes
+**Feedback:** Pump {workout.overall_pump}/5 | Soreness {workout.overall_soreness}/5 | Difficulty {workout.overall_difficulty}/5
+{f"**Notes:** {workout.notes}" if workout.notes else ""}
+                        """)
+
+                        st.markdown("**Sets:**")
+                        # Group sets by exercise
+                        from collections import defaultdict
+                        exercise_sets = defaultdict(list)
+                        for s in workout.sets:
+                            exercise_sets[s.exercise_name].append(s)
+
+                        for exercise_name, sets in exercise_sets.items():
+                            st.markdown(f"**{exercise_name}**")
+                            for i, s in enumerate(sets, 1):
+                                st.markdown(f"  Set {i}: {s.weight_lbs} lbs × {s.reps} @ {s.rir} RIR")
+        else:
+            st.info(f"No workouts logged in the last {days_back} days. Start logging above!")
+
+    with tab3:
+        st.markdown("### Exercise Progress Tracker")
+
+        # Exercise selector
+        exercise_name = st.text_input("Exercise Name", placeholder="e.g., Barbell Bench Press")
+
+        if exercise_name:
+            history = logger.get_exercise_history(exercise_name, limit=50)
+
+            if history:
+                st.markdown(f"#### {exercise_name} History")
+
+                # Display progress
+                progress = logger.get_strength_progress(exercise_name)
+
+                if 'error' not in progress:
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Starting 1RM", f"{progress['starting_1rm']:.1f} lbs")
+                    with col2:
+                        st.metric("Current 1RM", f"{progress['current_1rm']:.1f} lbs")
+                    with col3:
+                        gain_color = "normal" if progress['gain_lbs'] > 0 else "inverse"
+                        st.metric("Gain", f"{progress['gain_lbs']:.1f} lbs ({progress['gain_percentage']:.1f}%)", delta=progress['trend'])
+
+                    st.markdown("---")
+
+                    # Recent sets table
+                    st.markdown("#### Recent Sets")
+                    for entry in history[:10]:
+                        st.markdown(f"""
+**{entry['date']}:** {entry['weight_lbs']} lbs × {entry['reps']} @ {entry['rir']} RIR (Est 1RM: {entry['estimated_1rm']:.1f} lbs)
+                        """)
+            else:
+                st.info(f"No history found for '{exercise_name}'. Make sure you're using the exact exercise name from your logged workouts.")
+
+
 def main():
     st.set_page_config(
         page_title="Personal Health & Fitness Advisor",
@@ -473,6 +713,7 @@ def main():
     if profile.exists():
         render_proactive_dashboard(profile)
         render_training_program(profile)
+        render_workout_logging()
 
     # Chat section header
     st.subheader("💬 Chat with Your Coach")
