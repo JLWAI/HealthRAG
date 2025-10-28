@@ -1,9 +1,11 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from datetime import date
 from rag_system import HealthRAG, MLX_AVAILABLE
 from profile import UserProfile, EQUIPMENT_PRESETS
 from calculations import calculate_nutrition_plan, get_expected_rate_text, get_phase_explanation
+from program_generator import ProgramGenerator, format_workout, format_week
 
 load_dotenv()
 
@@ -251,6 +253,142 @@ def render_proactive_dashboard(profile: UserProfile):
     st.markdown("---")
 
 
+def render_training_program(profile: UserProfile):
+    """
+    Render training program generation and display.
+
+    Shows generated workout program with exercises, sets, reps, RIR progression.
+    """
+    st.markdown("---")
+    st.subheader("💪 Your Training Program")
+
+    # Load profile data
+    profile.load()
+    personal_info = profile.profile_data['personal_info']
+    training = profile.profile_data['training']
+    equipment = profile.profile_data['equipment']['available_equipment']
+
+    # Check if program already exists
+    program_file = "data/current_program.json"
+    program_exists = os.path.exists(program_file)
+
+    if not program_exists:
+        st.info("📋 No program generated yet. Let's create your personalized training plan!")
+
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+Your program will be customized based on:
+- **Equipment:** Your available equipment
+- **Training Level:** {level}
+- **Schedule:** {days} days per week
+- **Split:** {split}
+            """.format(
+                level=training['training_level'].capitalize(),
+                days=training['days_per_week'],
+                split=training.get('preferred_split', 'upper_lower').replace('_', '/').title()
+            ))
+
+        with col2:
+            if st.button("🚀 Generate Program", type="primary"):
+                with st.spinner("Generating your program..."):
+                    # Create program generator
+                    generator = ProgramGenerator(
+                        available_equipment=equipment,
+                        training_level=training['training_level'],
+                        days_per_week=training['days_per_week']
+                    )
+
+                    # Generate program (auto-select best template)
+                    program = generator.generate_program(
+                        template_name=None,  # Auto-select
+                        weeks=5,
+                        start_date=date.today()
+                    )
+
+                    # Save program
+                    generator.save_program(program, program_file)
+
+                    st.success("✅ Program generated successfully!")
+                    st.rerun()
+
+    else:
+        # Display existing program
+        import json
+        with open(program_file, 'r') as f:
+            program_data = json.load(f)
+
+        # Program header
+        st.markdown(f"""
+**Template:** {program_data['template_name'].replace('_', ' ').title()}
+**Start Date:** {program_data['start_date']}
+**Duration:** {len(program_data['weeks'])} weeks (5 weeks + deload)
+        """)
+
+        # Equipment coverage
+        coverage = program_data['coverage_report']
+        st.markdown(f"""
+**Exercise Quality:**
+- S+ tier: {coverage['s_plus_available']}/{coverage['s_plus_total']} exercises available
+- S tier: {coverage['s_available']}/{coverage['s_total']} exercises available
+        """)
+
+        # Week selector
+        week_options = [f"Week {w['week_number']}" for w in program_data['weeks'][:-1]]
+        week_options.append("🔄 DELOAD WEEK")
+
+        selected_week_idx = st.selectbox(
+            "Select Week to View",
+            range(len(week_options)),
+            format_func=lambda i: week_options[i],
+            index=0
+        )
+
+        week_data = program_data['weeks'][selected_week_idx]
+
+        # Display selected week
+        st.markdown("---")
+
+        if week_data['is_deload']:
+            st.markdown("### 🔄 DELOAD WEEK")
+        else:
+            st.markdown(f"### Week {week_data['week_number']}")
+
+        st.markdown(f"**Total Weekly Sets:** {week_data['total_weekly_sets']}")
+        st.markdown(f"**Notes:** {week_data['notes']}")
+
+        # Display each workout
+        for workout in week_data['workouts']:
+            with st.expander(f"🏋️ {workout['day_name']} ({workout['total_sets']} sets, ~{workout['estimated_duration_min']} min)", expanded=False):
+                st.markdown(f"**Muscle Groups:** {', '.join([m.capitalize() for m in workout['muscle_groups']])}")
+                st.markdown("---")
+
+                # Exercise table
+                for i, ex in enumerate(workout['exercises'], 1):
+                    st.markdown(f"""
+**{i}. {ex['name']}** [{ex['tier']}]
+- **Volume:** {ex['sets']} sets × {ex['reps']} @ {ex['rir']} RIR
+- **Notes:** {ex['notes'][:100] if ex['notes'] else 'No notes'}
+                    """)
+
+        # Action buttons
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Regenerate Program"):
+                os.remove(program_file)
+                st.rerun()
+
+        with col2:
+            if st.button("📥 Download Program"):
+                st.download_button(
+                    label="Download JSON",
+                    data=json.dumps(program_data, indent=2),
+                    file_name=f"training_program_{date.today()}.json",
+                    mime="application/json"
+                )
+
+
 def main():
     st.set_page_config(
         page_title="Personal Health & Fitness Advisor",
@@ -334,6 +472,7 @@ def main():
     # Proactive Dashboard (show plan automatically if profile exists)
     if profile.exists():
         render_proactive_dashboard(profile)
+        render_training_program(profile)
 
     # Chat section header
     st.subheader("💬 Chat with Your Coach")
