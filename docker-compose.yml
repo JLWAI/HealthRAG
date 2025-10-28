@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  healthrag:
+    build: .
+    ports:
+      - "8501:8501"  # Streamlit
+      - "11434:11434"  # Ollama
+    volumes:
+      - ./data:/app/data
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
