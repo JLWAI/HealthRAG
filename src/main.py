@@ -7,6 +7,7 @@ from profile import UserProfile, EQUIPMENT_PRESETS
 from calculations import calculate_nutrition_plan, get_expected_rate_text, get_phase_explanation
 from program_generator import ProgramGenerator, format_workout, format_week
 from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
+from autoregulation import AutoregulationEngine
 import json
 
 load_dotenv()
@@ -405,9 +406,10 @@ def render_workout_logging():
     st.subheader("📝 Log Workout")
 
     logger = WorkoutLogger()
+    engine = AutoregulationEngine(logger)
 
     # Tabs for Log vs History
-    tab1, tab2, tab3 = st.tabs(["📝 Log Today's Workout", "📊 Workout History", "📈 Exercise Progress"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📝 Log Today's Workout", "📊 Workout History", "📈 Exercise Progress", "🎯 Autoregulation"])
 
     with tab1:
         st.markdown("### Log Today's Workout")
@@ -627,6 +629,56 @@ def render_workout_logging():
                         """)
             else:
                 st.info(f"No history found for '{exercise_name}'. Make sure you're using the exact exercise name from your logged workouts.")
+
+    with tab4:
+        st.markdown("### 🎯 Autoregulation & Recommendations")
+        st.markdown("AI-powered program adjustments based on your workout feedback")
+
+        # Analysis period selector
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            analysis_days = st.selectbox("Analyze Last", [7, 14, 21, 30], index=1)
+
+        with col2:
+            if st.button("🔄 Refresh Analysis", key="refresh_autoreg"):
+                st.rerun()
+
+        # Generate report
+        with st.spinner("Analyzing your training data..."):
+            report = engine.generate_adjustment_report(days=analysis_days)
+
+        # Display report
+        st.markdown(report)
+
+        # Additional context
+        st.markdown("---")
+        st.markdown("""
+### 📚 Understanding Autoregulation
+
+**How it works:**
+- Analyzes your pump, soreness, and difficulty ratings
+- Tracks your strength progress on each exercise
+- Compares your actual performance vs prescribed
+- Generates personalized recommendations
+
+**Rating Guidelines:**
+- **Pump (1-5):** How much muscle pump you felt
+  - 1-2: Low pump (may need more volume)
+  - 3-4: Good pump (volume is working)
+  - 5: Huge pump (approaching maximum recoverable volume)
+
+- **Soreness (1-5):** How sore you are 24-48h after
+  - 1-2: Minimal soreness (normal)
+  - 3-4: Moderate soreness (good indicator of stimulus)
+  - 5: Extreme soreness (may indicate too much volume)
+
+- **Difficulty (1-5):** How hard the workout felt
+  - 1-2: Too easy (time to progress)
+  - 3-4: Appropriately challenging (perfect)
+  - 5: Extremely difficult (may need recovery)
+
+**Source:** Renaissance Periodization Autoregulation Principles
+        """)
 
 
 def main():
