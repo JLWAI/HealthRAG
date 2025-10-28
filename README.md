@@ -1,1 +1,1 @@
-# jwHealth
+# HealthRAG
