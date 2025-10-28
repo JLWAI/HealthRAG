@@ -15,6 +15,7 @@ from dataclasses import dataclass, asdict
 @dataclass
 class PersonalInfo:
     """User's personal statistics"""
+    name: str  # User's first name for personalization
     weight_lbs: float
     height_inches: int
     age: int
@@ -127,6 +128,7 @@ class UserProfile:
             return False
 
     def create(self,
+               name: str,
                weight_lbs: float,
                height_inches: int,
                age: int,
@@ -138,6 +140,7 @@ class UserProfile:
         Create new user profile.
 
         Args:
+            name: User's first name for personalization
             weight_lbs: Current weight in pounds
             height_inches: Height in inches
             age: Age in years
@@ -156,6 +159,7 @@ class UserProfile:
         # Build profile structure
         profile_data = {
             'personal_info': {
+                'name': name,
                 'weight_lbs': weight_lbs,
                 'height_inches': height_inches,
                 'age': age,
