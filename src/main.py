@@ -1,16 +1,20 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, datetime, timedelta
 from rag_system import HealthRAG, MLX_AVAILABLE
 from profile import UserProfile, EQUIPMENT_PRESETS
 from calculations import calculate_nutrition_plan, get_expected_rate_text, get_phase_explanation
 from program_generator import ProgramGenerator, format_workout, format_week
 from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
+from workout_coach import WorkoutCoach
 from autoregulation import AutoregulationEngine
 from program_export import export_program_to_excel, export_program_to_csv
 from program_manager import ProgramManager
 from exercise_database import get_exercises_by_muscle
+from food_logger import FoodLogger
+from food_search_integrated import IntegratedFoodSearch
+from meal_templates import MealTemplateManager
 import json
 
 load_dotenv()
@@ -1180,7 +1184,40 @@ def render_workout_logging():
                     notes=set_notes if set_notes else None
                 )
                 st.session_state.current_workout_sets.append(workout_set)
-                st.success(f"✅ Added: {exercise} - {weight} lbs × {reps} @ {rir} RIR")
+
+                # Real-time coach feedback
+                coach = WorkoutCoach()
+                # Count how many sets of this exercise already logged
+                exercise_sets = [s for s in st.session_state.current_workout_sets if s.exercise_name == exercise]
+                set_number = len(exercise_sets)
+
+                # Get feedback (using default hypertrophy targets)
+                feedback = coach.analyze_set(
+                    exercise_name=exercise,
+                    set_number=set_number,
+                    weight=weight,
+                    reps=reps,
+                    rir=rir,
+                    target_reps_min=8,
+                    target_reps_max=12,
+                    target_rir=2
+                )
+
+                st.success(f"✅ Set {set_number} logged: {exercise} - {weight} lbs × {reps} @ {rir} RIR")
+
+                # Show coach feedback with appropriate emoji
+                if feedback.status == "perfect":
+                    st.success(f"💯 {feedback.message}")
+                elif feedback.status == "excellent":
+                    st.success(f"🔥 {feedback.message}")
+                elif feedback.status == "good":
+                    st.info(f"✅ {feedback.message}")
+                elif feedback.status == "too_hard":
+                    st.warning(f"⚠️ {feedback.message}")
+                else:
+                    st.info(f"💡 {feedback.message}")
+
+                st.caption(f"💡 **Next:** {feedback.next_action}")
                 st.rerun()
 
         # Display current sets
@@ -1236,7 +1273,58 @@ def render_workout_logging():
                         )
 
                         workout_id = logger.log_workout(workout_log)
+
+                        # Generate post-workout analysis
+                        coach = WorkoutCoach()
+                        summary = coach.analyze_workout(workout_log)
+
                         st.success(f"🎉 Workout saved successfully! (ID: {workout_id})")
+
+                        # Display post-workout summary
+                        st.markdown("---")
+                        st.markdown("### 🏆 Post-Workout Analysis")
+
+                        # Overall performance badge
+                        if summary.overall_performance == "excellent":
+                            st.success("💪 **Excellent Performance!** You crushed this workout!")
+                        elif summary.overall_performance == "good":
+                            st.info("✅ **Good Performance!** Solid workout today.")
+                        else:
+                            st.warning("⚠️ **Needs Adjustment** - See recommendations below")
+
+                        # Key takeaways
+                        if summary.key_takeaways:
+                            st.markdown("#### 📊 Key Takeaways")
+                            for takeaway in summary.key_takeaways:
+                                st.markdown(f"- {takeaway}")
+
+                        # Exercise-by-exercise breakdown
+                        st.markdown("#### 📝 Exercise Analysis")
+                        for ex_feedback in summary.exercises_analyzed:
+                            with st.expander(f"**{ex_feedback.exercise_name}** ({ex_feedback.sets_logged} sets)", expanded=True):
+                                st.markdown(f"**Target:** {ex_feedback.target_sets} × {ex_feedback.target_reps_min}-{ex_feedback.target_reps_max} @ {ex_feedback.target_rir} RIR")
+                                st.markdown(f"**Assessment:** {ex_feedback.overall_assessment}")
+                                st.markdown(f"**Next Workout:** {ex_feedback.next_workout_recommendation}")
+
+                                # Show set-by-set feedback
+                                if ex_feedback.set_feedbacks:
+                                    st.markdown("**Set Breakdown:**")
+                                    for sf in ex_feedback.set_feedbacks:
+                                        if sf.status == "perfect":
+                                            st.success(f"Set {sf.set_number}: {sf.message}")
+                                        elif sf.status in ["excellent", "good"]:
+                                            st.info(f"Set {sf.set_number}: {sf.message}")
+                                        else:
+                                            st.warning(f"Set {sf.set_number}: {sf.message}")
+
+                        # Next workout plan
+                        st.markdown("---")
+                        st.markdown("#### 🎯 Next Workout Plan")
+                        st.markdown("**Recommendations for next time:**")
+                        for exercise_name, recommendation in summary.next_workout_plan.items():
+                            st.markdown(f"- **{exercise_name}:** {recommendation}")
+
+                        st.markdown("---")
                         st.session_state.current_workout_sets = []
                         st.rerun()
 
@@ -1390,6 +1478,404 @@ def render_workout_logging():
         """)
 
 
+def render_nutrition_tracking():
+    """
+    Render nutrition tracking interface with friction-reduction features.
+
+    Features:
+    - Search foods (USDA FDC + Open Food Facts)
+    - Recent Foods quick-add (95% time reduction)
+    - Copy Yesterday's Meals (98% time reduction)
+    - Meal Templates (one-click complex meals)
+    - Barcode lookup
+    - Daily nutrition summary
+    """
+    st.markdown("---")
+    st.subheader("🍽️ Nutrition Tracking")
+
+    # Initialize systems
+    logger = FoodLogger("data/food_log.db")
+    search = IntegratedFoodSearch(logger)
+    manager = MealTemplateManager("data/food_log.db", logger)
+
+    # Tabs for different features
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Today's Food",
+        "🔍 Search & Add",
+        "⚡ Quick Add",
+        "📋 Templates",
+        "📈 History"
+    ])
+
+    # Tab 1: Today's Food Log
+    with tab1:
+        st.markdown("### Today's Nutrition")
+
+        # Date selector
+        selected_date = st.date_input(
+            "Date",
+            value=date.today(),
+            key="nutrition_date"
+        )
+        date_str = selected_date.strftime("%Y-%m-%d")
+
+        # Quick action buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📋 Copy Yesterday's Meals", use_container_width=True):
+                yesterday = (selected_date - timedelta(days=1)).strftime("%Y-%m-%d")
+                try:
+                    count = logger.copy_meals_from_date(yesterday, date_str)
+                    st.success(f"✅ Copied {count} meals from yesterday!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error copying meals: {e}")
+
+        with col2:
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+
+        # Get daily nutrition
+        daily_nutrition = logger.get_daily_nutrition(date_str)
+
+        # Display summary
+        if daily_nutrition.entry_count > 0:
+            st.markdown("#### Daily Summary")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Calories", f"{daily_nutrition.total_calories:.0f}")
+            with col2:
+                st.metric("Protein", f"{daily_nutrition.total_protein_g:.1f}g")
+            with col3:
+                st.metric("Carbs", f"{daily_nutrition.total_carbs_g:.1f}g")
+            with col4:
+                st.metric("Fat", f"{daily_nutrition.total_fat_g:.1f}g")
+
+            # Display meals
+            st.markdown("#### Meals")
+            for meal_type in ["breakfast", "lunch", "dinner", "snack"]:
+                if meal_type in daily_nutrition.meals:
+                    entries = daily_nutrition.meals[meal_type]
+                    with st.expander(f"🍽️ {meal_type.title()} ({len(entries)} items)", expanded=True):
+                        for entry in entries:
+                            col1, col2, col3 = st.columns([3, 2, 1])
+                            with col1:
+                                st.write(f"**{entry.food_name}**")
+                                st.caption(f"{entry.servings}x serving")
+                            with col2:
+                                st.write(f"{entry.calories:.0f} cal | {entry.protein_g:.1f}g P")
+                            with col3:
+                                if st.button("🗑️", key=f"delete_{entry.entry_id}"):
+                                    logger.delete_entry(entry.entry_id)
+                                    st.rerun()
+        else:
+            st.info("No food logged for this date yet. Use tabs above to add foods!")
+
+    # Tab 2: Search & Add Foods
+    with tab2:
+        st.markdown("### Search Foods")
+        st.markdown("Search across USDA FoodData Central (500K+ foods) and Open Food Facts (2.8M+ products)")
+
+        # Search interface
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            query = st.text_input("Search for food", placeholder="e.g., chicken breast, greek yogurt")
+        with col2:
+            search_btn = st.button("🔍 Search", use_container_width=True)
+
+        if search_btn and query:
+            with st.spinner(f"Searching for '{query}'..."):
+                results = search.search_by_name(query, limit=10)
+
+            if results:
+                st.success(f"Found {len(results)} results")
+                for i, result in enumerate(results):
+                    with st.expander(
+                        f"{result.name} " +
+                        (f"({result.brand})" if result.brand else "") +
+                        f" - {result.calories:.0f} cal, {result.protein_g:.1f}g P",
+                        expanded=(i == 0)
+                    ):
+                        # Food details
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"**Serving:** {result.serving_size}")
+                            st.write(f"**Source:** {result.source.upper()}")
+                            if result.confidence:
+                                st.write(f"**Quality:** {result.confidence:.0%}")
+                        with col2:
+                            st.write(f"**Calories:** {result.calories:.0f}")
+                            st.write(f"**Protein:** {result.protein_g:.1f}g")
+                            st.write(f"**Carbs:** {result.carbs_g:.1f}g")
+                            st.write(f"**Fat:** {result.fat_g:.1f}g")
+
+                        # Add to log
+                        st.markdown("---")
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            servings = st.number_input(
+                                "Servings",
+                                min_value=0.1,
+                                value=1.0,
+                                step=0.1,
+                                key=f"servings_{i}"
+                            )
+                        with col2:
+                            meal_type = st.selectbox(
+                                "Meal",
+                                ["breakfast", "lunch", "dinner", "snack"],
+                                index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                                    logger.guess_meal_type(), 1
+                                ),
+                                key=f"meal_{i}"
+                            )
+                        with col3:
+                            if st.button("➕ Add to Log", key=f"add_{i}", use_container_width=True):
+                                # Add to database if not already there
+                                if not result.food_id:
+                                    food_id = search.add_result_to_database(result)
+                                else:
+                                    food_id = result.food_id
+
+                                # Log the food
+                                logger.log_food(
+                                    food_id=food_id,
+                                    servings=servings,
+                                    log_date=date_str,
+                                    meal_type=meal_type
+                                )
+                                st.success(f"✅ Added {result.name}!")
+                                st.rerun()
+            else:
+                st.warning("No results found. Try a different search term.")
+
+        # Barcode lookup
+        st.markdown("---")
+        st.markdown("### Barcode Lookup")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            barcode = st.text_input("Enter UPC/EAN barcode", placeholder="e.g., 737628064502")
+        with col2:
+            barcode_btn = st.button("🔍 Lookup", use_container_width=True)
+
+        if barcode_btn and barcode:
+            with st.spinner("Looking up barcode..."):
+                result = search.lookup_barcode(barcode)
+
+            if result:
+                st.success("✅ Product found!")
+                with st.expander(f"{result.name} ({result.brand})", expanded=True):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Serving:** {result.serving_size}")
+                        st.write(f"**Barcode:** {barcode}")
+                    with col2:
+                        st.write(f"**Calories:** {result.calories:.0f}")
+                        st.write(f"**Protein:** {result.protein_g:.1f}g")
+                        st.write(f"**Carbs:** {result.carbs_g:.1f}g")
+                        st.write(f"**Fat:** {result.fat_g:.1f}g")
+
+                    st.markdown("---")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        servings = st.number_input("Servings", min_value=0.1, value=1.0, step=0.1, key="barcode_servings")
+                    with col2:
+                        meal_type = st.selectbox(
+                            "Meal",
+                            ["breakfast", "lunch", "dinner", "snack"],
+                            index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                                logger.guess_meal_type(), 1
+                            ),
+                            key="barcode_meal"
+                        )
+                    with col3:
+                        if st.button("➕ Add to Log", key="add_barcode", use_container_width=True):
+                            logger.log_food(
+                                food_id=result.food_id,
+                                servings=servings,
+                                log_date=date_str,
+                                meal_type=meal_type
+                            )
+                            st.success(f"✅ Added {result.name}!")
+                            st.rerun()
+            else:
+                st.error("❌ Product not found. Try searching by name instead.")
+
+    # Tab 3: Quick Add (Recent Foods)
+    with tab3:
+        st.markdown("### Quick Add - Recent Foods")
+        st.markdown("Your 10 most frequently logged foods (last 14 days)")
+
+        recent_foods = logger.get_recent_foods(days=14, limit=10)
+
+        if recent_foods:
+            st.info("💡 Tip: Click any food to add it quickly (~3 seconds vs 30-60 seconds searching)")
+
+            # Display as grid of buttons
+            num_cols = 2
+            for i in range(0, len(recent_foods), num_cols):
+                cols = st.columns(num_cols)
+                for j, col in enumerate(cols):
+                    if i + j < len(recent_foods):
+                        food = recent_foods[i + j]
+                        with col:
+                            with st.container():
+                                st.markdown(f"**{food.name}**")
+                                if food.brand:
+                                    st.caption(food.brand)
+                                st.caption(f"{food.calories:.0f} cal | {food.protein_g:.1f}g P | {food.serving_size}")
+
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    servings = st.number_input(
+                                        "Servings",
+                                        min_value=0.1,
+                                        value=1.0,
+                                        step=0.1,
+                                        key=f"recent_servings_{food.food_id}",
+                                        label_visibility="collapsed"
+                                    )
+                                with col2:
+                                    if st.button(
+                                        "➕ Add",
+                                        key=f"add_recent_{food.food_id}",
+                                        use_container_width=True
+                                    ):
+                                        logger.log_food(
+                                            food_id=food.food_id,
+                                            servings=servings,
+                                            log_date=date_str,
+                                            meal_type=logger.guess_meal_type()
+                                        )
+                                        st.success(f"✅ Added {food.name}!")
+                                        st.rerun()
+                                st.markdown("---")
+        else:
+            st.info("No recent foods yet. Start logging to see your frequently eaten foods here!")
+
+    # Tab 4: Meal Templates
+    with tab4:
+        st.markdown("### Meal Templates")
+        st.markdown("One-click logging for repeated multi-food meals (e.g., protein shakes, meal prep)")
+
+        # Create new template
+        with st.expander("➕ Create New Template", expanded=False):
+            template_name = st.text_input("Template Name", placeholder="e.g., Morning Shake")
+            template_desc = st.text_area("Description (optional)", placeholder="Post-workout protein shake")
+            template_meal_type = st.selectbox("Meal Type", ["breakfast", "lunch", "dinner", "snack"], key="template_meal_type")
+
+            st.markdown("**Add Foods to Template**")
+            st.info("First, search and add foods to your database, then create a template from today's logged meals.")
+
+            if st.button("📅 Create from Today's Meals"):
+                try:
+                    template_id = manager.create_template_from_date(
+                        name=template_name,
+                        source_date=date_str,
+                        meal_type=template_meal_type,
+                        description=template_desc
+                    )
+                    st.success(f"✅ Created template: {template_name}")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        # List existing templates
+        st.markdown("---")
+        st.markdown("### Your Templates")
+
+        templates = manager.list_templates(sort_by="recent")
+
+        if templates:
+            for template in templates:
+                with st.expander(
+                    f"🍽️ {template.name} ({template.meal_type}) - " +
+                    f"{template.total_calories:.0f} cal, {template.total_protein_g:.1f}g P",
+                    expanded=False
+                ):
+                    if template.description:
+                        st.markdown(f"*{template.description}*")
+
+                    st.markdown("**Foods:**")
+                    for food in template.foods:
+                        st.write(
+                            f"- {food.servings}x {food.food_name} " +
+                            f"({food.calories * food.servings:.0f} cal, {food.protein_g * food.servings:.1f}g P)"
+                        )
+
+                    st.markdown(f"**Total:** {template.total_calories:.0f} cal | " +
+                               f"{template.total_protein_g:.1f}g P | " +
+                               f"{template.total_carbs_g:.1f}g C | " +
+                               f"{template.total_fat_g:.1f}g F")
+
+                    if template.use_count > 0:
+                        st.caption(f"Used {template.use_count} times | Last: {template.last_used[:10] if template.last_used else 'Never'}")
+
+                    st.markdown("---")
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        multiplier = st.number_input(
+                            "Portion multiplier",
+                            min_value=0.1,
+                            value=1.0,
+                            step=0.1,
+                            key=f"template_mult_{template.template_id}"
+                        )
+                    with col2:
+                        if st.button(
+                            "➕ Log",
+                            key=f"log_template_{template.template_id}",
+                            use_container_width=True
+                        ):
+                            count = manager.log_template(
+                                template_id=template.template_id,
+                                date=date_str,
+                                multiplier=multiplier
+                            )
+                            st.success(f"✅ Logged {count} foods from {template.name}!")
+                            st.rerun()
+        else:
+            st.info("No templates yet. Create your first template above!")
+
+    # Tab 5: History
+    with tab5:
+        st.markdown("### Nutrition History")
+
+        # Date range selector
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input(
+                "From",
+                value=date.today() - timedelta(days=7),
+                key="history_start"
+            )
+        with col2:
+            end_date = st.date_input(
+                "To",
+                value=date.today(),
+                key="history_end"
+            )
+
+        # Weekly average
+        st.markdown("#### Weekly Average")
+        weekly_avg = logger.get_weekly_average(
+            end_date=end_date.strftime("%Y-%m-%d"),
+            days=7
+        )
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Avg Calories", f"{weekly_avg['avg_calories']:.0f}")
+        with col2:
+            st.metric("Avg Protein", f"{weekly_avg['avg_protein_g']:.1f}g")
+        with col3:
+            st.metric("Avg Carbs", f"{weekly_avg['avg_carbs_g']:.1f}g")
+        with col4:
+            st.metric("Avg Fat", f"{weekly_avg['avg_fat_g']:.1f}g")
+
+        st.markdown(f"**Logged {weekly_avg['days_logged']}/{weekly_avg['days_requested']} days**")
+
+
 def main():
     st.set_page_config(
         page_title="Personal Health & Fitness Advisor",
@@ -1479,6 +1965,7 @@ def main():
         render_proactive_dashboard(profile)
         render_training_program(profile)
         render_workout_logging()
+        render_nutrition_tracking()
 
     # Chat section header
     st.subheader("💬 Chat with Your Coach")

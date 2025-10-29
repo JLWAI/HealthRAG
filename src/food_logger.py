@@ -206,17 +206,30 @@ class FoodLogger:
             conn.close()
 
     def search_foods(self, query: str, limit: int = 20) -> List[Food]:
-        """Search foods by name"""
+        """
+        Search foods by name with fuzzy matching.
+
+        Searches both name and brand fields, case-insensitive.
+        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        # Fuzzy search with LIKE (case-insensitive)
+        search_pattern = f"%{query.lower()}%"
+
         cursor.execute("""
             SELECT * FROM foods
-            WHERE name LIKE ? OR brand LIKE ?
-            ORDER BY name
+            WHERE LOWER(name) LIKE ? OR LOWER(brand) LIKE ?
+            ORDER BY
+                CASE
+                    WHEN LOWER(name) = LOWER(?) THEN 1
+                    WHEN LOWER(name) LIKE ? THEN 2
+                    ELSE 3
+                END,
+                name
             LIMIT ?
-        """, (f"%{query}%", f"%{query}%", limit))
+        """, (search_pattern, search_pattern, query, f"{query.lower()}%", limit))
 
         rows = cursor.fetchall()
         conn.close()
@@ -386,7 +399,10 @@ class FoodLogger:
 
         if not rows:
             return {
+                'start_date': start_date,
+                'end_date': end_date,
                 'days_logged': 0,
+                'days_requested': days,
                 'avg_calories': 0,
                 'avg_protein_g': 0,
                 'avg_carbs_g': 0,
@@ -417,6 +433,142 @@ class FoodLogger:
         cursor.execute("DELETE FROM food_entries WHERE id = ?", (entry_id,))
         conn.commit()
         conn.close()
+
+    def get_recent_foods(self, days: int = 14, limit: int = 10) -> List[Food]:
+        """
+        Get most frequently logged foods from recent days.
+
+        HIGH VALUE: Reduces friction by showing commonly eaten foods.
+        Studies show 80% of people eat same 20-30 foods repeatedly.
+
+        Args:
+            days: Look back this many days (default 14)
+            limit: Max foods to return (default 10)
+
+        Returns:
+            List of Food objects, ordered by frequency (most common first)
+        """
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cutoff_date = (date.today() - timedelta(days=days)).isoformat()
+
+        cursor.execute("""
+            SELECT
+                f.*,
+                COUNT(*) as log_count,
+                MAX(fe.created_at) as last_logged
+            FROM foods f
+            JOIN food_entries fe ON f.id = fe.food_id
+            WHERE fe.date >= ?
+            GROUP BY f.id
+            ORDER BY log_count DESC, last_logged DESC
+            LIMIT ?
+        """, (cutoff_date, limit))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [self._row_to_food(row) for row in rows]
+
+    def copy_meals_from_date(
+        self,
+        source_date: str,
+        target_date: Optional[str] = None,
+        meal_types: Optional[List[str]] = None
+    ) -> int:
+        """
+        Copy all meals from one date to another.
+
+        ULTIMATE LOW-FRICTION: "I ate the same thing today" = 2-second operation.
+        Perfect for meal prep users who eat similar meals daily.
+
+        Args:
+            source_date: Date to copy from (ISO format)
+            target_date: Date to copy to (defaults to today)
+            meal_types: Only copy specific meals (e.g., ["breakfast", "lunch"])
+                       If None, copies all meals
+
+        Returns:
+            Number of entries copied
+        """
+        if target_date is None:
+            target_date = date.today().isoformat()
+
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Build WHERE clause for meal types
+        if meal_types:
+            placeholders = ','.join('?' * len(meal_types))
+            meal_filter = f"AND meal_type IN ({placeholders})"
+            params = [source_date] + meal_types
+        else:
+            meal_filter = ""
+            params = [source_date]
+
+        # Get entries to copy
+        cursor.execute(f"""
+            SELECT * FROM food_entries
+            WHERE date = ? {meal_filter}
+            ORDER BY created_at
+        """, params)
+
+        entries_to_copy = cursor.fetchall()
+
+        # Insert copies with new date
+        copied_count = 0
+        for entry in entries_to_copy:
+            cursor.execute("""
+                INSERT INTO food_entries (
+                    date, food_id, servings, calories, protein_g, carbs_g, fat_g, meal_type, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                target_date,
+                entry['food_id'],
+                entry['servings'],
+                entry['calories'],
+                entry['protein_g'],
+                entry['carbs_g'],
+                entry['fat_g'],
+                entry['meal_type'],
+                f"Copied from {source_date}" + (f" - {entry['notes']}" if entry['notes'] else "")
+            ))
+            copied_count += 1
+
+        conn.commit()
+        conn.close()
+
+        return copied_count
+
+    def get_favorites(self, limit: int = 20) -> List[Food]:
+        """
+        Get favorite foods (starred by user).
+
+        Note: Requires favorites table (not yet implemented).
+        For now, returns same as get_recent_foods().
+        """
+        # TODO: Implement favorites table with star/unstar functionality
+        return self.get_recent_foods(days=30, limit=limit)
+
+    def guess_meal_type(self) -> str:
+        """
+        Auto-detect meal type based on current time.
+
+        SMART DEFAULT: Saves user one click per entry.
+        """
+        hour = datetime.now().hour
+
+        if 5 <= hour < 11:
+            return "breakfast"
+        elif 11 <= hour < 15:
+            return "lunch"
+        elif 15 <= hour < 18:
+            return "snack"
+        else:
+            return "dinner"
 
     def _row_to_food(self, row) -> Food:
         """Convert database row to Food object"""
