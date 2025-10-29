@@ -1557,6 +1557,45 @@ def render_nutrition_tracking():
                 if meal_type in daily_nutrition.meals:
                     entries = daily_nutrition.meals[meal_type]
                     with st.expander(f"🍽️ {meal_type.title()} ({len(entries)} items)", expanded=True):
+                        # Calculate meal totals
+                        meal_calories = sum(e.calories for e in entries)
+                        meal_protein = sum(e.protein_g for e in entries)
+
+                        st.markdown(f"**Meal Total:** {meal_calories:.0f} cal | {meal_protein:.1f}g P")
+
+                        # Add "Save as Template" button for this meal
+                        if len(entries) > 1:  # Only show if meal has multiple items
+                            with st.popover("💾 Save as Template", use_container_width=False):
+                                st.markdown(f"### Save {meal_type.title()} as Template")
+                                st.info(f"This will save all {len(entries)} items as a reusable template for quick logging.")
+
+                                template_name = st.text_input(
+                                    "Template Name",
+                                    value=f"My {meal_type.title()}",
+                                    key=f"template_name_{meal_type}_{date_str}"
+                                )
+                                template_desc = st.text_area(
+                                    "Description (optional)",
+                                    placeholder=f"e.g., Post-workout meal, Meal prep lunch",
+                                    key=f"template_desc_{meal_type}_{date_str}"
+                                )
+
+                                if st.button("✅ Create Template", key=f"create_template_{meal_type}_{date_str}", use_container_width=True):
+                                    try:
+                                        template_id = manager.create_template_from_date(
+                                            name=template_name,
+                                            source_date=date_str,
+                                            meal_type=meal_type,
+                                            description=template_desc if template_desc else None
+                                        )
+                                        st.success(f"✅ Saved '{template_name}' template! Find it in the Templates tab.")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error: {e}")
+
+                        st.markdown("---")
+
+                        # Display individual food items
                         for entry in entries:
                             col1, col2, col3 = st.columns([3, 2, 1])
                             with col1:
