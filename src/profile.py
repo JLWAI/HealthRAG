@@ -364,10 +364,56 @@ ACTIVITY_MULTIPLIERS = {
 
 # Common equipment lists
 EQUIPMENT_PRESETS = {
-    'minimal': ['bodyweight', 'resistance_bands', 'dumbbells'],
-    'home_gym': ['barbell', 'dumbbells', 'rack', 'bench', 'pull_up_bar'],
-    'commercial_gym': ['barbell', 'dumbbells', 'rack', 'bench', 'cables',
-                       'machines', 'pull_up_bar', 'dip_station']
+    'minimal': [
+        'bodyweight', 'resistance_bands', 'dumbbells'
+    ],
+    'home_gym_basic': [
+        'dumbbells', 'bench', 'pull_up_bar', 'resistance_bands', 'bodyweight'
+    ],
+    'home_gym_advanced': [
+        'barbell', 'j_hooks', 'squat_rack', 'dumbbells', 'bench',
+        'incline_bench', 'decline_bench', 'smith_machine',
+        'smith_squat_rack', 'smith_bench_press', 'cables',
+        'functional_trainer', 'leg_extension_machine', 'leg_curl_machine',
+        'pull_up_bar', 'lat_pulldown_machine', 'cable_row_machine',
+        'chest_press_machine', 'landmine', 'lateral_raise_machine',
+        'rowing_machine', 'treadmill', 'elliptical'
+    ],
+    'planet_fitness': [
+        'dumbbells', 'smith_machine', 'cables', 'leg_extension_machine',
+        'leg_curl_machine', 'leg_press_machine', 'hack_squat_machine',
+        'chest_press_machine', 'pec_deck', 'shoulder_press_machine',
+        'lateral_raise_machine', 'bicep_curl_machine', 'tricep_extension_machine',
+        'lat_pulldown_machine', 'seated_row_machine', 'rear_delt_machine',
+        'lower_back_extension', 'ab_crunch_machine', 'treadmill', 'elliptical',
+        'rowing_machine', 'functional_trainer', 'kettlebells', 'battle_ropes',
+        'trx', 'medicine_balls', 'bosu_balls'
+    ],
+    'home_gym_plus_pf': [
+        # Combined: Jason's home gym + Planet Fitness
+        'barbell', 'j_hooks', 'squat_rack', 'dumbbells', 'bench',
+        'incline_bench', 'decline_bench', 'smith_machine',
+        'smith_squat_rack', 'smith_bench_press', 'cables',
+        'functional_trainer', 'leg_extension_machine', 'leg_curl_machine',
+        'leg_press_machine', 'hack_squat_machine',
+        'pull_up_bar', 'lat_pulldown_machine', 'cable_row_machine',
+        'chest_press_machine', 'pec_deck', 'shoulder_press_machine',
+        'lateral_raise_machine', 'landmine', 'rowing_machine',
+        'treadmill', 'elliptical', 'kettlebells', 'battle_ropes',
+        'trx', 'medicine_balls'
+    ],
+    'commercial_gym': [
+        'barbell', 'dumbbells', 'squat_rack', 'power_rack', 'bench',
+        'incline_bench', 'decline_bench', 'smith_machine', 'cables',
+        'functional_trainer', 'machines', 'leg_press_machine',
+        'hack_squat_machine', 'leg_extension_machine', 'leg_curl_machine',
+        'pull_up_bar', 'dip_station', 'lat_pulldown_machine',
+        'cable_row_machine', 'chest_press_machine', 'pec_deck',
+        'shoulder_press_machine', 'lateral_raise_machine',
+        'landmine', 'rowing_machine', 'assault_bike', 'treadmill',
+        'elliptical', 'stairmaster', 'kettlebells', 'battle_ropes',
+        'trx', 'medicine_balls', 'plyo_boxes'
+    ]
 }
 
 

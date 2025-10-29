@@ -20,11 +20,16 @@
     "injury_history": []
   },
   "equipment": [
+    "barbell",
+    "j_hooks",
+    "squat_rack",
     "dumbbells",
     "bench",
     "incline_bench",
     "decline_bench",
     "smith_machine",
+    "smith_squat_rack",
+    "smith_bench_press",
     "cables",
     "functional_trainer",
     "leg_extension_machine",

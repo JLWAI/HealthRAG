@@ -234,26 +234,44 @@ def render_step_equipment():
 
     equipment_preset = st.selectbox(
         "Equipment Preset",
-        ["minimal", "home_gym", "commercial_gym", "custom"],
+        ["home_gym_advanced", "planet_fitness", "home_gym_plus_pf",
+         "home_gym_basic", "minimal", "commercial_gym", "custom"],
         format_func=lambda x: {
-            "minimal": "Minimal (Bodyweight, Resistance Bands)",
-            "home_gym": "Home Gym (Dumbbells, Bench, Pull-up Bar)",
+            "minimal": "Minimal (Bodyweight, Bands, Dumbbells)",
+            "home_gym_basic": "Home Gym - Basic (Dumbbells, Bench, Pull-up Bar)",
+            "home_gym_advanced": "Home Gym - Advanced (Smith Machine, Cables, Machines)",
+            "planet_fitness": "Planet Fitness",
+            "home_gym_plus_pf": "Home Gym + Planet Fitness (Best of Both)",
             "commercial_gym": "Commercial Gym (Full Equipment)",
             "custom": "Custom (Pick Specific Equipment)"
         }[x]
     )
 
     if equipment_preset == "custom":
-        equipment_options = [
-            "barbell", "dumbbells", "kettlebells", "resistance_bands",
-            "rack", "bench", "incline_bench", "pull_up_bar", "dip_station",
-            "cables", "machines", "smith_machine", "leg_press_machine",
-            "chest_press_machine", "lat_pulldown_machine", "bodyweight"
-        ]
+        st.markdown("**Select all equipment you have access to:**")
+        equipment_options = sorted([
+            "barbell", "j_hooks", "squat_rack", "power_rack",
+            "dumbbells", "kettlebells", "resistance_bands",
+            "bench", "incline_bench", "decline_bench",
+            "pull_up_bar", "dip_station",
+            "cables", "functional_trainer",
+            "smith_machine", "smith_squat_rack", "smith_bench_press",
+            "leg_press_machine", "hack_squat_machine",
+            "leg_extension_machine", "leg_curl_machine",
+            "chest_press_machine", "pec_deck",
+            "shoulder_press_machine", "lateral_raise_machine",
+            "bicep_curl_machine", "tricep_extension_machine",
+            "lat_pulldown_machine", "cable_row_machine", "seated_row_machine",
+            "rear_delt_machine", "lower_back_extension",
+            "ab_crunch_machine", "landmine",
+            "rowing_machine", "assault_bike", "treadmill", "elliptical", "stairmaster",
+            "battle_ropes", "trx", "medicine_balls", "bosu_balls", "plyo_boxes",
+            "bodyweight"
+        ])
         equipment = st.multiselect("Available Equipment", equipment_options, default=["bodyweight"])
     else:
         equipment = EQUIPMENT_PRESETS[equipment_preset]
-        st.info(f"**Selected:** {', '.join(equipment)}")
+        st.success(f"✅ **{len(equipment)} items selected** from '{equipment_preset.replace('_', ' ').title()}' preset")
 
     days_per_week = st.slider("Training Days per Week", min_value=2, max_value=6, value=4)
 
@@ -569,36 +587,56 @@ def render_profile_view():
         )
 
         equipment_preset = st.selectbox(
-            "Equipment",
-            ["keep_current", "minimal", "home_gym", "commercial_gym", "custom"],
+            "Equipment Access",
+            ["keep_current", "home_gym_advanced", "planet_fitness", "home_gym_plus_pf",
+             "home_gym_basic", "minimal", "commercial_gym", "custom"],
             format_func=lambda x: {
                 "keep_current": f"Keep Current ({len(current_equipment)} items)",
-                "minimal": "Minimal (Bodyweight, Bands)",
-                "home_gym": "Home Gym (Dumbbells, Bench, Pull-up Bar)",
+                "minimal": "Minimal (Bodyweight, Bands, Dumbbells)",
+                "home_gym_basic": "Home Gym - Basic (Dumbbells, Bench, Pull-up Bar)",
+                "home_gym_advanced": "Home Gym - Advanced (Your Setup: Smith, Cables, Machines)",
+                "planet_fitness": "Planet Fitness Only",
+                "home_gym_plus_pf": "Home Gym + Planet Fitness (Best of Both)",
                 "commercial_gym": "Commercial Gym (Full Equipment)",
-                "custom": "Custom Selection"
+                "custom": "Custom Selection (Pick Individual Items)"
             }[x],
             key="update_equipment"
         )
 
         if equipment_preset == "custom":
-            equipment_options = [
-                "barbell", "dumbbells", "kettlebells", "resistance_bands",
-                "rack", "bench", "incline_bench", "pull_up_bar", "dip_station",
-                "cables", "machines", "smith_machine", "leg_press_machine",
-                "chest_press_machine", "lat_pulldown_machine", "bodyweight"
-            ]
+            st.markdown("**Select all equipment you have access to:**")
+            equipment_options = sorted([
+                "barbell", "j_hooks", "squat_rack", "power_rack",
+                "dumbbells", "kettlebells", "resistance_bands",
+                "bench", "incline_bench", "decline_bench",
+                "pull_up_bar", "dip_station",
+                "cables", "functional_trainer",
+                "smith_machine", "smith_squat_rack", "smith_bench_press",
+                "leg_press_machine", "hack_squat_machine",
+                "leg_extension_machine", "leg_curl_machine",
+                "chest_press_machine", "pec_deck",
+                "shoulder_press_machine", "lateral_raise_machine",
+                "bicep_curl_machine", "tricep_extension_machine",
+                "lat_pulldown_machine", "cable_row_machine", "seated_row_machine",
+                "rear_delt_machine", "lower_back_extension",
+                "ab_crunch_machine", "landmine",
+                "rowing_machine", "assault_bike", "treadmill", "elliptical", "stairmaster",
+                "battle_ropes", "trx", "medicine_balls", "bosu_balls", "plyo_boxes",
+                "bodyweight"
+            ])
             new_equipment = st.multiselect(
-                "Select Equipment",
+                "Equipment",
                 equipment_options,
                 default=[eq for eq in current_equipment if eq in equipment_options],
-                key="update_equipment_list"
+                key="update_equipment_list",
+                help="Select all equipment you have access to at home or at your gym"
             )
         elif equipment_preset == "keep_current":
             new_equipment = current_equipment
         else:
             from profile import EQUIPMENT_PRESETS
             new_equipment = EQUIPMENT_PRESETS[equipment_preset]
+            st.info(f"ℹ️ This will update your equipment to: **{len(new_equipment)} items** from the '{equipment_preset.replace('_', ' ').title()}' preset")
 
         if st.button("💾 Save Changes", type="primary"):
             updates = {
