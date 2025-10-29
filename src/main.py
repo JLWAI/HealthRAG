@@ -605,8 +605,9 @@ def render_training_program(profile: UserProfile):
     # Load profile data
     profile.load()
     personal_info = profile.profile_data['personal_info']
-    training = profile.profile_data['training']
-    equipment = profile.profile_data['equipment']['available_equipment']
+    experience = profile.profile_data.get('experience', {})
+    schedule = profile.profile_data.get('schedule', {})
+    equipment = profile.profile_data.get('equipment', ['bodyweight'])
 
     # Check if program already exists
     program_file = "data/current_program.json"
@@ -624,9 +625,9 @@ Your program will be customized based on:
 - **Schedule:** {days} days per week
 - **Split:** {split}
             """.format(
-                level=training['training_level'].capitalize(),
-                days=training['days_per_week'],
-                split=training.get('preferred_split', 'upper_lower').replace('_', '/').title()
+                level=experience.get('training_level', 'intermediate').capitalize(),
+                days=schedule.get('days_per_week', 4),
+                split=schedule.get('preferred_split', 'upper_lower').replace('_', '/').title()
             ))
 
         with col2:
@@ -635,8 +636,8 @@ Your program will be customized based on:
                     # Create program generator
                     generator = ProgramGenerator(
                         available_equipment=equipment,
-                        training_level=training['training_level'],
-                        days_per_week=training['days_per_week']
+                        training_level=experience.get('training_level', 'intermediate'),
+                        days_per_week=schedule.get('days_per_week', 4)
                     )
 
                     # Generate program (auto-select best template)
