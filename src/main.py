@@ -9,6 +9,7 @@ from program_generator import ProgramGenerator, format_workout, format_week
 from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
 from autoregulation import AutoregulationEngine
 from program_export import export_program_to_excel, export_program_to_csv
+from program_manager import ProgramManager
 from exercise_database import get_exercises_by_muscle
 import json
 
@@ -622,11 +623,7 @@ def render_profile_view():
 
             profile.update(updates)
             st.success("✅ Profile updated successfully!")
-
-            # Delete current program so it regenerates with new settings
-            if os.path.exists("data/current_program.json"):
-                os.remove("data/current_program.json")
-                st.info("💡 Your training program will regenerate with your new settings")
+            st.info("💡 Click 'Generate New Program' in the Training section to create a program with your updated settings. Your current program will be saved in history.")
 
             st.rerun()
 
@@ -724,6 +721,7 @@ def render_training_program(profile: UserProfile):
     Render training program generation and display.
 
     Shows generated workout program with exercises, sets, reps, RIR progression.
+    Supports multiple programs with history.
     """
     st.markdown("---")
     st.subheader("💪 Your Training Program")
@@ -735,9 +733,12 @@ def render_training_program(profile: UserProfile):
     schedule = profile.profile_data.get('schedule', {})
     equipment = profile.profile_data.get('equipment', ['bodyweight'])
 
-    # Check if program already exists
-    program_file = "data/current_program.json"
-    program_exists = os.path.exists(program_file)
+    # Initialize program manager
+    program_mgr = ProgramManager()
+
+    # Check if active program exists
+    active_program = program_mgr.get_active_program()
+    program_exists = active_program is not None
 
     if not program_exists:
         st.info("📋 No program generated yet. Let's create your personalized training plan!")
@@ -773,24 +774,128 @@ Your program will be customized based on:
                         start_date=date.today()
                     )
 
-                    # Save program
-                    generator.save_program(program, program_file)
+                    # Convert to dict and save with ProgramManager
+                    from dataclasses import asdict
+                    program_dict = {
+                        "template_name": program.template_name,
+                        "start_date": program.start_date.isoformat(),
+                        "equipment_used": program.equipment_used,
+                        "coverage_report": program.coverage_report,
+                        "created_at": program.created_at,
+                        "weeks": []
+                    }
 
-                    st.success("✅ Program generated successfully!")
+                    for week in program.weeks:
+                        week_dict = {
+                            "week_number": week.week_number,
+                            "is_deload": week.is_deload,
+                            "notes": week.notes,
+                            "total_weekly_sets": week.total_weekly_sets,
+                            "workouts": []
+                        }
+
+                        for workout in week.workouts:
+                            workout_dict = {
+                                "day_name": workout.day_name,
+                                "muscle_groups": [m.value for m in workout.muscle_groups],
+                                "total_sets": workout.total_sets,
+                                "estimated_duration_min": workout.estimated_duration_min,
+                                "exercises": []
+                            }
+
+                            for ex in workout.exercises:
+                                ex_dict = {
+                                    "name": ex.exercise.display_name,
+                                    "tier": ex.exercise.tier.value,
+                                    "sets": ex.sets,
+                                    "reps": ex.reps_scheme,
+                                    "rir": ex.rir,
+                                    "load_lbs": ex.load_lbs,
+                                    "notes": ex.notes
+                                }
+                                workout_dict["exercises"].append(ex_dict)
+
+                            week_dict["workouts"].append(workout_dict)
+
+                        program_dict["weeks"].append(week_dict)
+
+                    # Save program with manager
+                    program_id = program_mgr.save_program(program_dict, set_as_active=True)
+
+                    st.success(f"✅ Program generated successfully! (ID: {program_id})")
+                    st.balloons()
                     st.rerun()
 
     else:
         # Display existing program
-        import json
-        with open(program_file, 'r') as f:
-            program_data = json.load(f)
+        program_data = active_program
+
+        # Program history selector
+        all_programs = program_mgr.list_programs(limit=20)
+
+        if len(all_programs) > 1:
+            st.markdown("### 📚 Program History")
+            col1, col2 = st.columns([3, 1])
+
+            with col1:
+                program_options = []
+                for p in all_programs:
+                    status = "🟢 ACTIVE" if p.is_active else "📦"
+                    label = f"{status} {p.template_name.replace('_', ' ').title()} (Started: {p.start_date}) - Week {p.weeks_completed}/{p.total_weeks}"
+                    program_options.append(label)
+
+                selected_idx = st.selectbox(
+                    "Select Program",
+                    range(len(program_options)),
+                    format_func=lambda i: program_options[i],
+                    index=0,  # Active program is first
+                    key="program_selector"
+                )
+
+                # Load selected program
+                selected_program = all_programs[selected_idx]
+                if not selected_program.is_active:
+                    program_data = program_mgr.get_program(selected_program.program_id)
+
+            with col2:
+                if not all_programs[selected_idx].is_active:
+                    if st.button("🔄 Switch to This Program"):
+                        program_mgr.set_active_program(all_programs[selected_idx].program_id)
+                        st.success("Program switched!")
+                        st.rerun()
+
+            st.markdown("---")
 
         # Program header
+        program_id = program_data.get('program_id', 'unknown')
+        weeks_completed = program_data.get('weeks_completed', 0)
+        total_weeks = len(program_data['weeks'])
+
         st.markdown(f"""
 **Template:** {program_data['template_name'].replace('_', ' ').title()}
 **Start Date:** {program_data['start_date']}
-**Duration:** {len(program_data['weeks'])} weeks (5 weeks + deload)
+**Duration:** {total_weeks} weeks (5 weeks + deload)
+**Progress:** Week {weeks_completed}/{total_weeks} {'✅ Completed!' if weeks_completed >= total_weeks else ''}
         """)
+
+        # Week progress updater
+        if weeks_completed < total_weeks:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                new_progress = st.slider(
+                    "Update Your Progress",
+                    min_value=0,
+                    max_value=total_weeks,
+                    value=weeks_completed,
+                    help="Track which week you're currently on"
+                )
+            with col2:
+                if st.button("💾 Update Progress") and new_progress != weeks_completed:
+                    program_mgr.update_progress(program_id, new_progress)
+                    st.success(f"Progress updated to week {new_progress}!")
+                    st.rerun()
+
+            st.markdown("---")
 
         # Equipment coverage
         coverage = program_data['coverage_report']
@@ -844,24 +949,30 @@ Your program will be customized based on:
 
         col1, col2, col3 = st.columns(3)
 
+        # Create temporary file for export functions (they expect file path)
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+        json.dump(program_data, temp_file, indent=2)
+        temp_file.close()
+
         with col1:
             # Excel export for Google Sheets
-            excel_data = export_program_to_excel(program_file)
+            excel_data = export_program_to_excel(temp_file.name)
             st.download_button(
                 label="📊 Download Excel (Google Sheets)",
                 data=excel_data,
-                file_name=f"training_program_{date.today()}.xlsx",
+                file_name=f"training_program_{program_id}_{date.today()}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 help="Download as Excel file - upload to Google Sheets for easy tracking"
             )
 
         with col2:
             # CSV export
-            csv_data = export_program_to_csv(program_file)
+            csv_data = export_program_to_csv(temp_file.name)
             st.download_button(
                 label="📄 Download CSV",
                 data=csv_data,
-                file_name=f"training_program_{date.today()}.csv",
+                file_name=f"training_program_{program_id}_{date.today()}.csv",
                 mime="text/csv"
             )
 
@@ -870,16 +981,87 @@ Your program will be customized based on:
             st.download_button(
                 label="📦 Download JSON",
                 data=json.dumps(program_data, indent=2),
-                file_name=f"training_program_{date.today()}.json",
+                file_name=f"training_program_{program_id}_{date.today()}.json",
                 mime="application/json"
             )
 
+        # Clean up temp file
+        try:
+            os.unlink(temp_file.name)
+        except:
+            pass
+
         st.markdown("---")
 
-        # Regenerate button
-        if st.button("🔄 Regenerate Program", help="Create a new program with same settings"):
-            os.remove(program_file)
-            st.rerun()
+        # Regenerate button - creates NEW program instead of overwriting
+        if st.button("🆕 Generate New Program", help="Create a new program with current settings (keeps this one in history)"):
+            with st.spinner("Generating new program..."):
+                # Create program generator
+                generator = ProgramGenerator(
+                    available_equipment=equipment,
+                    training_level=experience.get('training_level', 'intermediate'),
+                    days_per_week=schedule.get('days_per_week', 4)
+                )
+
+                # Generate program (auto-select best template)
+                program = generator.generate_program(
+                    template_name=None,  # Auto-select
+                    weeks=5,
+                    start_date=date.today()
+                )
+
+                # Convert to dict and save with ProgramManager
+                from dataclasses import asdict
+                new_program_dict = {
+                    "template_name": program.template_name,
+                    "start_date": program.start_date.isoformat(),
+                    "equipment_used": program.equipment_used,
+                    "coverage_report": program.coverage_report,
+                    "created_at": program.created_at,
+                    "weeks": []
+                }
+
+                for week in program.weeks:
+                    week_dict = {
+                        "week_number": week.week_number,
+                        "is_deload": week.is_deload,
+                        "notes": week.notes,
+                        "total_weekly_sets": week.total_weekly_sets,
+                        "workouts": []
+                    }
+
+                    for workout in week.workouts:
+                        workout_dict = {
+                            "day_name": workout.day_name,
+                            "muscle_groups": [m.value for m in workout.muscle_groups],
+                            "total_sets": workout.total_sets,
+                            "estimated_duration_min": workout.estimated_duration_min,
+                            "exercises": []
+                        }
+
+                        for ex in workout.exercises:
+                            ex_dict = {
+                                "name": ex.exercise.display_name,
+                                "tier": ex.exercise.tier.value,
+                                "sets": ex.sets,
+                                "reps": ex.reps_scheme,
+                                "rir": ex.rir,
+                                "load_lbs": ex.load_lbs,
+                                "notes": ex.notes
+                            }
+                            workout_dict["exercises"].append(ex_dict)
+
+                        week_dict["workouts"].append(workout_dict)
+
+                    new_program_dict["weeks"].append(week_dict)
+
+                # Save new program with manager (this creates a NEW program with new timestamp)
+                new_program_id = program_mgr.save_program(new_program_dict, set_as_active=True)
+
+                st.success(f"✅ New program generated! (ID: {new_program_id})")
+                st.info("💡 Your previous program is saved in history. You can switch back to it anytime.")
+                st.balloons()
+                st.rerun()
 
 
 def render_workout_logging():
@@ -904,18 +1086,17 @@ def render_workout_logging():
     with tab1:
         st.markdown("### Log Today's Workout")
 
-        # Check if program exists to pre-populate workout names
-        program_file = "data/current_program.json"
+        # Check if active program exists to pre-populate workout names
+        program_mgr = ProgramManager()
+        active_program = program_mgr.get_active_program()
         workout_names = []
 
-        if os.path.exists(program_file):
-            with open(program_file, 'r') as f:
-                program_data = json.load(f)
-                # Extract unique workout names
-                for week in program_data['weeks']:
-                    for workout in week['workouts']:
-                        if workout['day_name'] not in workout_names:
-                            workout_names.append(workout['day_name'])
+        if active_program:
+            # Extract unique workout names
+            for week in active_program['weeks']:
+                for workout in week['workouts']:
+                    if workout['day_name'] not in workout_names:
+                        workout_names.append(workout['day_name'])
 
         # Workout metadata
         col1, col2 = st.columns(2)
