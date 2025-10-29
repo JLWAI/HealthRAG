@@ -206,19 +206,23 @@ class ProgramGenerator:
                 continue  # Skip if no sets for this muscle
 
             # Select exercises (2 per muscle in most cases)
+            # Get 3 options so user can see alternatives
             exercise_recs = self.selector.select_exercises_for_muscle(
                 muscle,
-                count=2 if not is_deload else 1
+                count=3 if not is_deload else 2
             )
+
+            # Use top 2 (or 1 for deload) for actual workout
+            exercise_recs_to_use = exercise_recs[:2 if not is_deload else 1]
 
             # Distribute sets across exercises
             sets_per_exercise = calculate_volume_per_exercise(
                 workout_volume,
-                len(exercise_recs)
+                len(exercise_recs_to_use)
             )
 
             # Build workout exercises
-            for i, rec in enumerate(exercise_recs):
+            for i, rec in enumerate(exercise_recs_to_use):
                 sets = sets_per_exercise[i]
                 if sets == 0:
                     continue

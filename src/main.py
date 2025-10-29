@@ -8,6 +8,8 @@ from calculations import calculate_nutrition_plan, get_expected_rate_text, get_p
 from program_generator import ProgramGenerator, format_workout, format_week
 from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
 from autoregulation import AutoregulationEngine
+from program_export import export_program_to_excel, export_program_to_csv
+from exercise_database import get_exercises_by_muscle
 import json
 
 load_dotenv()
@@ -838,20 +840,46 @@ Your program will be customized based on:
 
         # Action buttons
         st.markdown("---")
-        col1, col2 = st.columns(2)
+        st.markdown("### 📥 Export Program")
+
+        col1, col2, col3 = st.columns(3)
+
         with col1:
-            if st.button("🔄 Regenerate Program"):
-                os.remove(program_file)
-                st.rerun()
+            # Excel export for Google Sheets
+            excel_data = export_program_to_excel(program_file)
+            st.download_button(
+                label="📊 Download Excel (Google Sheets)",
+                data=excel_data,
+                file_name=f"training_program_{date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Download as Excel file - upload to Google Sheets for easy tracking"
+            )
 
         with col2:
-            if st.button("📥 Download Program"):
-                st.download_button(
-                    label="Download JSON",
-                    data=json.dumps(program_data, indent=2),
-                    file_name=f"training_program_{date.today()}.json",
-                    mime="application/json"
-                )
+            # CSV export
+            csv_data = export_program_to_csv(program_file)
+            st.download_button(
+                label="📄 Download CSV",
+                data=csv_data,
+                file_name=f"training_program_{date.today()}.csv",
+                mime="text/csv"
+            )
+
+        with col3:
+            # JSON export (original format)
+            st.download_button(
+                label="📦 Download JSON",
+                data=json.dumps(program_data, indent=2),
+                file_name=f"training_program_{date.today()}.json",
+                mime="application/json"
+            )
+
+        st.markdown("---")
+
+        # Regenerate button
+        if st.button("🔄 Regenerate Program", help="Create a new program with same settings"):
+            os.remove(program_file)
+            st.rerun()
 
 
 def render_workout_logging():
