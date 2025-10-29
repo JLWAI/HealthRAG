@@ -155,7 +155,7 @@ UPPER_LOWER_4X = MesocycleTemplate(
         )
     ],
     description="Classic upper/lower split. Each muscle group trained 2x per week.",
-    best_for=["intermediate", "4_days_available", "balanced_development"],
+    best_for=["intermediate", "4_days_available", "balanced_development", "hypertrophy", "hypertrophy_focus"],
     min_training_level="intermediate"
 )
 
