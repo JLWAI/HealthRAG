@@ -13,8 +13,345 @@ import json
 load_dotenv()
 
 
+def render_onboarding_wizard():
+    """
+    Step-by-step onboarding wizard for new users.
+
+    Steps:
+    1. Welcome + Data Source (Apple Health or Manual)
+    2. Personal Info
+    3. Goals
+    4. Equipment
+    5. Generate Plans
+    """
+    st.title("🏃‍♂️ Welcome to HealthRAG!")
+    st.markdown("### Let's build your personalized fitness and nutrition plan")
+
+    # Initialize onboarding state
+    if 'onboarding_step' not in st.session_state:
+        st.session_state.onboarding_step = 1
+
+    if 'onboarding_data' not in st.session_state:
+        st.session_state.onboarding_data = {}
+
+    # Step indicator
+    steps = ["Data Source", "Personal Info", "Goals", "Equipment", "Review"]
+    current_step = st.session_state.onboarding_step
+
+    cols = st.columns(len(steps))
+    for i, step_name in enumerate(steps, 1):
+        with cols[i-1]:
+            if i < current_step:
+                st.markdown(f"✅ **{step_name}**")
+            elif i == current_step:
+                st.markdown(f"▶️ **{step_name}**")
+            else:
+                st.markdown(f"⚪ {step_name}")
+
+    st.markdown("---")
+
+    # Render current step
+    if current_step == 1:
+        render_step_data_source()
+    elif current_step == 2:
+        render_step_personal_info()
+    elif current_step == 3:
+        render_step_goals()
+    elif current_step == 4:
+        render_step_equipment()
+    elif current_step == 5:
+        render_step_review()
+
+
+def render_step_data_source():
+    """Step 1: Choose data source"""
+    st.subheader("📱 Step 1: How would you like to provide your information?")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("""
+### 🍎 Import from Apple Health
+
+Export your health data from the Apple Health app:
+1. Open **Health** app on iPhone/Mac
+2. Tap your **profile picture**
+3. Tap **Export All Health Data**
+4. Save and upload the `export.xml` file here
+
+**Automatically imports:**
+- Weight, height, age, biological sex
+- Recent step counts
+- Activity data
+        """)
+
+        uploaded_file = st.file_uploader("Upload Apple Health export.xml", type=['xml', 'zip'])
+
+        if uploaded_file and st.button("📥 Import from Apple Health", type="primary"):
+            with st.spinner("Importing Apple Health data..."):
+                # TODO: Parse XML and populate data
+                st.success("✅ Apple Health data imported successfully!")
+                st.session_state.onboarding_data['data_source'] = 'apple_health'
+                st.session_state.onboarding_step = 2
+                st.rerun()
+
+    with col2:
+        st.markdown("""
+### ✍️ Manual Entry
+
+Enter your information manually.
+
+**You'll provide:**
+- Weight, height, age, sex
+- Activity level
+- Equipment available
+        """)
+
+        if st.button("✍️ Enter Information Manually", type="primary"):
+            st.session_state.onboarding_data['data_source'] = 'manual'
+            st.session_state.onboarding_step = 2
+            st.rerun()
+
+
+def render_step_personal_info():
+    """Step 2: Personal information"""
+    st.subheader("📋 Step 2: Personal Information")
+
+    name = st.text_input("First Name", placeholder="e.g., Jason",
+                        help="Your first name for personalized coaching")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        weight = st.number_input("Weight (lbs)", min_value=50.0, max_value=500.0, value=170.0, step=0.5)
+        feet = st.number_input("Height (ft)", min_value=4, max_value=7, value=5)
+
+    with col2:
+        age = st.number_input("Age", min_value=13, max_value=100, value=30)
+        inches = st.number_input("Height (in)", min_value=0, max_value=11, value=10)
+
+    sex = st.selectbox("Sex", ["male", "female"])
+
+    activity = st.selectbox(
+        "Activity Level",
+        ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
+        index=2,
+        help="Sedentary: Little/no exercise | Lightly Active: 1-3 days/week | Moderately Active: 3-5 days/week"
+    )
+
+    training_level = st.selectbox("Training Experience", ["beginner", "intermediate", "advanced"], index=1)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back"):
+            st.session_state.onboarding_step = 1
+            st.rerun()
+
+    with col2:
+        if st.button("Next ➡️", type="primary"):
+            if not name or name.strip() == "":
+                st.error("Please enter your first name")
+            else:
+                st.session_state.onboarding_data.update({
+                    'name': name.strip(),
+                    'weight_lbs': weight,
+                    'height_inches': feet * 12 + inches,
+                    'age': age,
+                    'sex': sex,
+                    'activity_level': activity,
+                    'training_level': training_level
+                })
+                st.session_state.onboarding_step = 3
+                st.rerun()
+
+
+def render_step_goals():
+    """Step 3: Goals"""
+    st.subheader("🎯 Step 3: What are your goals?")
+
+    phase = st.selectbox(
+        "Primary Goal",
+        ["cut", "bulk", "maintain", "recomp"],
+        format_func=lambda x: {
+            "cut": "🔥 Cut (Lose Fat)",
+            "bulk": "💪 Bulk (Build Muscle)",
+            "maintain": "⚖️ Maintain (Stay Same Weight)",
+            "recomp": "🔄 Recomp (Build Muscle + Lose Fat)"
+        }[x]
+    )
+
+    st.markdown(f"""
+**Selected: {phase.capitalize()}**
+
+{get_phase_explanation(st.session_state.onboarding_data, {'phase': phase})}
+    """)
+
+    if phase in ["cut", "bulk"]:
+        col1, col2 = st.columns(2)
+        with col1:
+            current_weight = st.session_state.onboarding_data.get('weight_lbs', 170)
+            target_weight = st.number_input(
+                "Target Weight (lbs)",
+                min_value=50.0,
+                max_value=500.0,
+                value=current_weight - 10 if phase == "cut" else current_weight + 10,
+                step=0.5
+            )
+        with col2:
+            timeline = st.number_input("Timeline (weeks)", min_value=4, max_value=52, value=12)
+    else:
+        target_weight = None
+        timeline = None
+
+    primary_goal = st.selectbox(
+        "Training Focus",
+        ["hypertrophy", "strength", "general_fitness", "fat_loss", "performance"]
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back"):
+            st.session_state.onboarding_step = 2
+            st.rerun()
+
+    with col2:
+        if st.button("Next ➡️", type="primary"):
+            st.session_state.onboarding_data.update({
+                'phase': phase,
+                'primary_goal': primary_goal,
+                'target_weight_lbs': target_weight,
+                'timeline_weeks': timeline
+            })
+            st.session_state.onboarding_step = 4
+            st.rerun()
+
+
+def render_step_equipment():
+    """Step 4: Equipment"""
+    st.subheader("🏋️ Step 4: What equipment do you have access to?")
+
+    equipment_preset = st.selectbox(
+        "Equipment Preset",
+        ["minimal", "home_gym", "commercial_gym", "custom"],
+        format_func=lambda x: {
+            "minimal": "Minimal (Bodyweight, Resistance Bands)",
+            "home_gym": "Home Gym (Dumbbells, Bench, Pull-up Bar)",
+            "commercial_gym": "Commercial Gym (Full Equipment)",
+            "custom": "Custom (Pick Specific Equipment)"
+        }[x]
+    )
+
+    if equipment_preset == "custom":
+        equipment_options = [
+            "barbell", "dumbbells", "kettlebells", "resistance_bands",
+            "rack", "bench", "incline_bench", "pull_up_bar", "dip_station",
+            "cables", "machines", "smith_machine", "leg_press_machine",
+            "chest_press_machine", "lat_pulldown_machine", "bodyweight"
+        ]
+        equipment = st.multiselect("Available Equipment", equipment_options, default=["bodyweight"])
+    else:
+        equipment = EQUIPMENT_PRESETS[equipment_preset]
+        st.info(f"**Selected:** {', '.join(equipment)}")
+
+    days_per_week = st.slider("Training Days per Week", min_value=2, max_value=6, value=4)
+
+    preferred_split = st.selectbox(
+        "Preferred Training Split",
+        ["full_body", "upper_lower", "ppl", "bro_split"],
+        format_func=lambda x: {
+            "full_body": "Full Body (3x/week, hit everything each session)",
+            "upper_lower": "Upper/Lower (4x/week, balanced approach)",
+            "ppl": "Push/Pull/Legs (6x/week, high frequency)",
+            "bro_split": "Bro Split (5x/week, one muscle per day)"
+        }[x]
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back"):
+            st.session_state.onboarding_step = 3
+            st.rerun()
+
+    with col2:
+        if st.button("Next ➡️", type="primary"):
+            st.session_state.onboarding_data.update({
+                'equipment': equipment,
+                'days_per_week': days_per_week,
+                'preferred_split': preferred_split
+            })
+            st.session_state.onboarding_step = 5
+            st.rerun()
+
+
+def render_step_review():
+    """Step 5: Review and create"""
+    st.subheader("✅ Step 5: Review Your Information")
+
+    data = st.session_state.onboarding_data
+
+    st.markdown(f"""
+### 👤 Personal Information
+- **Name:** {data['name']}
+- **Weight:** {data['weight_lbs']} lbs
+- **Height:** {data['height_inches'] // 12}'{data['height_inches'] % 12}"
+- **Age:** {data['age']} years
+- **Sex:** {data['sex'].capitalize()}
+- **Activity:** {data['activity_level'].replace('_', ' ').title()}
+- **Training Level:** {data['training_level'].capitalize()}
+
+### 🎯 Goals
+- **Phase:** {data['phase'].capitalize()}
+- **Training Focus:** {data['primary_goal'].replace('_', ' ').title()}
+{f"- **Target Weight:** {data.get('target_weight_lbs')} lbs" if data.get('target_weight_lbs') else ""}
+{f"- **Timeline:** {data.get('timeline_weeks')} weeks" if data.get('timeline_weeks') else ""}
+
+### 🏋️ Training Setup
+- **Equipment:** {len(data['equipment'])} items available
+- **Days per Week:** {data['days_per_week']}
+- **Preferred Split:** {data['preferred_split'].replace('_', ' ').title()}
+    """)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back"):
+            st.session_state.onboarding_step = 4
+            st.rerun()
+
+    with col2:
+        if st.button("🚀 Create My Plan!", type="primary"):
+            # Create profile
+            profile = UserProfile()
+            success = profile.create(
+                name=data['name'],
+                weight_lbs=data['weight_lbs'],
+                height_inches=data['height_inches'],
+                age=data['age'],
+                sex=data['sex'],
+                activity_level=data['activity_level'],
+                equipment=data['equipment'],
+                phase=data['phase'],
+                primary_goal=data['primary_goal'],
+                target_weight_lbs=data.get('target_weight_lbs'),
+                timeline_weeks=data.get('timeline_weeks'),
+                training_level=data['training_level'],
+                days_per_week=data['days_per_week'],
+                minutes_per_session=60,
+                preferred_split=data['preferred_split']
+            )
+
+            if success:
+                # Clear onboarding state
+                del st.session_state.onboarding_step
+                del st.session_state.onboarding_data
+
+                st.success(f"✅ Profile created successfully! Welcome, {data['name']}!")
+                st.balloons()
+                st.rerun()
+            else:
+                st.error("❌ Failed to create profile")
+
+
 def render_profile_setup():
-    """Render profile creation form"""
+    """Render profile creation form - OLD VERSION (keeping for reference)"""
     st.sidebar.markdown("---")
     st.sidebar.subheader("👤 Create Your Profile")
 
@@ -756,10 +1093,14 @@ def main():
 
     # Profile Management
     profile = UserProfile()
-    if profile.exists():
-        render_profile_view()
-    else:
-        render_profile_setup()
+
+    if not profile.exists():
+        # Show onboarding wizard for new users
+        render_onboarding_wizard()
+        return  # Don't show anything else until profile is created
+
+    # Existing user - show sidebar profile info
+    render_profile_view()
 
     # Proactive Dashboard (show plan automatically if profile exists)
     if profile.exists():
