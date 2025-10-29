@@ -489,9 +489,11 @@ def render_profile_view():
     with st.sidebar.expander("📋 View Full Profile"):
         st.text(profile.summary())
 
-    with st.sidebar.expander("✏️ Quick Update"):
+    with st.sidebar.expander("✏️ Edit Profile"):
+        st.markdown("**Personal Info**")
+
         new_weight = st.number_input(
-            "Update Weight (lbs)",
+            "Weight (lbs)",
             min_value=50.0,
             max_value=500.0,
             value=float(info.weight_lbs),
@@ -499,9 +501,131 @@ def render_profile_view():
             key="update_weight"
         )
 
-        if st.button("Update Weight"):
-            profile.update({'personal_info': {'weight_lbs': new_weight}})
-            st.success(f"Weight updated to {new_weight} lbs")
+        new_activity = st.selectbox(
+            "Activity Level",
+            ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
+            index=["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"].index(info.activity_level),
+            key="update_activity"
+        )
+
+        st.markdown("**Goals**")
+        new_phase = st.selectbox(
+            "Phase",
+            ["maintain", "cut", "bulk", "recomp"],
+            index=["maintain", "cut", "bulk", "recomp"].index(goals.phase),
+            key="update_phase"
+        )
+
+        if new_phase in ["cut", "bulk"]:
+            new_target = st.number_input(
+                "Target Weight (lbs)",
+                min_value=50.0,
+                max_value=500.0,
+                value=float(goals.target_weight_lbs) if goals.target_weight_lbs else float(info.weight_lbs),
+                step=0.5,
+                key="update_target"
+            )
+            new_timeline = st.number_input(
+                "Timeline (weeks)",
+                min_value=4,
+                max_value=52,
+                value=int(goals.timeline_weeks) if goals.timeline_weeks else 12,
+                key="update_timeline"
+            )
+        else:
+            new_target = None
+            new_timeline = None
+
+        st.markdown("**Training**")
+
+        # Get current values from correct keys
+        experience = profile.profile_data.get('experience', {})
+        schedule = profile.profile_data.get('schedule', {})
+        current_equipment = profile.profile_data.get('equipment', ['bodyweight'])
+
+        new_training_level = st.selectbox(
+            "Training Level",
+            ["beginner", "intermediate", "advanced"],
+            index=["beginner", "intermediate", "advanced"].index(experience.get('training_level', 'intermediate')),
+            key="update_training_level"
+        )
+
+        new_days = st.slider(
+            "Days per Week",
+            min_value=2,
+            max_value=6,
+            value=int(schedule.get('days_per_week', 4)),
+            key="update_days"
+        )
+
+        new_split = st.selectbox(
+            "Preferred Split",
+            ["full_body", "upper_lower", "ppl", "bro_split"],
+            index=["full_body", "upper_lower", "ppl", "bro_split"].index(schedule.get('preferred_split', 'upper_lower')),
+            key="update_split"
+        )
+
+        equipment_preset = st.selectbox(
+            "Equipment",
+            ["keep_current", "minimal", "home_gym", "commercial_gym", "custom"],
+            format_func=lambda x: {
+                "keep_current": f"Keep Current ({len(current_equipment)} items)",
+                "minimal": "Minimal (Bodyweight, Bands)",
+                "home_gym": "Home Gym (Dumbbells, Bench, Pull-up Bar)",
+                "commercial_gym": "Commercial Gym (Full Equipment)",
+                "custom": "Custom Selection"
+            }[x],
+            key="update_equipment"
+        )
+
+        if equipment_preset == "custom":
+            equipment_options = [
+                "barbell", "dumbbells", "kettlebells", "resistance_bands",
+                "rack", "bench", "incline_bench", "pull_up_bar", "dip_station",
+                "cables", "machines", "smith_machine", "leg_press_machine",
+                "chest_press_machine", "lat_pulldown_machine", "bodyweight"
+            ]
+            new_equipment = st.multiselect(
+                "Select Equipment",
+                equipment_options,
+                default=[eq for eq in current_equipment if eq in equipment_options],
+                key="update_equipment_list"
+            )
+        elif equipment_preset == "keep_current":
+            new_equipment = current_equipment
+        else:
+            from profile import EQUIPMENT_PRESETS
+            new_equipment = EQUIPMENT_PRESETS[equipment_preset]
+
+        if st.button("💾 Save Changes", type="primary"):
+            updates = {
+                'personal_info': {
+                    'weight_lbs': new_weight,
+                    'activity_level': new_activity
+                },
+                'goals': {
+                    'phase': new_phase,
+                    'target_weight_lbs': new_target,
+                    'timeline_weeks': new_timeline
+                },
+                'experience': {
+                    'training_level': new_training_level
+                },
+                'schedule': {
+                    'days_per_week': new_days,
+                    'preferred_split': new_split
+                },
+                'equipment': new_equipment
+            }
+
+            profile.update(updates)
+            st.success("✅ Profile updated successfully!")
+
+            # Delete current program so it regenerates with new settings
+            if os.path.exists("data/current_program.json"):
+                os.remove("data/current_program.json")
+                st.info("💡 Your training program will regenerate with your new settings")
+
             st.rerun()
 
     # Delete Profile
