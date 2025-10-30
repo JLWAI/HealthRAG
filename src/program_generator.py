@@ -109,13 +109,30 @@ class ProgramGenerator:
         if template_name:
             template = get_template_by_name(template_name)
         else:
+            # Debug logging
+            print(f"DEBUG: Looking for template with days_per_week={self.days_per_week}, training_level={self.training_level}")
+
             template = get_recommended_template(
                 self.days_per_week,
                 self.training_level,
                 goals=["hypertrophy_focus"]
             )
 
+            if not template:
+                # Try with broader goals
+                print(f"DEBUG: No match with hypertrophy_focus, trying broader search")
+                template = get_recommended_template(
+                    self.days_per_week,
+                    self.training_level,
+                    goals=["intermediate", "4_days_available", "balanced_development"]
+                )
+
         if not template:
+            # List available templates for debugging
+            from mesocycle_templates import ALL_TEMPLATES
+            print(f"DEBUG: Available templates:")
+            for t in ALL_TEMPLATES:
+                print(f"  - {t.name}: {t.days_per_week} days/week, level={t.min_training_level}, goals={t.best_for}")
             raise ValueError(f"No suitable template found for {self.days_per_week} days/week")
 
         # Generate weekly plans

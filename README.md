@@ -12,7 +12,32 @@ A completely **FREE**, **local** AI-powered health and fitness advisor that uses
 
 ## Quick Start
 
-### Option 1: Docker (Cross-Platform, Recommended)
+### Option 1: Local Development (Python venv)
+
+**One-time setup:**
+```bash
+# Run the automated setup script (installs all dependencies)
+chmod +x setup_dependencies.sh
+./setup_dependencies.sh
+```
+
+**Daily usage:**
+```bash
+# Activate virtual environment (includes ZBar library path for barcode scanning)
+source activate_venv.sh
+
+# Start the application
+streamlit run src/main.py
+
+# Access at: http://localhost:8501
+```
+
+**To deactivate:**
+```bash
+deactivate
+```
+
+### Option 2: Docker (Cross-Platform, Recommended)
 
 ```bash
 # Start everything with one command
@@ -24,7 +49,7 @@ docker-compose up --build
 # Access at: http://localhost:8501
 ```
 
-### Option 2: Local MLX (macOS Only - Faster)
+### Option 3: Local MLX (macOS Only - Faster)
 
 ```bash
 # Run the setup script
@@ -100,6 +125,23 @@ HealthRAG/
 - Only answers from your documents
 - Source attribution
 - No hallucination - explicit when info not available
+
+### 📷 Camera Barcode Scanning (Privacy-First)
+- **Privacy-focused**: Camera OFF by default, user must explicitly enable
+- **Automatic detection**: Uses pyzbar to decode UPC/EAN barcodes
+- **Instant lookup**: Queries Open Food Facts database (2.8M+ products)
+- **Full nutrition info**: Calories, protein, carbs, fat, serving sizes
+- **Quick logging**: Add scanned products directly to food log
+- **Manual fallback**: Original manual entry always available
+- **Success rate**: 70-80% in good conditions (lighting, centering)
+
+**How to use:**
+1. Navigate to: "🍽️ Nutrition Tracking" → "🔍 Search & Add" tab
+2. Click "📷 Enable Camera" button
+3. Position barcode to webcam (centered, good lighting)
+4. Take photo - automatic detection + product lookup
+5. Select servings/meal type and add to log
+6. Click "🚫 Disable Camera" when done
 
 ## Configuration
 

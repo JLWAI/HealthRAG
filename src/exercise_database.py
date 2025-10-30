@@ -326,13 +326,24 @@ S_TIER_EXERCISES = [
     # ========== QUADS ==========
     Exercise(
         name="barbell_back_squat",
-        display_name="Barbell Back Squat",
+        display_name="Barbell Back Squat (High Bar)",
         tier=ExerciseTier.S,
         primary_muscles=[MuscleGroup.QUADS],
         secondary_muscles=[MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS],
         equipment_required=["barbell", "rack"],
         difficulty="advanced",
-        notes="King of leg exercises. NOT available at Planet Fitness (no free barbells)."
+        notes="King of leg exercises. S-tier alternative to hack squat. NOT available at Planet Fitness (no free barbells)."
+    ),
+
+    Exercise(
+        name="landmine_hack_squat",
+        display_name="Landmine Hack Squat (Viking Press Attachment)",
+        tier=ExerciseTier.A,
+        primary_muscles=[MuscleGroup.QUADS],
+        secondary_muscles=[MuscleGroup.GLUTES],
+        equipment_required=["landmine", "barbell"],
+        difficulty="intermediate",
+        notes="Home alternative to hack squat machine using Viking Press landmine attachment. Excellent quad builder."
     ),
 
     Exercise(
@@ -455,6 +466,17 @@ A_TIER_EXERCISES = [
         notes="Classic back builder. Home or gym."
     ),
 
+    Exercise(
+        name="landmine_t_bar_row",
+        display_name="Landmine T-Bar Row (Viking Press Attachment)",
+        tier=ExerciseTier.A,
+        primary_muscles=[MuscleGroup.BACK],
+        secondary_muscles=[MuscleGroup.BICEPS],
+        equipment_required=["landmine", "barbell"],
+        difficulty="intermediate",
+        notes="Excellent back thickness builder using Viking Press landmine attachment. Home gym friendly."
+    ),
+
     # SHOULDERS
     Exercise(
         name="dumbbell_lateral_raise",
@@ -476,6 +498,17 @@ A_TIER_EXERCISES = [
         equipment_required=["dumbbells", "bench"],
         difficulty="intermediate",
         notes="Home or gym."
+    ),
+
+    Exercise(
+        name="landmine_press",
+        display_name="Landmine Shoulder Press (Viking Press)",
+        tier=ExerciseTier.A,
+        primary_muscles=[MuscleGroup.SHOULDERS],
+        secondary_muscles=[MuscleGroup.TRICEPS],
+        equipment_required=["landmine", "barbell"],
+        difficulty="intermediate",
+        notes="Unique shoulder press variation using Viking Press landmine attachment. Great for shoulder-friendly pressing."
     ),
 
     # BICEPS

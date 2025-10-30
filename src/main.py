@@ -1690,7 +1690,108 @@ def render_nutrition_tracking():
 
         # Barcode lookup
         st.markdown("---")
-        st.markdown("### Barcode Lookup")
+        st.markdown("### 📷 Barcode Lookup")
+
+        # Camera scanning section
+        st.markdown("#### Scan with Camera")
+        st.info("💡 Click button below to enable camera, then take a photo of the barcode. Works best in good lighting with barcode centered.")
+
+        # Initialize session state for camera
+        if 'camera_enabled' not in st.session_state:
+            st.session_state.camera_enabled = False
+
+        # Camera toggle button
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            if st.button("📷 Enable Camera" if not st.session_state.camera_enabled else "🚫 Disable Camera",
+                        use_container_width=True):
+                st.session_state.camera_enabled = not st.session_state.camera_enabled
+                st.rerun()
+
+        # Only show camera if enabled
+        camera_image = None
+        if st.session_state.camera_enabled:
+            camera_image = st.camera_input("Take a photo of barcode", key="barcode_camera")
+
+        if camera_image:
+            # Decode barcode from image
+            try:
+                from PIL import Image
+                from pyzbar import pyzbar
+                import io
+
+                # Convert to PIL Image
+                image = Image.open(io.BytesIO(camera_image.getvalue()))
+
+                # Decode barcodes
+                barcodes = pyzbar.decode(image)
+
+                if barcodes:
+                    # Get first barcode
+                    detected_barcode = barcodes[0].data.decode('utf-8')
+                    st.success(f"✅ Barcode detected: {detected_barcode}")
+
+                    # Auto-lookup the barcode
+                    with st.spinner("Looking up product..."):
+                        result = search.lookup_barcode(detected_barcode)
+
+                    if result:
+                        st.success(f"🎉 Product found: {result.name}")
+                        with st.expander(f"{result.name} ({result.brand})", expanded=True):
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write(f"**Serving:** {result.serving_size}")
+                                st.write(f"**Barcode:** {detected_barcode}")
+                            with col2:
+                                st.write(f"**Calories:** {result.calories:.0f}")
+                                st.write(f"**Protein:** {result.protein_g:.1f}g")
+                                st.write(f"**Carbs:** {result.carbs_g:.1f}g")
+                                st.write(f"**Fat:** {result.fat_g:.1f}g")
+
+                            st.markdown("---")
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                servings = st.number_input("Servings", min_value=0.1, value=1.0, step=0.1, key="camera_servings")
+                            with col2:
+                                meal_type = st.selectbox(
+                                    "Meal",
+                                    ["breakfast", "lunch", "dinner", "snack"],
+                                    index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                                        logger.guess_meal_type(), 1
+                                    ),
+                                    key="camera_meal"
+                                )
+                            with col3:
+                                if st.button("➕ Add to Log", key="add_camera", use_container_width=True):
+                                    logger.log_food(
+                                        food_id=result.food_id,
+                                        servings=servings,
+                                        log_date=date_str,
+                                        meal_type=meal_type
+                                    )
+                                    st.success(f"✅ Added {result.name}!")
+                                    st.rerun()
+                    else:
+                        st.error(f"❌ Product '{detected_barcode}' not found in Open Food Facts database.")
+                        st.info("💡 Try scanning again or enter the barcode manually below.")
+                else:
+                    st.warning("⚠️ No barcode detected in image. Try again with:")
+                    st.markdown("""
+                    - Better lighting
+                    - Barcode centered in frame
+                    - Hold camera steady
+                    - Or enter barcode manually below
+                    """)
+            except ImportError as e:
+                st.error(f"❌ Barcode scanning requires pyzbar and Pillow. Error: {e}")
+                st.info("Install with: `pip3 install pyzbar Pillow`")
+            except Exception as e:
+                st.error(f"❌ Error scanning barcode: {e}")
+                st.info("Try entering the barcode manually below.")
+
+        # Manual barcode entry (fallback)
+        st.markdown("---")
+        st.markdown("#### Manual Entry")
         col1, col2 = st.columns([3, 1])
         with col1:
             barcode = st.text_input("Enter UPC/EAN barcode", placeholder="e.g., 737628064502")
