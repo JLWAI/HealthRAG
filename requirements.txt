@@ -13,6 +13,7 @@ torch==2.3.0
 
 # Web UI
 streamlit==1.29.0
+plotly==5.18.0
 
 # HTTP requests (for API clients)
 requests==2.31.0
@@ -35,3 +36,7 @@ numpy==1.26.3
 # Development dependencies
 pytest==7.4.3
 pytest-cov==4.1.0
+pytest-playwright==0.4.3
+playwright==1.40.0
+pytest-asyncio==0.21.1
+pytest-html==4.1.1

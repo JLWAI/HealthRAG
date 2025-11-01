@@ -500,48 +500,54 @@ class FoodLogger:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Build WHERE clause for meal types
-        if meal_types:
-            placeholders = ','.join('?' * len(meal_types))
-            meal_filter = f"AND meal_type IN ({placeholders})"
-            params = [source_date] + meal_types
-        else:
-            meal_filter = ""
-            params = [source_date]
+        try:
+            # Build WHERE clause for meal types
+            if meal_types:
+                placeholders = ','.join('?' * len(meal_types))
+                meal_filter = f"AND meal_type IN ({placeholders})"
+                params = [source_date] + meal_types
+            else:
+                meal_filter = ""
+                params = [source_date]
 
-        # Get entries to copy
-        cursor.execute(f"""
-            SELECT * FROM food_entries
-            WHERE date = ? {meal_filter}
-            ORDER BY created_at
-        """, params)
+            # Get entries to copy
+            cursor.execute(f"""
+                SELECT * FROM food_entries
+                WHERE date = ? {meal_filter}
+                ORDER BY created_at
+            """, params)
 
-        entries_to_copy = cursor.fetchall()
+            entries_to_copy = cursor.fetchall()
 
-        # Insert copies with new date
-        copied_count = 0
-        for entry in entries_to_copy:
-            cursor.execute("""
-                INSERT INTO food_entries (
-                    date, food_id, servings, calories, protein_g, carbs_g, fat_g, meal_type, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                target_date,
-                entry['food_id'],
-                entry['servings'],
-                entry['calories'],
-                entry['protein_g'],
-                entry['carbs_g'],
-                entry['fat_g'],
-                entry['meal_type'],
-                f"Copied from {source_date}" + (f" - {entry['notes']}" if entry['notes'] else "")
-            ))
-            copied_count += 1
+            # Insert copies with new date - wrap in transaction
+            conn.execute("BEGIN TRANSACTION")
+            copied_count = 0
+            for entry in entries_to_copy:
+                cursor.execute("""
+                    INSERT INTO food_entries (
+                        date, food_id, servings, calories, protein_g, carbs_g, fat_g, meal_type, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    target_date,
+                    entry['food_id'],
+                    entry['servings'],
+                    entry['calories'],
+                    entry['protein_g'],
+                    entry['carbs_g'],
+                    entry['fat_g'],
+                    entry['meal_type'],
+                    f"Copied from {source_date}" + (f" - {entry['notes']}" if entry['notes'] else "")
+                ))
+                copied_count += 1
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            return copied_count
 
-        return copied_count
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
 
     def get_favorites(self, limit: int = 20) -> List[Food]:
         """

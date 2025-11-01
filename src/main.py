@@ -15,7 +15,12 @@ from exercise_database import get_exercises_by_muscle
 from food_logger import FoodLogger
 from food_search_integrated import IntegratedFoodSearch
 from meal_templates import MealTemplateManager
+from adaptive_tdee import (
+    WeightTracker, calculate_trend_weight, calculate_adaptive_tdee,
+    recommend_macro_adjustment, get_adaptive_tdee_insight, AdaptiveTDEEInsight
+)
 import json
+import plotly.graph_objects as go
 
 load_dotenv()
 
@@ -997,41 +1002,42 @@ Your program will be customized based on:
         json.dump(program_data, temp_file, indent=2)
         temp_file.close()
 
-        with col1:
-            # Excel export for Google Sheets
-            excel_data = export_program_to_excel(temp_file.name)
-            st.download_button(
-                label="📊 Download Excel (Google Sheets)",
-                data=excel_data,
-                file_name=f"training_program_{program_id}_{date.today()}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                help="Download as Excel file - upload to Google Sheets for easy tracking"
-            )
-
-        with col2:
-            # CSV export
-            csv_data = export_program_to_csv(temp_file.name)
-            st.download_button(
-                label="📄 Download CSV",
-                data=csv_data,
-                file_name=f"training_program_{program_id}_{date.today()}.csv",
-                mime="text/csv"
-            )
-
-        with col3:
-            # JSON export (original format)
-            st.download_button(
-                label="📦 Download JSON",
-                data=json.dumps(program_data, indent=2),
-                file_name=f"training_program_{program_id}_{date.today()}.json",
-                mime="application/json"
-            )
-
-        # Clean up temp file
         try:
-            os.unlink(temp_file.name)
-        except:
-            pass
+            with col1:
+                # Excel export for Google Sheets
+                excel_data = export_program_to_excel(temp_file.name)
+                st.download_button(
+                    label="📊 Download Excel (Google Sheets)",
+                    data=excel_data,
+                    file_name=f"training_program_{program_id}_{date.today()}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    help="Download as Excel file - upload to Google Sheets for easy tracking"
+                )
+
+            with col2:
+                # CSV export
+                csv_data = export_program_to_csv(temp_file.name)
+                st.download_button(
+                    label="📄 Download CSV",
+                    data=csv_data,
+                    file_name=f"training_program_{program_id}_{date.today()}.csv",
+                    mime="text/csv"
+                )
+
+            with col3:
+                # JSON export (original format)
+                st.download_button(
+                    label="📦 Download JSON",
+                    data=json.dumps(program_data, indent=2),
+                    file_name=f"training_program_{program_id}_{date.today()}.json",
+                    mime="application/json"
+                )
+        finally:
+            # Clean up temp file
+            try:
+                os.unlink(temp_file.name)
+            except:
+                pass  # Ignore errors during cleanup
 
         st.markdown("---")
 
@@ -2016,6 +2022,540 @@ def render_nutrition_tracking():
         st.markdown(f"**Logged {weekly_avg['days_logged']}/{weekly_avg['days_requested']} days**")
 
 
+def render_weight_tracking():
+    """
+    Weight tracking with EWMA trend analysis.
+
+    Features:
+    - Daily weight logging
+    - EWMA trend weight visualization
+    - 7-day moving average
+    - Delta from goal weight
+    - Rate of change tracking
+    """
+    st.markdown("---")
+    st.header("⚖️ Weight Tracking & Trends")
+
+    # Initialize weight tracker
+    tracker = WeightTracker(db_path="data/weights.db")
+
+    # Get user profile for goal weight
+    profile = UserProfile()
+    goal_weight = None
+    if profile.exists():
+        info = profile.get_personal_info()
+        goals = profile.get_goals()
+        if goals and hasattr(goals, 'target_weight_lbs'):
+            goal_weight = goals.target_weight_lbs
+
+    # Tabs for different views
+    tab1, tab2 = st.tabs(["📊 Weight Trends", "📝 Log Weight"])
+
+    with tab1:
+        st.subheader("📈 Weight Trend Analysis")
+
+        # Get trend data (last 30 days)
+        trends = tracker.get_trend_analysis(days=30, goal_weight=goal_weight)
+
+        if not trends:
+            st.info("👆 Log your first weight entry to see trends!")
+            return
+
+        # Latest stats
+        latest = trends[-1]
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric(
+                "Latest Weight",
+                f"{latest.actual_weight:.1f} lbs",
+                delta=None
+            )
+
+        with col2:
+            st.metric(
+                "Trend Weight",
+                f"{latest.trend_weight:.1f} lbs",
+                delta=f"{latest.trend_weight - latest.actual_weight:.1f} lbs",
+                delta_color="inverse",
+                help="EWMA smoothed weight (less affected by daily fluctuations)"
+            )
+
+        with col3:
+            if latest.moving_average_7d is not None:
+                st.metric(
+                    "7-Day Average",
+                    f"{latest.moving_average_7d:.1f} lbs"
+                )
+            else:
+                st.metric("7-Day Average", "Need 7 days")
+
+        with col4:
+            if latest.delta_from_goal is not None:
+                delta_color = "normal" if latest.delta_from_goal > 0 else "inverse"
+                st.metric(
+                    "From Goal",
+                    f"{abs(latest.delta_from_goal):.1f} lbs",
+                    delta=f"{'above' if latest.delta_from_goal > 0 else 'below'} goal",
+                    delta_color=delta_color
+                )
+            else:
+                st.metric("From Goal", "No goal set")
+
+        # Rate of change
+        if latest.rate_of_change_weekly is not None:
+            rate_color = "🟢" if latest.rate_of_change_weekly < 0 else "🔴"
+            st.markdown(f"**Rate of Change:** {rate_color} {latest.rate_of_change_weekly:.2f} lbs/week")
+        else:
+            st.markdown("**Rate of Change:** Need 14+ days for accurate rate")
+
+        st.markdown("---")
+
+        # Plotly chart
+        st.subheader("📊 Weight Chart (Last 30 Days)")
+
+        dates = [t.date for t in trends]
+        actual_weights = [t.actual_weight for t in trends]
+        trend_weights = [t.trend_weight for t in trends]
+        moving_avgs = [t.moving_average_7d for t in trends]
+
+        fig = go.Figure()
+
+        # Actual weight (scatter)
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=actual_weights,
+            mode='markers',
+            name='Daily Weight',
+            marker=dict(size=8, color='lightblue'),
+            hovertemplate='<b>%{x}</b><br>Weight: %{y:.1f} lbs<extra></extra>'
+        ))
+
+        # Trend weight (EWMA)
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=trend_weights,
+            mode='lines',
+            name='Trend (EWMA)',
+            line=dict(color='blue', width=3),
+            hovertemplate='<b>%{x}</b><br>Trend: %{y:.1f} lbs<extra></extra>'
+        ))
+
+        # 7-day moving average
+        valid_ma = [(d, ma) for d, ma in zip(dates, moving_avgs) if ma is not None]
+        if valid_ma:
+            ma_dates, ma_values = zip(*valid_ma)
+            fig.add_trace(go.Scatter(
+                x=ma_dates,
+                y=ma_values,
+                mode='lines',
+                name='7-Day Average',
+                line=dict(color='green', width=2, dash='dash'),
+                hovertemplate='<b>%{x}</b><br>7-Day Avg: %{y:.1f} lbs<extra></extra>'
+            ))
+
+        # Goal weight line
+        if goal_weight is not None:
+            fig.add_hline(
+                y=goal_weight,
+                line_dash="dot",
+                line_color="red",
+                annotation_text=f"Goal: {goal_weight} lbs",
+                annotation_position="right"
+            )
+
+        fig.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Weight (lbs)",
+            hovermode='x unified',
+            height=400,
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Coaching insights
+        st.markdown("### 🧠 Insights")
+
+        if len(trends) < 7:
+            st.info("📅 Log at least 7 days for weekly averages")
+
+        if len(trends) < 14:
+            st.info("📈 Log at least 14 days for accurate rate of change")
+
+        if latest.rate_of_change_weekly is not None:
+            rate = latest.rate_of_change_weekly
+
+            if abs(rate) < 0.25:
+                st.success(f"✅ Stable weight (±0.25 lbs/week)")
+            elif rate < -2.0:
+                st.warning(f"⚠️ Losing weight very fast ({rate:.2f} lbs/week). Consider increasing calories.")
+            elif rate < -0.5:
+                st.info(f"📉 Losing weight at {abs(rate):.2f} lbs/week")
+            elif rate > 2.0:
+                st.warning(f"⚠️ Gaining weight very fast (+{rate:.2f} lbs/week). Consider reducing calories.")
+            elif rate > 0.5:
+                st.info(f"📈 Gaining weight at +{rate:.2f} lbs/week")
+
+        # Weight history table
+        st.markdown("---")
+        st.subheader("📋 Weight History")
+
+        history_entries = tracker.get_weights(limit=30)
+
+        if history_entries:
+            # Format for display
+            history_data = []
+            for entry in history_entries:
+                history_data.append({
+                    "Date": entry.date,
+                    "Weight": f"{entry.weight_lbs:.1f} lbs",
+                    "Notes": entry.notes or ""
+                })
+
+            st.dataframe(
+                history_data,
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("No weight entries yet")
+
+    with tab2:
+        st.subheader("📝 Log Today's Weight")
+
+        # Get latest weight for default value
+        latest_entry = tracker.get_latest_weight()
+        default_weight = latest_entry.weight_lbs if latest_entry else 170.0
+
+        with st.form("log_weight_form"):
+            col1, col2 = st.columns(2)
+
+            with col1:
+                log_date = st.date_input(
+                    "Date",
+                    value=date.today(),
+                    help="Date of weight measurement"
+                )
+
+            with col2:
+                weight_lbs = st.number_input(
+                    "Weight (lbs)",
+                    min_value=50.0,
+                    max_value=500.0,
+                    value=default_weight,
+                    step=0.1,
+                    help="Your body weight in pounds"
+                )
+
+            notes = st.text_area(
+                "Notes (optional)",
+                placeholder="e.g., Morning weight, after workout, etc.",
+                help="Optional notes about the measurement"
+            )
+
+            submitted = st.form_submit_button("💾 Log Weight", type="primary", use_container_width=True)
+
+            if submitted:
+                try:
+                    tracker.log_weight(
+                        weight_lbs=weight_lbs,
+                        log_date=log_date.strftime("%Y-%m-%d"),
+                        notes=notes
+                    )
+                    st.success(f"✅ Logged {weight_lbs} lbs for {log_date.strftime('%Y-%m-%d')}")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(f"❌ Invalid weight: {e}")
+
+        # Quick stats
+        st.markdown("---")
+        st.markdown("### 📊 Quick Stats")
+
+        latest_entry = tracker.get_latest_weight()
+        if latest_entry:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("Latest Entry", f"{latest_entry.weight_lbs:.1f} lbs")
+                st.caption(f"Logged on {latest_entry.date}")
+
+            with col2:
+                entries_count = len(tracker.get_weights(limit=100))
+                st.metric("Total Entries", entries_count)
+
+                if entries_count >= 7:
+                    st.caption("✅ Enough for weekly trends")
+                elif entries_count >= 1:
+                    st.caption(f"📅 {7 - entries_count} more for weekly trends")
+
+
+def render_adaptive_tdee():
+    """
+    Adaptive TDEE and Weekly Check-In system.
+
+    MacroFactor-style adaptive nutrition coaching:
+    - Back-calculated TDEE from actual weight change + intake
+    - Weekly macro adjustment recommendations
+    - Adherence-neutral coaching
+    """
+    st.markdown("---")
+    st.header("🎯 Adaptive TDEE & Weekly Check-In")
+
+    # Initialize trackers
+    weight_tracker = WeightTracker(db_path="data/weights.db")
+    food_logger = FoodLogger(db_path="data/food_log.db")
+
+    # Get user profile
+    profile = UserProfile()
+    if not profile.exists():
+        st.warning("⚠️ Create your profile first to use Adaptive TDEE")
+        return
+
+    info = profile.get_personal_info()
+    goals = profile.get_goals()
+
+    # Calculate formula TDEE (Mifflin-St Jeor)
+    from calculations import calculate_nutrition_plan
+
+    plan = calculate_nutrition_plan(
+        weight_lbs=info.weight_lbs,
+        height_inches=info.height_inches,
+        age=info.age,
+        sex=info.sex,
+        activity_level=info.activity_level,
+        phase=goals.phase,
+        training_level=profile.get_experience().training_level
+    )
+
+    # Determine goal rate from phase
+    if goals.phase == "cut":
+        goal_rate = -1.0  # -1 lb/week default for cutting
+        if hasattr(goals, 'target_weight_lbs') and goals.target_weight_lbs:
+            weeks = goals.timeline_weeks if hasattr(goals, 'timeline_weeks') else 12
+            goal_rate = -(info.weight_lbs - goals.target_weight_lbs) / weeks
+    elif goals.phase == "bulk":
+        goal_rate = 0.5  # +0.5 lb/week default for bulking
+    elif goals.phase == "recomp":
+        goal_rate = -0.25  # Slight deficit for recomp
+    else:  # maintain
+        goal_rate = 0.0
+
+    # Get adaptive TDEE insight (integration function)
+    insight = get_adaptive_tdee_insight(
+        weight_tracker=weight_tracker,
+        food_logger=food_logger,
+        formula_tdee=plan['tdee'],
+        goal_rate_lbs_week=goal_rate,
+        current_calories=plan['calories'],
+        current_protein_g=plan['protein_g'],
+        phase=goals.phase,
+        days=14
+    )
+
+    # Display status
+    if not insight.has_sufficient_data:
+        st.info(
+            f"📊 **Data Collection Progress:** {insight.days_logged}/14 days logged\n\n"
+            f"Log weight daily and track food for at least 14 days to unlock Adaptive TDEE.\n\n"
+            f"**Why 14 days?** This provides enough data to calculate accurate trends "
+            f"while filtering out daily fluctuations."
+        )
+
+        # Show progress bar
+        progress = insight.days_logged / 14
+        st.progress(progress)
+
+        # Show formula TDEE in the meantime
+        st.markdown("### 📐 Formula-Based TDEE (Mifflin-St Jeor)")
+        st.metric("Estimated TDEE", f"{insight.formula_tdee} cal/day")
+        st.caption("This is an estimate. Adaptive TDEE will be more accurate once you have 14 days of data.")
+
+        return
+
+    # Sufficient data - show full adaptive TDEE analysis
+    st.success(f"✅ {insight.days_logged} days of data - Adaptive TDEE is active!")
+
+    # Main metrics
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric(
+            "Formula TDEE",
+            f"{insight.formula_tdee} cal",
+            help="Mifflin-St Jeor formula estimate"
+        )
+
+    with col2:
+        st.metric(
+            "Adaptive TDEE",
+            f"{insight.adaptive_tdee} cal",
+            delta=f"{insight.tdee_delta:+d} cal" if insight.tdee_delta else None,
+            help="Back-calculated from your actual data"
+        )
+
+    with col3:
+        st.metric(
+            "Avg Intake (14d)",
+            f"{insight.average_intake:.0f} cal",
+            help="Average daily calories over last 14 days"
+        )
+
+    with col4:
+        weight_change_label = f"{insight.weight_change_14d:+.1f} lbs" if insight.weight_change_14d else "N/A"
+        st.metric(
+            "Weight Change (14d)",
+            weight_change_label,
+            help="Trend weight change over 14 days"
+        )
+
+    st.markdown("---")
+
+    # TDEE Comparison
+    st.subheader("📊 TDEE Comparison: Formula vs. Reality")
+
+    if insight.tdee_delta:
+        delta_pct = (insight.tdee_delta / insight.formula_tdee) * 100
+
+        if abs(delta_pct) < 5:
+            st.success(
+                f"✅ **Your actual TDEE matches the formula closely** (within {abs(delta_pct):.1f}%)\n\n"
+                f"The Mifflin-St Jeor formula is working well for you."
+            )
+        elif insight.tdee_delta > 0:
+            st.info(
+                f"📈 **Your actual TDEE is {insight.tdee_delta} cal higher than the formula** (+{delta_pct:.1f}%)\n\n"
+                f"Possible reasons:\n"
+                f"- Higher NEAT (Non-Exercise Activity Thermogenesis)\n"
+                f"- More active than activity level suggests\n"
+                f"- Higher metabolic rate (good genetics!)\n\n"
+                f"**Recommendation:** Use {insight.adaptive_tdee} cal as your baseline."
+            )
+        else:
+            st.info(
+                f"📉 **Your actual TDEE is {abs(insight.tdee_delta)} cal lower than the formula** ({delta_pct:.1f}%)\n\n"
+                f"Possible reasons:\n"
+                f"- Lower NEAT (Non-Exercise Activity Thermogenesis)\n"
+                f"- Less active than activity level suggests\n"
+                f"- Adaptive thermogenesis (metabolic adaptation)\n\n"
+                f"**Recommendation:** Use {insight.adaptive_tdee} cal as your baseline."
+            )
+
+    st.markdown("---")
+
+    # Weekly Check-In
+    st.subheader("🎯 Weekly Check-In & Macro Adjustment")
+
+    if insight.macro_adjustment:
+        adj = insight.macro_adjustment
+
+        # Display current status
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Goal Rate",
+                f"{adj.goal_rate:+.2f} lbs/week",
+                help="Your target rate of weight change"
+            )
+
+        with col2:
+            st.metric(
+                "Actual Rate",
+                f"{adj.actual_rate:+.2f} lbs/week",
+                delta=f"{adj.actual_rate - adj.goal_rate:+.2f} lbs/week",
+                delta_color="off",
+                help="Your measured rate from trend data"
+            )
+
+        with col3:
+            deviation_label = "On Track" if abs(adj.percent_deviation) <= 20 else f"{adj.percent_deviation:+.1f}%"
+            st.metric(
+                "Deviation",
+                deviation_label,
+                help="How far off from goal (±20% = on track)"
+            )
+
+        st.markdown("---")
+
+        # Recommendation
+        st.markdown("### 💡 Recommendation")
+
+        # Color-code based on reason
+        if adj.reason == "on_track":
+            st.success(adj.coaching_message)
+        elif "too_fast" in adj.reason:
+            st.warning(adj.coaching_message)
+        else:
+            st.info(adj.coaching_message)
+
+        # Show macro changes
+        if adj.calorie_change != 0:
+            st.markdown("#### 📋 Recommended Macro Changes")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("**Current Macros:**")
+                st.write(f"- Calories: {plan['calories']} cal/day")
+                st.write(f"- Protein: {plan['protein_g']:.0f}g")
+                st.write(f"- Fat: {plan['fat_g']:.0f}g")
+                st.write(f"- Carbs: {plan['carbs_g']:.0f}g")
+
+            with col2:
+                # Calculate new macros (protein stays constant)
+                new_calories = adj.new_calories
+                protein_cal = plan['protein_g'] * 4
+                fat_cal = plan['fat_g'] * 9
+                remaining_cal = new_calories - protein_cal - fat_cal
+                new_carbs_g = remaining_cal / 4
+
+                st.markdown(f"**Adjusted Macros:** ({adj.calorie_change:+d} cal)")
+                st.write(f"- Calories: {new_calories} cal/day")
+                st.write(f"- Protein: {plan['protein_g']:.0f}g (unchanged)")
+                st.write(f"- Fat: {plan['fat_g']:.0f}g (unchanged)")
+                st.write(f"- Carbs: {new_carbs_g:.0f}g ({(new_carbs_g - plan['carbs_g']):+.0f}g)")
+
+            # Apply adjustment button
+            st.markdown("---")
+            col1, col2 = st.columns([3, 1])
+
+            with col1:
+                st.markdown(
+                    "**Note:** This is a recommendation. You can accept it or adjust manually. "
+                    "HealthRAG will continue tracking and provide weekly updates."
+                )
+
+            with col2:
+                if st.button("✅ Apply Adjustment", type="primary", use_container_width=True):
+                    st.info(
+                        "💡 To apply this adjustment, update your profile weight and recalculate your nutrition plan. "
+                        "The system will automatically use the new baseline."
+                    )
+
+        # Educational note
+        st.markdown("---")
+        st.markdown(
+            "### 📚 How Adaptive TDEE Works\n\n"
+            "**Back-Calculation Formula:**\n"
+            "```\n"
+            "TDEE = Avg_Calories + (Weight_Change_lbs × 3500 / 14)\n"
+            "```\n\n"
+            "**Why this works:**\n"
+            "- 1 lb of fat ≈ 3500 calories\n"
+            "- If you lost 1 lb in 14 days eating 2100 cal/day:\n"
+            "  - You were in a 250 cal/day deficit (3500 ÷ 14)\n"
+            "  - Your TDEE = 2100 + 250 = 2350 cal/day\n\n"
+            "**Adherence-Neutral Adjustments:**\n"
+            "- Within ±20% of goal: No change (natural variation)\n"
+            "- Within ±50% of goal: ±100 cal adjustment\n"
+            "- Beyond ±50%: ±150 cal adjustment\n\n"
+            "This approach is based on MacroFactor's methodology and Renaissance Periodization principles."
+        )
+
+
 def main():
     st.set_page_config(
         page_title="Personal Health & Fitness Advisor",
@@ -2106,6 +2646,8 @@ def main():
         render_training_program(profile)
         render_workout_logging()
         render_nutrition_tracking()
+        render_weight_tracking()
+        render_adaptive_tdee()
 
     # Chat section header
     st.subheader("💬 Chat with Your Coach")

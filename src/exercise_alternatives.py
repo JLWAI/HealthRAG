@@ -3,7 +3,7 @@ Intelligent Exercise Alternative System for HealthRAG
 
 Provides location-aware exercise alternatives based on:
 1. Jeff Nippard's tier rankings (S+, S, A)
-2. Jason's home gym equipment vs Planet Fitness
+2. Home gym equipment vs commercial gym
 3. Maintains exercise quality in substitutions
 
 KEY FEATURE: Shows multiple equivalent options per exercise with location awareness
@@ -88,10 +88,10 @@ class ExerciseWithAlternatives:
 
 
 # ============================================================================
-# JASON'S HOME GYM EQUIPMENT
+# USER'S HOME GYM EQUIPMENT
 # ============================================================================
 
-JASONS_HOME_GYM = {
+USERS_HOME_GYM = {
     'barbell',
     'j_hooks',
     'squat_rack',
@@ -166,7 +166,7 @@ def get_exercise_location(exercise: Exercise,
         Location enum indicating where exercise can be done
     """
     if home_equipment is None:
-        home_equipment = JASONS_HOME_GYM
+        home_equipment = USERS_HOME_GYM
     if pf_equipment is None:
         pf_equipment = PLANET_FITNESS_EQUIPMENT
 
@@ -210,7 +210,7 @@ def find_alternatives_by_location(
         List of alternatives with location info
     """
     if home_equipment is None:
-        home_equipment = JASONS_HOME_GYM
+        home_equipment = USERS_HOME_GYM
     if pf_equipment is None:
         pf_equipment = PLANET_FITNESS_EQUIPMENT
 
@@ -315,7 +315,7 @@ def build_exercise_with_alternatives(
         ExerciseWithAlternatives or None if exercise not found
     """
     if home_equipment is None:
-        home_equipment = JASONS_HOME_GYM
+        home_equipment = USERS_HOME_GYM
     if pf_equipment is None:
         pf_equipment = PLANET_FITNESS_EQUIPMENT
 
@@ -362,7 +362,7 @@ def get_s_tier_exercises_with_alternatives(
         List of exercises with alternatives, sorted by tier
     """
     if home_equipment is None:
-        home_equipment = JASONS_HOME_GYM
+        home_equipment = USERS_HOME_GYM
     if pf_equipment is None:
         pf_equipment = PLANET_FITNESS_EQUIPMENT
 
@@ -399,7 +399,7 @@ def generate_exercise_guide(
         Formatted markdown guide
     """
     if home_equipment is None:
-        home_equipment = JASONS_HOME_GYM
+        home_equipment = USERS_HOME_GYM
     if pf_equipment is None:
         pf_equipment = PLANET_FITNESS_EQUIPMENT
 

@@ -143,6 +143,92 @@ HealthRAG/
 5. Select servings/meal type and add to log
 6. Click "🚫 Disable Camera" when done
 
+### ⚖️ Weight Tracking & Adaptive TDEE
+
+Track your weight with **MacroFactor-style trend analysis** for data-driven coaching:
+
+**Features:**
+- **EWMA Trend Weight**: Exponentially Weighted Moving Average (alpha=0.3) smooths daily fluctuations
+- **7-Day Moving Average**: Simple moving average for comparison
+- **Rate of Change**: Weekly rate (lbs/week) calculated from trend data
+- **Goal Tracking**: Visual delta from target weight
+- **Interactive Charts**: Plotly visualization with hover details
+- **Coaching Insights**: Automatic recommendations based on rate of change
+
+**How to use:**
+1. Navigate to: "⚖️ Weight Tracking & Trends"
+2. **Log Weight** tab: Enter daily weight (replaces existing entry for same date)
+3. **Weight Trends** tab: View charts, trends, and insights
+4. Log consistently (7+ days for weekly trends, 14+ days for rate of change)
+
+**What the trends mean:**
+- **Daily Weight** (blue dots): Your actual scale readings
+- **Trend Weight** (blue line): EWMA-smoothed weight (less reactive to daily fluctuations)
+- **7-Day Average** (green dashed): Simple moving average
+- **Goal Line** (red dotted): Your target weight from profile
+
+**Coaching insights:**
+- ✅ Stable: ±0.25 lbs/week (maintenance)
+- 📉 Cutting: -0.5 to -2.0 lbs/week (sustainable fat loss)
+- ⚠️ Too fast: > 2.0 lbs/week (consider slowing down)
+- 📈 Bulking: +0.5 to +2.0 lbs/week (muscle gain)
+
+**Database:** Weight data stored in `data/weights.db` (SQLite)
+
+---
+
+### 🔬 Adaptive TDEE & Weekly Check-Ins
+
+**MacroFactor-style back-calculated TDEE** using your actual data for data-driven adjustments:
+
+**Features:**
+- **Back-Calculated TDEE**: Calculates your true TDEE from actual weight change + calorie intake (14-day rolling window)
+- **Formula**: `TDEE = Avg_Calories - (Weight_Change_lbs × 3500 / Days)`
+- **Weekly Check-In**: Compares goal rate vs actual rate, recommends macro adjustments
+- **Adherence-Neutral Logic**: Assumes perfect tracking, adjusts based on results not compliance
+- **Smart Thresholds**:
+  - Within ±20% of goal: No change (natural variation)
+  - Within ±50% of goal: ±100 cal adjustment (minor tweak)
+  - Beyond ±50% of goal: ±150 cal adjustment (significant correction)
+- **Phase-Aware**: Different logic for cut/bulk/maintain/recomp phases
+
+**How to use:**
+1. Navigate to: "🔬 Adaptive TDEE & Check-In"
+2. Log 14+ days of weight and food intake
+3. View adaptive TDEE comparison vs formula estimate
+4. Review weekly check-in recommendations
+5. Apply macro adjustments with one click
+
+**What the metrics mean:**
+- **Formula TDEE**: Mifflin-St Jeor estimate from your stats (static)
+- **Adaptive TDEE**: Back-calculated from your actual data (dynamic)
+- **TDEE Delta**: Difference between adaptive and formula (± cal/day)
+- **Avg Intake**: Your average daily calories (last 14 days)
+- **Weight Change**: Trend weight change using EWMA smoothing
+
+**Coaching insights:**
+- ✅ On track: Actual rate within ±20% of goal (keep current macros)
+- ⚠️ Losing too fast: Actual rate > goal (increase calories +100-150)
+- 📉 Losing too slow: Actual rate < goal (decrease calories -100-150)
+- 📈 Gaining too fast/slow: Same logic for bulking phases
+- 🔄 Maintenance: Absolute threshold (±0.25 lbs/week = stable)
+
+**Example:**
+```
+Week 1-2 data:
+- Weight: 210 → 208 lbs (trend: -2 lbs)
+- Avg intake: 2100 cal/day
+- Adaptive TDEE: 2100 - (-2 × 3500 / 14) = 2600 cal/day
+
+Goal: -1.0 lb/week
+Actual: -1.0 lb/week
+✅ On track! Keep current macros.
+```
+
+**Database:** Combined data from `data/weights.db` + `data/food_log.db`
+
+---
+
 ## Configuration
 
 Edit `config/settings.py` to customize:

@@ -390,7 +390,7 @@ EQUIPMENT_PRESETS = {
         'trx', 'medicine_balls', 'bosu_balls'
     ],
     'home_gym_plus_pf': [
-        # Combined: Jason's home gym + Planet Fitness
+        # Combined: Home gym + Planet Fitness equipment
         'barbell', 'j_hooks', 'squat_rack', 'dumbbells', 'bench',
         'incline_bench', 'decline_bench', 'smith_machine',
         'smith_squat_rack', 'smith_bench_press', 'cables',
