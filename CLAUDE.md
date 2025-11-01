@@ -592,13 +592,14 @@ User asks: "How much protein do I need?"
 
 ### Deployment Frequency Constraint ⚠️ CRITICAL
 
-**Render.com deploys cost time and money. Target: ≤10 deploys per day.**
+**Render.com deploys cost time and money. Target: ≤10 deploys per day, with one consolidated GitHub push per deploy cycle.**
 
 **REQUIRED WORKFLOW:**
 1. **Test locally FIRST** - Run `./test-checklist.sh` before ANY push to GitHub
 2. **Batch commits** - Group related changes into ONE commit when possible
-3. **Only push to main when confident** - Feature branches don't trigger deploys
-4. **One deploy per feature** - Avoid iterative "fix, push, fix, push" cycles on main
+3. **Combine updates before pushing** - Accumulate fixes locally and push/merge once per deploy so Render builds only once
+4. **Only push to main when confident** - Feature branches don't trigger deploys
+5. **One deploy per feature** - Avoid iterative "fix, push, fix, push" cycles on main
 
 **Cost Impact:**
 - Before local-first testing: 150-300 deploys/month ($$$$)

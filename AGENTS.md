@@ -21,7 +21,7 @@ Tests live in `tests/` and mirror module names (e.g., `test_workout_coach.py`). 
 ## Commit & Pull Request Guidelines
 History shows imperative, capitalized subject lines (e.g., "Add comprehensive nutrition tracking system…"); keep to ~72 characters and explain the "what" in one line. PRs should include: 1) a concise change summary, 2) references to issues or planning docs, 3) screenshots or terminal snippets for UI or ingestion changes, and 4) a test plan listing executed commands. Request a review before merging and confirm Docker and local paths still function when touching deployment scripts.
 
-**⚠️ DEPLOYMENT FREQUENCY:** Pushes to `main` trigger automatic Render.com deploys. **Target: ≤10 deploys per day.** Always test locally first with `./test-checklist.sh` and batch related changes into single commits to minimize deployment costs. See `docs/TESTING.md` for local-first workflow details.
+**⚠️ DEPLOYMENT FREQUENCY:** Pushes to `main` trigger Render.com deploys. **Target: ≤10 deploys per day, with one GitHub push per planned deploy window.** Collect local changes, run the full test checklist, then merge/push once so Render only builds once for that batch. Avoid rapid-fire fix pushes—stage fixes locally and include them in the next consolidated deploy. See `docs/TESTING.md` for local-first workflow details.
 
 ## Data & Configuration Tips
 Sensitive health data stays local—do not commit derived vector stores or personal PDFs. Use `.env` files or `config/settings.py` overrides for machine-specific tweaks, and document new environment variables in `README.md`. When adjusting ingestion or model selection, update the relevant scripts and note the workflow change in `docs/`.
