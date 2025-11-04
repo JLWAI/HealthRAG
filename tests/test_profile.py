@@ -25,6 +25,7 @@ def profile(temp_profile_path):
 def sample_profile_data():
     """Sample profile data for testing"""
     return {
+        'name': 'Test User',
         'weight_lbs': 185.0,
         'height_inches': 72,
         'age': 35,
@@ -63,6 +64,7 @@ class TestProfileCreation:
     def test_minimal_profile_creation(self, profile):
         """Test creating profile with minimal required fields"""
         success = profile.create(
+            name='Minimal User',
             weight_lbs=170.0,
             height_inches=68,
             age=25,
@@ -149,6 +151,7 @@ class TestProfileGetters:
         profile.create(**sample_profile_data)
         info = profile.get_personal_info()
         assert isinstance(info, PersonalInfo)
+        assert info.name == 'Test User'
         assert info.weight_lbs == 185.0
         assert info.height_inches == 72
 
@@ -215,9 +218,15 @@ class TestEquipmentPresets:
 
     def test_equipment_presets_exist(self):
         """Test that equipment presets are defined"""
-        assert 'minimal' in EQUIPMENT_PRESETS
-        assert 'home_gym' in EQUIPMENT_PRESETS
-        assert 'commercial_gym' in EQUIPMENT_PRESETS
+        expected_presets = {
+            'minimal',
+            'home_gym_basic',
+            'home_gym_advanced',
+            'planet_fitness',
+            'home_gym_plus_pf',
+            'commercial_gym'
+        }
+        assert expected_presets.issubset(set(EQUIPMENT_PRESETS.keys()))
 
     def test_commercial_gym_has_expected_equipment(self):
         """Test commercial gym preset has expected equipment"""
@@ -233,6 +242,7 @@ class TestDataClasses:
     def test_personal_info_creation(self):
         """Test PersonalInfo dataclass"""
         info = PersonalInfo(
+            name='Sample User',
             weight_lbs=185.0,
             height_inches=72,
             age=35,

@@ -12,6 +12,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -29,7 +30,38 @@ def setup_test_database():
     return test_db
 
 
-def test_day_1_initial_setup(logger, manager, search):
+@pytest.fixture(scope="module")
+def meal_prep_env(tmp_path_factory):
+    """Provide shared logger/manager/search backed by a temporary database."""
+    temp_dir = tmp_path_factory.mktemp("meal_prep")
+    db_path = temp_dir / "meal_prep.db"
+    logger = FoodLogger(str(db_path))
+    manager = MealTemplateManager(str(db_path), logger)
+    search = IntegratedFoodSearch(logger)
+    return {
+        "db_path": str(db_path),
+        "logger": logger,
+        "manager": manager,
+        "search": search
+    }
+
+
+@pytest.fixture(scope="module")
+def logger(meal_prep_env):
+    return meal_prep_env["logger"]
+
+
+@pytest.fixture(scope="module")
+def manager(meal_prep_env):
+    return meal_prep_env["manager"]
+
+
+@pytest.fixture(scope="module")
+def search(meal_prep_env):
+    return meal_prep_env["search"]
+
+
+def _run_day_1_initial_setup(logger, manager, search):
     """
     Day 1: User sets up their common foods and logs first day of meals
 
@@ -216,11 +248,24 @@ def test_day_1_initial_setup(logger, manager, search):
         'chicken_id': chicken_id,
         'rice_id': rice_id,
         'broccoli_id': broccoli_id,
-        'shake_template_id': shake_template_id
+        'shake_template_id': shake_template_id,
+        'log_date': day_1
     }
 
 
-def test_day_2_copy_yesterday(logger):
+@pytest.fixture(scope="module")
+def day1_state(logger, manager, search):
+    """Execute and cache the full Day 1 setup once for downstream tests."""
+    return _run_day_1_initial_setup(logger, manager, search)
+
+
+def test_day_1_initial_setup(day1_state):
+    """Validate Day 1 setup produced expected artifacts."""
+    assert day1_state['chicken_id'] is not None
+    assert day1_state['shake_template_id'] is not None
+
+
+def test_day_2_copy_yesterday(logger, day1_state):
     """
     Day 2: User copies yesterday's meals (meal prep scenario)
 
@@ -232,8 +277,8 @@ def test_day_2_copy_yesterday(logger):
     print("DAY 2: Copy Yesterday - Meal Prep Workflow")
     print("="*80)
 
-    day_1 = datetime.now().strftime("%Y-%m-%d")
-    day_2 = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    day_1 = day1_state['log_date']
+    day_2 = (datetime.strptime(day_1, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
 
     print("\n1. Copying all meals from yesterday to today...")
     print(f"   Source: {day_1}")
@@ -260,7 +305,7 @@ def test_day_2_copy_yesterday(logger):
     print(f"   ✅ Verified: Day 2 matches Day 1 perfectly")
 
 
-def test_day_3_meal_template(manager, logger):
+def test_day_3_meal_template(manager, logger, day1_state):
     """
     Day 3: User logs protein shake using template
 
@@ -272,7 +317,7 @@ def test_day_3_meal_template(manager, logger):
     print("DAY 3: Meal Template - One-Click Logging")
     print("="*80)
 
-    day_3 = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+    day_3 = (datetime.strptime(day1_state['log_date'], "%Y-%m-%d") + timedelta(days=2)).strftime("%Y-%m-%d")
 
     print("\n1. Listing available templates...")
     templates = manager.list_templates(meal_type="breakfast")
@@ -304,7 +349,7 @@ def test_day_3_meal_template(manager, logger):
     print(f"\n      Total: {sum(e.calories for e in breakfast_entries):.0f} cal, {total_breakfast_protein:.1f}g P")
 
 
-def test_recent_foods(logger):
+def test_recent_foods(logger, day1_state):
     """
     Test Recent Foods feature
 
@@ -374,7 +419,7 @@ def run_complete_workflow():
     search = IntegratedFoodSearch(logger)
 
     # Run workflow
-    food_ids = test_day_1_initial_setup(logger, manager, search)
+    food_ids = _run_day_1_initial_setup(logger, manager, search)
     test_day_2_copy_yesterday(logger)
     test_day_3_meal_template(manager, logger)
     test_recent_foods(logger)

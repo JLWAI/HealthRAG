@@ -19,48 +19,47 @@ class TestWorkoutSet:
     def test_create_workout_set(self):
         """Test creating a WorkoutSet"""
         workout_set = WorkoutSet(
-            exercise_name="Barbell Bench Press",
+            set_number=1,
             weight_lbs=225,
-            reps=10,
+            reps_completed=10,
             rir=2,
+            exercise_name="Barbell Bench Press",
             notes="Felt strong"
         )
 
-        assert workout_set.exercise_name == "Barbell Bench Press"
         assert workout_set.weight_lbs == 225
-        assert workout_set.reps == 10
+        assert workout_set.reps_completed == 10
         assert workout_set.rir == 2
         assert workout_set.notes == "Felt strong"
 
     def test_workout_set_default_notes(self):
         """Test WorkoutSet with no notes"""
         workout_set = WorkoutSet(
-            exercise_name="Squat",
+            set_number=1,
             weight_lbs=315,
-            reps=8,
-            rir=2,
-            notes=None
+            reps_completed=8,
+            rir=2
         )
 
         assert workout_set.notes is None
 
     def test_workout_set_volume_calculation(self):
         """Test volume calculation (weight × reps)"""
-        workout_set = WorkoutSet("Bench Press", 225, 10, 2, None)
+        workout_set = WorkoutSet(set_number=1, weight_lbs=225, reps_completed=10, rir=2)
 
-        volume = workout_set.weight_lbs * workout_set.reps
+        volume = workout_set.weight_lbs * workout_set.reps_completed
         assert volume == 2250
 
     def test_workout_set_zero_weight_bodyweight(self):
         """Test bodyweight exercises (0 lbs)"""
-        workout_set = WorkoutSet("Pull-ups", 0, 10, 2, None)
+        workout_set = WorkoutSet(set_number=1, weight_lbs=0, reps_completed=10, rir=2)
 
         assert workout_set.weight_lbs == 0
-        assert workout_set.reps == 10
+        assert workout_set.reps_completed == 10
 
     def test_workout_set_fractional_weight(self):
         """Test fractional weights (e.g., 2.5 lb plates)"""
-        workout_set = WorkoutSet("Bench Press", 227.5, 10, 2, None)
+        workout_set = WorkoutSet(set_number=1, weight_lbs=227.5, reps_completed=10, rir=2)
 
         assert workout_set.weight_lbs == 227.5
 
@@ -102,7 +101,7 @@ class TestExerciseLog:
 
         assert len(exercise_log.sets) == 3
         assert exercise_log.sets[0].weight_lbs == 225
-        assert exercise_log.sets[0].reps == 12
+        assert exercise_log.sets[0].reps_completed == 12
 
     def test_exercise_log_get_total_sets(self):
         """Test getting total number of sets"""
@@ -168,9 +167,9 @@ class TestExerciseLog:
         assert exercise_log.get_total_sets() == 0
         assert exercise_log.get_total_reps() == 0
         assert exercise_log.get_total_volume() == 0
-        assert exercise_log.get_average_weight() == 0
-        assert exercise_log.get_average_reps() == 0
-        assert exercise_log.get_average_rir() == 0
+        assert exercise_log.get_average_weight() == 0.0
+        assert exercise_log.get_average_reps() == 0.0
+        assert exercise_log.get_average_rir() == 0.0
 
 
 class TestWorkoutSession:
@@ -317,6 +316,7 @@ class TestExerciseProgress:
         assert progress.total_volume == 0
         assert progress.total_sets == 0
         assert progress.avg_rir == 0
+        assert progress.total_rir == 0
 
     def test_update_from_log(self):
         """Test updating progress from exercise log"""
@@ -492,7 +492,7 @@ class TestIntegration:
 
         # Verify session totals
         assert session.get_total_sets() == 6
-        assert session.get_total_volume() == 9465  # (225*12 + 225*10 + 225*9) + (80*12 + 80*11 + 80*10)
+        assert session.get_total_volume() == 9615  # (225*12 + 225*10 + 225*9) + (80*12 + 80*11 + 80*10)
 
         # Create progress from bench exercise
         progress = ExerciseProgress(

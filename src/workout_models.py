@@ -73,6 +73,8 @@ class WorkoutSet:
     rir: int
     timestamp: datetime = field(default_factory=datetime.now)
     set_id: Optional[int] = None
+    exercise_name: Optional[str] = None
+    notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -82,7 +84,9 @@ class WorkoutSet:
             'reps_completed': self.reps_completed,
             'rir': self.rir,
             'timestamp': self.timestamp.isoformat(),
-            'set_id': self.set_id
+            'set_id': self.set_id,
+            'exercise_name': self.exercise_name,
+            'notes': self.notes
         }
 
     @classmethod
@@ -143,6 +147,26 @@ class ExerciseLog:
     def get_total_volume(self) -> float:
         """Calculate total volume (sets × reps × weight)"""
         return sum(s.weight_lbs * s.reps_completed for s in self.sets)
+
+    def get_total_sets(self) -> int:
+        """Total number of sets logged."""
+        return len(self.sets)
+
+    def get_total_reps(self) -> int:
+        """Total repetitions completed across all sets."""
+        return sum(s.reps_completed for s in self.sets)
+
+    def get_average_weight(self) -> float:
+        """Average weight used across logged sets."""
+        if not self.sets:
+            return 0.0
+        return sum(s.weight_lbs for s in self.sets) / len(self.sets)
+
+    def get_average_reps(self) -> float:
+        """Average repetitions performed."""
+        if not self.sets:
+            return 0.0
+        return sum(s.reps_completed for s in self.sets) / len(self.sets)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -219,6 +243,28 @@ class WorkoutSession:
         """Get total volume for session"""
         return sum(ex.get_total_volume() for ex in self.exercises)
 
+    def get_exercise(self, exercise_name: str) -> Optional[ExerciseLog]:
+        """Retrieve exercise log by name (case-insensitive)."""
+        target = exercise_name.lower()
+        for exercise in self.exercises:
+            if exercise.exercise_name.lower() == target:
+                return exercise
+        return None
+
+    def get_summary(self) -> str:
+        """Generate human-readable session summary."""
+        total_sets = self.get_total_sets()
+        total_volume = self.get_total_volume()
+        parts = [
+            f"Session: {self.muscle_group}",
+            f"Date: {self.date.isoformat()}",
+            f"Completed Sets: {total_sets} sets",
+            f"Total Volume: {total_volume:.0f} lbs"
+        ]
+        if self.duration_minutes:
+            parts.append(f"Duration: {self.duration_minutes} min")
+        return " | ".join(parts)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return {
@@ -265,6 +311,7 @@ class ExerciseProgress:
     total_volume: float = 0.0
     total_sets: int = 0
     avg_rir: float = 0.0
+    total_rir: float = 0.0
 
     def update_from_log(self, exercise_log: ExerciseLog, session_date: date):
         """Update progress from a new exercise log"""
@@ -282,9 +329,19 @@ class ExerciseProgress:
         self.total_volume += exercise_log.get_total_volume()
         self.total_sets += len(exercise_log.sets)
 
-        # Update average RIR
-        total_rir = sum(s.rir for ex in [exercise_log] for s in ex.sets)
-        self.avg_rir = total_rir / self.total_sets if self.total_sets > 0 else 0.0
+        # Update cumulative RIR and average
+        self.total_rir += sum(s.rir for s in exercise_log.sets)
+        self.avg_rir = self.total_rir / self.total_sets if self.total_sets > 0 else 0.0
+
+    def days_since_first_logged(self, on_date: Optional[date] = None) -> int:
+        """Days since the exercise was first logged."""
+        reference = on_date or date.today()
+        return (reference - self.first_logged).days
+
+    def days_since_last_logged(self, on_date: Optional[date] = None) -> int:
+        """Days since the exercise was last logged."""
+        reference = on_date or date.today()
+        return (reference - self.last_logged).days
 
 
 if __name__ == "__main__":

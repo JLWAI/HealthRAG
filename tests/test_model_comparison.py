@@ -19,6 +19,7 @@ import json
 from typing import Dict, List, Tuple
 import sys
 import os
+import pytest
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -89,7 +90,7 @@ def evaluate_response(response: str, keywords: List[str]) -> float:
     return keyword_score + length_score + structure_score
 
 
-def test_model(model_name: str, backend: str, test_queries: List[Dict]) -> Dict:
+def evaluate_model(model_name: str, backend: str, test_queries: List[Dict]) -> Dict:
     """
     Test a specific model configuration.
 
@@ -199,7 +200,7 @@ def main():
     all_results = []
 
     for model_config in models_to_test:
-        result = test_model(
+        result = evaluate_model(
             model_config["name"],
             model_config["backend"],
             TEST_QUERIES
@@ -251,4 +252,13 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
+
+
+@pytest.mark.skipif(
+    os.getenv("ENABLE_MODEL_COMPARISON") != "1",
+    reason="Requires local LLM backends (Ollama/MLX); disabled by default."
+)
+def test_model_comparison_suite():
+    """Optional end-to-end model comparison, gated behind an environment flag."""
     main()

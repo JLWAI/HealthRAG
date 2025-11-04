@@ -22,7 +22,21 @@ Testing focus:
 import pytest
 import os
 import random
-from playwright.async_api import Page, expect
+import sys
+from typing import Any
+
+try:
+    from playwright.async_api import Page, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    Page = Any  # type: ignore
+    expect = None  # type: ignore
+    HAS_PLAYWRIGHT = False
+
+pytestmark = pytest.mark.skipif(
+    not HAS_PLAYWRIGHT or "pytest_playwright" not in sys.modules,
+    reason="pytest-playwright plugin required for browser E2E tests"
+)
 
 # Environment configuration
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8501")
