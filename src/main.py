@@ -19,6 +19,15 @@ from adaptive_tdee import (
     WeightTracker, calculate_trend_weight, calculate_adaptive_tdee,
     recommend_macro_adjustment, get_adaptive_tdee_insight, AdaptiveTDEEInsight
 )
+from tdee_analytics import TDEEHistoricalTracker, TDEESnapshot
+from enhanced_tdee_ui import (
+    render_tdee_trend_visualization,
+    render_weight_progress_chart,
+    render_goal_prediction,
+    render_body_measurements,
+    render_monthly_report,
+    render_export_options
+)
 import json
 import plotly.graph_objects as go
 
@@ -2554,6 +2563,78 @@ def render_adaptive_tdee():
             "- Beyond ±50%: ±150 cal adjustment\n\n"
             "This approach is based on MacroFactor's methodology and Renaissance Periodization principles."
         )
+
+    # ========== ENHANCED TDEE ANALYTICS (MacroFactor-inspired) ==========
+    st.markdown("---")
+    st.markdown("## 📊 Advanced Analytics & Tracking")
+    st.caption("MacroFactor-inspired features for comprehensive progress tracking")
+
+    # Initialize historical tracker
+    tdee_tracker = TDEEHistoricalTracker(db_path="data/tdee_history.db")
+
+    # Save current snapshot if we have sufficient data
+    if insight.has_sufficient_data and insight.adaptive_tdee:
+        snapshot = TDEESnapshot(
+            snapshot_id=None,
+            date=date.today().isoformat(),
+            formula_tdee=insight.formula_tdee,
+            adaptive_tdee=insight.adaptive_tdee,
+            tdee_delta=insight.tdee_delta,
+            average_intake_14d=insight.average_intake,
+            weight_lbs=info.weight_lbs,
+            trend_weight_lbs=None,  # Will be calculated from weight entries
+            weight_change_14d=insight.weight_change_14d,
+            goal_rate_lbs_week=goal_rate,
+            actual_rate_lbs_week=insight.macro_adjustment.actual_rate if insight.macro_adjustment else None,
+            percent_deviation=insight.macro_adjustment.percent_deviation if insight.macro_adjustment else None,
+            calorie_adjustment=insight.macro_adjustment.calorie_change if insight.macro_adjustment else None,
+            adjustment_reason=insight.macro_adjustment.reason if insight.macro_adjustment else None,
+            days_logged=insight.days_logged,
+            phase=goals.phase
+        )
+        tdee_tracker.save_snapshot(snapshot)
+
+    # Create tabs for enhanced features
+    tabs = st.tabs([
+        "📈 TDEE Trends",
+        "⚖️ Weight Progress",
+        "🎯 Goal Prediction",
+        "📏 Body Measurements",
+        "📊 Monthly Report",
+        "📤 Export Data"
+    ])
+
+    with tabs[0]:
+        render_tdee_trend_visualization(tdee_tracker, days=60)
+
+    with tabs[1]:
+        render_weight_progress_chart(weight_tracker, days=60)
+
+    with tabs[2]:
+        if hasattr(goals, 'target_weight_lbs') and goals.target_weight_lbs:
+            render_goal_prediction(
+                weight_tracker=weight_tracker,
+                goal_weight_lbs=goals.target_weight_lbs,
+                phase=goals.phase
+            )
+        else:
+            st.info("💡 Set a target weight in your profile to see goal predictions!")
+
+    with tabs[3]:
+        render_body_measurements()
+
+    with tabs[4]:
+        # Monthly report selector
+        col1, col2 = st.columns(2)
+        with col1:
+            month = st.selectbox("Month", range(1, 13), index=date.today().month - 1)
+        with col2:
+            year = st.number_input("Year", min_value=2020, max_value=2030, value=date.today().year)
+
+        render_monthly_report(month, year)
+
+    with tabs[5]:
+        render_export_options(tdee_tracker)
 
 
 def main():
