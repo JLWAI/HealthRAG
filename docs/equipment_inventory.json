@@ -1,0 +1,331 @@
+{
+  "metadata": {
+    "project": "HealthRAG",
+    "description": "Equipment inventory across home gym, Planet Fitness, and presets",
+    "sources": [
+      "src/exercise_alternatives.py",
+      "src/profile.py",
+      "src/exercise_database.py",
+      "PDFs: The_Min-Max_Program__4X.pdf, The_Min-Max_Program__5X.pdf, Fundamentals_Hypertrophy_Program.pdf"
+    ]
+  },
+  "home_gym": {
+    "name": "Jason's Home Gym (Advanced)",
+    "location": "src/exercise_alternatives.py:94-119",
+    "total_items": 24,
+    "equipment": [
+      "barbell",
+      "j_hooks",
+      "squat_rack",
+      "dumbbells",
+      "bench",
+      "incline_bench",
+      "decline_bench",
+      "smith_machine",
+      "smith_squat_rack",
+      "smith_bench_press",
+      "cables",
+      "functional_trainer",
+      "leg_extension_machine",
+      "leg_curl_machine",
+      "pull_up_bar",
+      "lat_pulldown_machine",
+      "cable_row_machine",
+      "chest_press_machine",
+      "landmine",
+      "lateral_raise_machine",
+      "rowing_machine",
+      "treadmill",
+      "elliptical",
+      "bodyweight"
+    ],
+    "by_category": {
+      "barbell_equipment": [
+        "barbell",
+        "j_hooks",
+        "squat_rack",
+        "smith_machine",
+        "smith_squat_rack",
+        "smith_bench_press"
+      ],
+      "dumbbells_freeweight": [
+        "dumbbells",
+        "bodyweight"
+      ],
+      "benches": [
+        "bench",
+        "incline_bench",
+        "decline_bench"
+      ],
+      "machines": [
+        "leg_extension_machine",
+        "leg_curl_machine",
+        "lat_pulldown_machine",
+        "cable_row_machine",
+        "chest_press_machine",
+        "lateral_raise_machine"
+      ],
+      "cable_functional": [
+        "cables",
+        "functional_trainer",
+        "landmine"
+      ],
+      "cardio": [
+        "rowing_machine",
+        "treadmill",
+        "elliptical"
+      ],
+      "bodyweight": [
+        "pull_up_bar",
+        "bodyweight"
+      ]
+    },
+    "key_features": [
+      "Smith machine with squat/bench attachments (rare for home gym)",
+      "Dual cable system (functional trainer + cables)",
+      "Complete leg machine suite",
+      "Multiple bench options (flat/incline/decline)",
+      "Cardio options included"
+    ]
+  },
+  "planet_fitness": {
+    "name": "Planet Fitness Equipment",
+    "location": "src/exercise_alternatives.py:122-151",
+    "total_items": 28,
+    "equipment": [
+      "dumbbells",
+      "smith_machine",
+      "cables",
+      "functional_trainer",
+      "leg_extension_machine",
+      "leg_curl_machine",
+      "leg_press_machine",
+      "hack_squat_machine",
+      "chest_press_machine",
+      "pec_deck",
+      "shoulder_press_machine",
+      "lateral_raise_machine",
+      "bicep_curl_machine",
+      "tricep_extension_machine",
+      "lat_pulldown_machine",
+      "seated_row_machine",
+      "rear_delt_machine",
+      "lower_back_extension",
+      "ab_crunch_machine",
+      "treadmill",
+      "elliptical",
+      "rowing_machine",
+      "kettlebells",
+      "battle_ropes",
+      "trx",
+      "medicine_balls",
+      "bosu_balls",
+      "bodyweight"
+    ],
+    "by_category": {
+      "free_weights": [
+        "dumbbells",
+        "kettlebells",
+        "bodyweight"
+      ],
+      "squat_machines": [
+        "smith_machine",
+        "leg_press_machine",
+        "hack_squat_machine"
+      ],
+      "lower_body_isolation": [
+        "leg_extension_machine",
+        "leg_curl_machine",
+        "lower_back_extension"
+      ],
+      "pressing_machines": [
+        "chest_press_machine",
+        "shoulder_press_machine"
+      ],
+      "isolation_machines": [
+        "pec_deck",
+        "lateral_raise_machine",
+        "bicep_curl_machine",
+        "tricep_extension_machine"
+      ],
+      "pulling_machines": [
+        "lat_pulldown_machine",
+        "seated_row_machine",
+        "rear_delt_machine"
+      ],
+      "core_functional": [
+        "functional_trainer",
+        "cables",
+        "ab_crunch_machine"
+      ],
+      "conditioning": [
+        "treadmill",
+        "elliptical",
+        "rowing_machine",
+        "battle_ropes",
+        "trx",
+        "medicine_balls",
+        "bosu_balls"
+      ]
+    },
+    "key_features": [
+      "No barbell compound lifts (squat/bench)",
+      "Machine-focused equipment",
+      "Full leg machine suite",
+      "Functional training options (TRX, battle ropes, medicine balls)",
+      "Complete isolation machine lineup"
+    ],
+    "limitations": [
+      "No barbell",
+      "No pull-up bar (has assist machine)",
+      "No free squat rack"
+    ]
+  },
+  "shared_equipment": {
+    "count": 13,
+    "percentage_home": "54%",
+    "percentage_pf": "46%",
+    "items": [
+      "dumbbells",
+      "smith_machine",
+      "cables",
+      "functional_trainer",
+      "leg_extension_machine",
+      "leg_curl_machine",
+      "chest_press_machine",
+      "lateral_raise_machine",
+      "lat_pulldown_machine",
+      "treadmill",
+      "elliptical",
+      "rowing_machine",
+      "bodyweight"
+    ]
+  },
+  "home_exclusive": {
+    "count": 8,
+    "items": [
+      "barbell",
+      "j_hooks",
+      "squat_rack",
+      "bench",
+      "incline_bench",
+      "decline_bench",
+      "pull_up_bar",
+      "cable_row_machine"
+    ]
+  },
+  "pf_exclusive": {
+    "count": 15,
+    "items": [
+      "leg_press_machine",
+      "hack_squat_machine",
+      "pec_deck",
+      "shoulder_press_machine",
+      "bicep_curl_machine",
+      "tricep_extension_machine",
+      "seated_row_machine",
+      "rear_delt_machine",
+      "lower_back_extension",
+      "ab_crunch_machine",
+      "kettlebells",
+      "battle_ropes",
+      "trx",
+      "medicine_balls",
+      "bosu_balls"
+    ]
+  },
+  "equipment_presets": {
+    "minimal": {
+      "description": "Home gym with minimal equipment",
+      "items": [
+        "bodyweight",
+        "resistance_bands",
+        "dumbbells"
+      ],
+      "item_count": 3
+    },
+    "home_gym_basic": {
+      "description": "Basic home setup",
+      "items": [
+        "dumbbells",
+        "bench",
+        "pull_up_bar",
+        "resistance_bands",
+        "bodyweight"
+      ],
+      "item_count": 5
+    },
+    "home_gym_advanced": {
+      "description": "Advanced home gym (matches Jason's setup)",
+      "item_count": 23,
+      "note": "Maps to USERS_HOME_GYM"
+    },
+    "planet_fitness": {
+      "description": "Planet Fitness membership",
+      "item_count": 27,
+      "note": "Maps to PLANET_FITNESS_EQUIPMENT"
+    },
+    "home_gym_plus_pf": {
+      "description": "Combined home + Planet Fitness equipment (best of both)",
+      "item_count": 33,
+      "note": "Union of home_gym_advanced + PF unique items"
+    },
+    "commercial_gym": {
+      "description": "Full commercial gym equipment (most complete)",
+      "item_count": 34,
+      "includes_unique": [
+        "power_rack",
+        "dip_station",
+        "assault_bike",
+        "stairmaster",
+        "plyo_boxes"
+      ],
+      "note": "Maximum coverage for exercise selection"
+    }
+  },
+  "pdf_program_references": {
+    "The_Min-Max_Program_4X_and_5X": {
+      "baseline": "Commercial gym equipment",
+      "flexibility": "Supports home gym with limited options",
+      "key_quote": "I based the program on equipment you'll find in most commercial gyms. But if your gym doesn't have a specific machine or apparatus, or you train at home with limited options, just make the appropriate substitution.",
+      "mentioned_exercises": [
+        "Barbell incline press",
+        "Machine chest press",
+        "Incline dumbbell Y-raise",
+        "Cable lateral raise",
+        "Machine lateral raise",
+        "Pull-up (wide grip)",
+        "Close-grip lat pulldown",
+        "Chest-supported T-bar row",
+        "Squat variants",
+        "Smith machine lunge"
+      ]
+    },
+    "Fundamentals_Hypertrophy_Program": {
+      "accessories_mentioned": [
+        "Squat shoes (Adidas Powerlift 3.1)",
+        "10mm prong/lever belt",
+        "Knee sleeves",
+        "Straps",
+        "Chalk"
+      ],
+      "exercise_alternatives_count": "30+",
+      "note": "Comprehensive exercise substitution guide for different equipment scenarios"
+    }
+  },
+  "coverage_analysis": {
+    "home_gym_coverage": "~85% of all exercises",
+    "planet_fitness_coverage": "~75% of all exercises",
+    "combined_coverage": "~100% of all exercises",
+    "home_gaps": [
+      "Barbell squat (has Smith equivalent)",
+      "Barbell bench (has Smith equivalent)",
+      "Dip station"
+    ],
+    "pf_gaps": [
+      "All barbell exercises",
+      "Free squat rack",
+      "Pull-up bar (has assisted machine)"
+    ]
+  }
+}
