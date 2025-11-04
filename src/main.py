@@ -28,6 +28,7 @@ from enhanced_tdee_ui import (
     render_monthly_report,
     render_export_options
 )
+from progress_photos_ui import render_progress_photos_full
 import json
 import plotly.graph_objects as go
 
@@ -2600,6 +2601,7 @@ def render_adaptive_tdee():
         "⚖️ Weight Progress",
         "🎯 Goal Prediction",
         "📏 Body Measurements",
+        "📸 Progress Photos",
         "📊 Monthly Report",
         "📤 Export Data"
     ])
@@ -2624,6 +2626,9 @@ def render_adaptive_tdee():
         render_body_measurements()
 
     with tabs[4]:
+        render_progress_photos_full()
+
+    with tabs[5]:
         # Monthly report selector
         col1, col2 = st.columns(2)
         with col1:
@@ -2633,7 +2638,7 @@ def render_adaptive_tdee():
 
         render_monthly_report(month, year)
 
-    with tabs[5]:
+    with tabs[6]:
         render_export_options(tdee_tracker)
 
 
