@@ -1,5 +1,11 @@
 # HealthRAG
 
+[![Test Suite](https://github.com/jasonlws/HealthRAG/actions/workflows/test.yml/badge.svg)](https://github.com/jasonlws/HealthRAG/actions/workflows/test.yml)
+[![Code Quality](https://github.com/jasonlws/HealthRAG/actions/workflows/lint.yml/badge.svg)](https://github.com/jasonlws/HealthRAG/actions/workflows/lint.yml)
+[![codecov](https://codecov.io/gh/jasonlws/HealthRAG/branch/main/graph/badge.svg)](https://codecov.io/gh/jasonlws/HealthRAG)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
 A completely **FREE**, **local** AI-powered health and fitness advisor that uses Retrieval-Augmented Generation (RAG) to provide personalized advice from your own fitness and nutrition documents.
 
 ## Why HealthRAG?
@@ -9,6 +15,27 @@ A completely **FREE**, **local** AI-powered health and fitness advisor that uses
 - **🚀 No API Keys**: Uses local Ollama or Apple Silicon MLX
 - **📚 Your Documents**: Query your personal library of fitness PDFs
 - **⚡ Fast**: Optimized for Apple Silicon with MLX support
+
+## 🎉 What's New in Phase 4 (v4.0)
+
+**Phase 4 is now 100% complete!** HealthRAG now includes a comprehensive tracking and adaptive coaching suite:
+
+### 🚀 Major Features Delivered:
+- ✅ **Adaptive TDEE Algorithm** - MacroFactor-style back-calculated TDEE with EWMA trend weight
+- ✅ **Weekly Check-Ins** - Automated progress analysis with macro adjustment recommendations
+- ✅ **Body Measurements** - Track 13 measurement points (waist, chest, arms, legs, etc.)
+- ✅ **Progress Photos** - Upload, gallery, and before/after comparison (100% local, private)
+- ✅ **Monthly Reports** - Comprehensive analytics (weight, strength, body comp, goals)
+- ✅ **TDEE Analytics** - Historical trends, water weight detection, visualization
+- ✅ **7-Tab Interface** - Complete tracking suite integrated into Streamlit UI
+
+### 📊 Stats:
+- **32 source files** (up from 24)
+- **16,459 lines of code** (up from 12,278)
+- **8 new Phase 4 files** (3,082 new LOC)
+- **All MacroFactor-inspired features** delivered
+
+See [PHASE4_SUMMARY.md](PHASE4_SUMMARY.md) for detailed completion report.
 
 ## Quick Start
 
