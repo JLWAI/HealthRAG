@@ -23,6 +23,15 @@ from dataclasses import dataclass
 from datetime import datetime, date
 from typing import List, Optional, Tuple
 from pathlib import Path
+import logging
+from PIL import Image
+import time
+
+from performance_utils import timing_decorator, log_query_performance
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -101,18 +110,22 @@ class ProgressPhotoTracker:
             ...
     """
 
-    def __init__(self, db_path: str = "data/photos.db", photos_dir: str = "data/photos"):
+    def __init__(self, db_path: str = "data/photos.db", photos_dir: str = "data/photos",
+                 thumbnails_dir: str = "data/photos/thumbnails"):
         """
         Initialize progress photo tracker.
 
         Args:
             db_path: Path to SQLite database file
             photos_dir: Directory to store photo files
+            thumbnails_dir: Directory to store thumbnail images (default: data/photos/thumbnails)
         """
         self.db_path = db_path
         self.photos_dir = photos_dir
+        self.thumbnails_dir = thumbnails_dir
         self._init_database()
         self._init_photos_directory()
+        self._init_thumbnails_directory()
 
     def _init_database(self):
         """Create photos table if it doesn't exist."""
@@ -149,7 +162,170 @@ class ProgressPhotoTracker:
 
     def _init_photos_directory(self):
         """Create photos directory if it doesn't exist."""
-        Path(self.photos_dir).mkdir(parents=True, exist_ok=True)
+        try:
+            Path(self.photos_dir).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Photos directory initialized: {self.photos_dir}")
+        except PermissionError:
+            logger.error(f"Permission denied creating photos directory: {self.photos_dir}")
+            raise ValueError(f"Cannot create photos directory (permission denied): {self.photos_dir}")
+        except OSError as e:
+            logger.error(f"Failed to create photos directory: {e}")
+            raise ValueError(f"Failed to create photos directory: {e}")
+
+    def _init_thumbnails_directory(self):
+        """Create thumbnails directory if it doesn't exist."""
+        try:
+            Path(self.thumbnails_dir).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Thumbnails directory initialized: {self.thumbnails_dir}")
+        except PermissionError:
+            logger.error(f"Permission denied creating thumbnails directory: {self.thumbnails_dir}")
+            # Non-fatal - thumbnails are optional
+        except OSError as e:
+            logger.error(f"Failed to create thumbnails directory: {e}")
+            # Non-fatal - thumbnails are optional
+
+    def generate_thumbnail(self, photo_path: str, size: Tuple[int, int] = (200, 200),
+                          force_regenerate: bool = False) -> Optional[str]:
+        """
+        Generate thumbnail for a photo.
+
+        PERFORMANCE: Thumbnails are cached and only regenerated if force_regenerate=True.
+
+        Args:
+            photo_path: Path to full-size photo
+            size: Thumbnail size (width, height) in pixels (default: 200x200)
+            force_regenerate: Force regenerate even if thumbnail exists
+
+        Returns:
+            Path to thumbnail file, or None if generation failed
+        """
+        try:
+            if not os.path.exists(photo_path):
+                logger.warning(f"Photo not found: {photo_path}")
+                return None
+
+            # Generate thumbnail filename
+            photo_filename = os.path.basename(photo_path)
+            thumbnail_path = os.path.join(self.thumbnails_dir, f"thumb_{photo_filename}")
+
+            # Check if thumbnail already exists
+            if os.path.exists(thumbnail_path) and not force_regenerate:
+                logger.debug(f"Thumbnail already exists: {thumbnail_path}")
+                return thumbnail_path
+
+            # Load and resize image
+            start_time = time.time()
+            with Image.open(photo_path) as img:
+                # Convert to RGB if needed (for PNG with transparency)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+
+                # Create thumbnail (maintains aspect ratio)
+                img.thumbnail(size, Image.LANCZOS)
+
+                # Save thumbnail with optimization
+                img.save(thumbnail_path, 'JPEG', quality=85, optimize=True)
+
+            elapsed_ms = (time.time() - start_time) * 1000
+            logger.info(f"Generated thumbnail in {elapsed_ms:.1f}ms: {thumbnail_path}")
+
+            return thumbnail_path
+
+        except Exception as e:
+            logger.error(f"Failed to generate thumbnail for {photo_path}: {e}")
+            return None
+
+    def _check_disk_space(self, required_mb: float = 10.0) -> bool:
+        """
+        Check if sufficient disk space is available.
+
+        Args:
+            required_mb: Required disk space in MB
+
+        Returns:
+            True if sufficient space available
+
+        Raises:
+            ValueError: If insufficient disk space
+        """
+        try:
+            stat = os.statvfs(self.photos_dir)
+            # Available space in MB
+            available_mb = (stat.f_bavail * stat.f_frsize) / (1024 * 1024)
+
+            if available_mb < required_mb:
+                raise ValueError(f"Insufficient disk space: {available_mb:.1f}MB available, {required_mb:.1f}MB required")
+
+            return True
+        except AttributeError:
+            # statvfs not available on Windows - skip check
+            logger.warning("Disk space check not available on this platform")
+            return True
+
+    def _validate_image_file(self, photo_file, max_size_mb: float = 10.0) -> Tuple[bool, str]:
+        """
+        Validate uploaded image file.
+
+        Args:
+            photo_file: File-like object
+            max_size_mb: Maximum file size in MB
+
+        Returns:
+            (is_valid, error_message) tuple
+
+        Raises:
+            ValueError: If file is invalid
+        """
+        # Check file size
+        if hasattr(photo_file, 'size'):
+            size_mb = photo_file.size / (1024 * 1024)
+            if size_mb > max_size_mb:
+                raise ValueError(f"Photo upload failed: File size ({size_mb:.1f}MB) exceeds {max_size_mb}MB limit")
+
+        # Check file type by extension
+        if hasattr(photo_file, 'name'):
+            ext = photo_file.name.split('.')[-1].lower()
+            valid_extensions = ['jpg', 'jpeg', 'png']
+            if ext not in valid_extensions:
+                raise ValueError(f"Photo upload failed: Invalid file type '.{ext}'. Must be JPG or PNG")
+
+        # Try to open and validate image
+        try:
+            if hasattr(photo_file, 'seek'):
+                photo_file.seek(0)  # Reset file pointer
+
+            # Attempt to open image
+            img = Image.open(photo_file)
+            img.verify()  # Verify it's a valid image
+
+            # Reset file pointer after verify()
+            if hasattr(photo_file, 'seek'):
+                photo_file.seek(0)
+
+            logger.info(f"Image validated: {img.format} {img.size}")
+            return True, ""
+
+        except Exception as e:
+            raise ValueError(f"Photo upload failed: Corrupt or invalid image file ({str(e)})")
+
+    def _validate_date(self, date_str: str):
+        """
+        Validate date string is in ISO format and not in the future.
+
+        Args:
+            date_str: Date string (YYYY-MM-DD)
+
+        Raises:
+            ValueError: If date is invalid
+        """
+        try:
+            photo_date = datetime.fromisoformat(date_str).date()
+        except ValueError:
+            raise ValueError(f"Invalid date format: '{date_str}'. Must be YYYY-MM-DD")
+
+        # Check if date is in the future
+        if photo_date > date.today():
+            raise ValueError(f"Photo date cannot be in the future: {date_str}")
 
     def save_photo(
         self,
@@ -175,12 +351,39 @@ class ProgressPhotoTracker:
             photo_id: ID of saved photo
 
         Raises:
-            ValueError: If angle is invalid or photo already exists for date+angle
+            ValueError: If validation fails or photo already exists
         """
+        logger.info(f"Saving photo: date={date_str}, angle={angle}")
+
+        # Validate date
+        self._validate_date(date_str)
+
         # Validate angle
         valid_angles = ["front", "side", "back", "other"]
         if angle not in valid_angles:
             raise ValueError(f"Invalid angle '{angle}'. Must be one of: {valid_angles}")
+
+        # Validate phase if provided
+        if phase:
+            valid_phases = ["cut", "bulk", "maintain", "recomp"]
+            if phase not in valid_phases:
+                raise ValueError(f"Invalid phase '{phase}'. Must be one of: {valid_phases}")
+
+        # Validate weight if provided
+        if weight_lbs is not None:
+            if weight_lbs <= 0 or weight_lbs > 1000:
+                raise ValueError(f"Invalid weight: {weight_lbs} lbs. Must be between 0 and 1000")
+
+        # Validate image file (size, type, corruption)
+        self._validate_image_file(photo_file, max_size_mb=10.0)
+
+        # Check disk space
+        self._check_disk_space(required_mb=10.0)
+
+        # Ensure photos directory exists
+        if not os.path.exists(self.photos_dir):
+            logger.warning(f"Photos directory missing, recreating: {self.photos_dir}")
+            self._init_photos_directory()
 
         # Generate filename: YYYY-MM-DD_angle.jpg
         file_extension = photo_file.name.split('.')[-1] if hasattr(photo_file, 'name') else 'jpg'
@@ -192,17 +395,26 @@ class ProgressPhotoTracker:
             raise ValueError(f"Photo already exists for {date_str} {angle}. Delete it first to replace.")
 
         # Save file to disk
-        with open(file_path, 'wb') as f:
-            if hasattr(photo_file, 'read'):
-                f.write(photo_file.read())
-            else:
-                f.write(photo_file)
+        try:
+            with open(file_path, 'wb') as f:
+                if hasattr(photo_file, 'read'):
+                    f.write(photo_file.read())
+                else:
+                    f.write(photo_file)
+            logger.info(f"Photo saved to disk: {file_path}")
+
+        except PermissionError:
+            logger.error(f"Permission denied writing photo: {file_path}")
+            raise ValueError(f"Photo upload failed: Permission denied")
+        except OSError as e:
+            logger.error(f"Failed to write photo: {e}")
+            raise ValueError(f"Photo upload failed: {str(e)}")
 
         # Save metadata to database
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
         try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
             cursor.execute("""
                 INSERT INTO photos (date, file_path, angle, weight_lbs, phase, notes)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -210,79 +422,124 @@ class ProgressPhotoTracker:
 
             photo_id = cursor.lastrowid
             conn.commit()
-
-            return photo_id
-
-        except sqlite3.IntegrityError as e:
-            # If DB insert fails, remove the file we just saved
-            os.remove(file_path)
-            raise ValueError(f"Photo already exists for {date_str} {angle}")
-
-        finally:
             conn.close()
 
+            logger.info(f"Photo metadata saved to database: photo_id={photo_id}")
+            return photo_id
+
+        except sqlite3.IntegrityError:
+            # If DB insert fails, remove the file we just saved
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            logger.error(f"Database integrity error: duplicate photo for {date_str} {angle}")
+            raise ValueError(f"Photo already exists for {date_str} {angle}")
+
+        except sqlite3.OperationalError as e:
+            # Database locked or inaccessible
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            logger.error(f"Database error: {e}")
+            raise ValueError(f"Photo upload failed: Database error ({str(e)})")
+
+        except Exception as e:
+            # Cleanup on any unexpected error
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            logger.error(f"Unexpected error saving photo: {e}")
+            raise ValueError(f"Photo upload failed: {str(e)}")
+
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+    @timing_decorator(threshold_ms=100)
     def get_photos(
         self,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         angle: Optional[str] = None,
-        phase: Optional[str] = None
+        phase: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0
     ) -> List[ProgressPhoto]:
         """
         Retrieve progress photos with optional filters.
+
+        PERFORMANCE: Added pagination support (limit/offset) to prevent loading too many photos.
 
         Args:
             start_date: Filter photos from this date onwards (ISO format)
             end_date: Filter photos up to this date (ISO format)
             angle: Filter by angle (front, side, back, other)
             phase: Filter by phase (cut, bulk, maintain, recomp)
+            limit: Maximum number of photos to return (default: all)
+            offset: Number of photos to skip (for pagination, default: 0)
 
         Returns:
             List of ProgressPhoto objects, sorted by date (oldest first)
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        start_time = time.time()
 
-        query = "SELECT id, date, file_path, angle, weight_lbs, phase, notes, created_at FROM photos WHERE 1=1"
-        params = []
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
 
-        if start_date:
-            query += " AND date >= ?"
-            params.append(start_date)
+            query = "SELECT id, date, file_path, angle, weight_lbs, phase, notes, created_at FROM photos WHERE 1=1"
+            params = []
 
-        if end_date:
-            query += " AND date <= ?"
-            params.append(end_date)
+            if start_date:
+                query += " AND date >= ?"
+                params.append(start_date)
 
-        if angle:
-            query += " AND angle = ?"
-            params.append(angle)
+            if end_date:
+                query += " AND date <= ?"
+                params.append(end_date)
 
-        if phase:
-            query += " AND phase = ?"
-            params.append(phase)
+            if angle:
+                query += " AND angle = ?"
+                params.append(angle)
 
-        query += " ORDER BY date ASC, angle ASC"
+            if phase:
+                query += " AND phase = ?"
+                params.append(phase)
 
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
+            query += " ORDER BY date ASC, angle ASC"
 
-        photos = []
-        for row in rows:
-            photo = ProgressPhoto(
-                photo_id=row[0],
-                date=row[1],
-                file_path=row[2],
-                angle=row[3],
-                weight_lbs=row[4],
-                phase=row[5],
-                notes=row[6],
-                created_at=row[7]
-            )
-            photos.append(photo)
+            # Add pagination
+            if limit is not None:
+                query += " LIMIT ? OFFSET ?"
+                params.extend([limit, offset])
 
-        return photos
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+
+            elapsed_ms = (time.time() - start_time) * 1000
+            log_query_performance("get_photos", len(rows), elapsed_ms)
+
+            photos = []
+            for row in rows:
+                photo = ProgressPhoto(
+                    photo_id=row[0],
+                    date=row[1],
+                    file_path=row[2],
+                    angle=row[3],
+                    weight_lbs=row[4],
+                    phase=row[5],
+                    notes=row[6],
+                    created_at=row[7]
+                )
+                photos.append(photo)
+
+            logger.info(f"Retrieved {len(photos)} photos (limit={limit}, offset={offset})")
+            return photos
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database error retrieving photos: {e}")
+            return []  # Graceful degradation
+        except Exception as e:
+            logger.error(f"Unexpected error retrieving photos: {e}")
+            return []
 
     def get_photo_by_id(self, photo_id: int) -> Optional[ProgressPhoto]:
         """

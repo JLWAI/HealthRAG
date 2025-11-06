@@ -17,6 +17,28 @@ from typing import List, Optional, Dict, Tuple
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Measurement validation ranges (inches)
+MEASUREMENT_RANGES = {
+    'neck_inches': (8, 30),
+    'chest_inches': (20, 70),
+    'shoulders_inches': (30, 80),
+    'bicep_left_inches': (6, 30),
+    'bicep_right_inches': (6, 30),
+    'forearm_left_inches': (6, 25),
+    'forearm_right_inches': (6, 25),
+    'waist_inches': (20, 60),
+    'hips_inches': (20, 80),
+    'thigh_left_inches': (10, 50),
+    'thigh_right_inches': (10, 50),
+    'calf_left_inches': (8, 30),
+    'calf_right_inches': (8, 30)
+}
 
 
 @dataclass
@@ -84,10 +106,21 @@ class BodyMeasurementTracker:
 
     def _init_database(self):
         """Create database tables if they don't exist"""
-        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            logger.error(f"Permission denied creating database directory")
+            raise ValueError(f"Cannot create database directory (permission denied)")
+        except OSError as e:
+            logger.error(f"Failed to create database directory: {e}")
+            raise ValueError(f"Failed to create database directory: {e}")
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+        except sqlite3.OperationalError as e:
+            logger.error(f"Cannot open database: {e}")
+            raise ValueError(f"Database error: {e}")
 
         # Body measurements table
         cursor.execute("""
@@ -129,6 +162,85 @@ class BodyMeasurementTracker:
         conn.commit()
         conn.close()
 
+    def _validate_date(self, date_str: str):
+        """
+        Validate date string is in ISO format and not in the future.
+
+        Args:
+            date_str: Date string (YYYY-MM-DD)
+
+        Raises:
+            ValueError: If date is invalid
+        """
+        try:
+            measurement_date = datetime.fromisoformat(date_str).date()
+        except ValueError:
+            raise ValueError(f"Invalid date format: '{date_str}'. Must be YYYY-MM-DD")
+
+        # Check if date is in the future
+        if measurement_date > date.today():
+            raise ValueError(f"Measurement date cannot be in the future: {date_str}")
+
+    def _validate_measurement_value(self, field_name: str, value: Optional[float]):
+        """
+        Validate a single measurement value.
+
+        Args:
+            field_name: Field name (e.g., 'waist_inches')
+            value: Measurement value in inches
+
+        Raises:
+            ValueError: If value is invalid
+        """
+        if value is None:
+            return  # Optional fields are allowed to be None
+
+        # Check for negative or zero values
+        if value <= 0:
+            field_display = field_name.replace('_', ' ').title()
+            raise ValueError(f"Invalid measurement: {field_display} must be greater than 0")
+
+        # Check against valid ranges
+        if field_name in MEASUREMENT_RANGES:
+            min_val, max_val = MEASUREMENT_RANGES[field_name]
+            if not (min_val <= value <= max_val):
+                field_display = field_name.replace('_', ' ').title()
+                raise ValueError(
+                    f"Invalid measurement: {field_display} ({value:.1f} inches) must be between {min_val}-{max_val} inches"
+                )
+
+    def _validate_measurement(self, measurement: BodyMeasurement):
+        """
+        Validate all fields in a BodyMeasurement object.
+
+        Args:
+            measurement: BodyMeasurement to validate
+
+        Raises:
+            ValueError: If any validation fails
+        """
+        # Validate date
+        self._validate_date(measurement.date)
+
+        # Validate all measurement fields
+        for field_name in MEASUREMENT_RANGES.keys():
+            value = getattr(measurement, field_name, None)
+            self._validate_measurement_value(field_name, value)
+
+        # Check that at least one measurement is provided
+        measurement_fields = [
+            'neck_inches', 'chest_inches', 'shoulders_inches',
+            'bicep_left_inches', 'bicep_right_inches',
+            'forearm_left_inches', 'forearm_right_inches',
+            'waist_inches', 'hips_inches',
+            'thigh_left_inches', 'thigh_right_inches',
+            'calf_left_inches', 'calf_right_inches'
+        ]
+
+        has_measurement = any(getattr(measurement, field) is not None for field in measurement_fields)
+        if not has_measurement:
+            raise ValueError("At least one measurement must be provided")
+
     def log_measurements(self, measurement: BodyMeasurement) -> int:
         """
         Log body measurements (replaces existing entry for same date).
@@ -138,11 +250,19 @@ class BodyMeasurementTracker:
 
         Returns:
             measurement_id of logged entry
+
+        Raises:
+            ValueError: If validation fails or database error
         """
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        logger.info(f"Logging measurements for date: {measurement.date}")
+
+        # Validate measurement data
+        self._validate_measurement(measurement)
 
         try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
             # Convert dataclass to dict, exclude id and created_at
             data = asdict(measurement)
             data.pop('measurement_id', None)
@@ -162,10 +282,21 @@ class BodyMeasurementTracker:
             measurement_id = cursor.lastrowid
             conn.commit()
 
+            logger.info(f"Measurements logged successfully: measurement_id={measurement_id}")
             return measurement_id
 
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Database integrity error: {e}")
+            raise ValueError(f"Failed to log measurements: {e}")
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database error: {e}")
+            raise ValueError(f"Database error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error logging measurements: {e}")
+            raise ValueError(f"Failed to log measurements: {e}")
         finally:
-            conn.close()
+            if 'conn' in locals():
+                conn.close()
 
     def get_measurements(self, start_date: Optional[str] = None,
                         end_date: Optional[str] = None,
@@ -179,55 +310,66 @@ class BodyMeasurementTracker:
             limit: Optional limit on number of entries
 
         Returns:
-            List of BodyMeasurement objects
+            List of BodyMeasurement objects (empty list on error)
         """
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
 
-        query = "SELECT * FROM body_measurements WHERE 1=1"
-        params = []
+            query = "SELECT * FROM body_measurements WHERE 1=1"
+            params = []
 
-        if start_date:
-            query += " AND date >= ?"
-            params.append(start_date)
+            if start_date:
+                query += " AND date >= ?"
+                params.append(start_date)
 
-        if end_date:
-            query += " AND date <= ?"
-            params.append(end_date)
+            if end_date:
+                query += " AND date <= ?"
+                params.append(end_date)
 
-        query += " ORDER BY date DESC"
+            query += " ORDER BY date DESC"
 
-        if limit:
-            query += " LIMIT ?"
-            params.append(limit)
+            if limit:
+                query += " LIMIT ?"
+                params.append(limit)
 
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
 
-        return [
-            BodyMeasurement(
-                measurement_id=row['id'],
-                date=row['date'],
-                neck_inches=row['neck_inches'],
-                chest_inches=row['chest_inches'],
-                shoulders_inches=row['shoulders_inches'],
-                bicep_left_inches=row['bicep_left_inches'],
-                bicep_right_inches=row['bicep_right_inches'],
-                forearm_left_inches=row['forearm_left_inches'],
-                forearm_right_inches=row['forearm_right_inches'],
-                waist_inches=row['waist_inches'],
-                hips_inches=row['hips_inches'],
-                thigh_left_inches=row['thigh_left_inches'],
-                thigh_right_inches=row['thigh_right_inches'],
-                calf_left_inches=row['calf_left_inches'],
-                calf_right_inches=row['calf_right_inches'],
-                notes=row['notes'],
-                created_at=row['created_at']
-            )
-            for row in rows
-        ]
+            measurements = [
+                BodyMeasurement(
+                    measurement_id=row['id'],
+                    date=row['date'],
+                    neck_inches=row['neck_inches'],
+                    chest_inches=row['chest_inches'],
+                    shoulders_inches=row['shoulders_inches'],
+                    bicep_left_inches=row['bicep_left_inches'],
+                    bicep_right_inches=row['bicep_right_inches'],
+                    forearm_left_inches=row['forearm_left_inches'],
+                    forearm_right_inches=row['forearm_right_inches'],
+                    waist_inches=row['waist_inches'],
+                    hips_inches=row['hips_inches'],
+                    thigh_left_inches=row['thigh_left_inches'],
+                    thigh_right_inches=row['thigh_right_inches'],
+                    calf_left_inches=row['calf_left_inches'],
+                    calf_right_inches=row['calf_right_inches'],
+                    notes=row['notes'],
+                    created_at=row['created_at']
+                )
+                for row in rows
+            ]
+
+            logger.info(f"Retrieved {len(measurements)} measurements")
+            return measurements
+
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database error retrieving measurements: {e}")
+            return []  # Graceful degradation
+        except Exception as e:
+            logger.error(f"Unexpected error retrieving measurements: {e}")
+            return []
 
     def get_latest_measurement(self) -> Optional[BodyMeasurement]:
         """Get most recent measurement entry"""

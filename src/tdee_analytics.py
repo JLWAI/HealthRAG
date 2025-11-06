@@ -24,6 +24,15 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 import json
 import csv
+import time
+import streamlit as st
+import logging
+
+from performance_utils import timing_decorator, PerformanceTimer, log_query_performance
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -117,10 +126,21 @@ class TDEEHistoricalTracker:
 
     def _init_database(self):
         """Create database tables if they don't exist"""
-        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            logger.error(f"Permission denied creating database directory")
+            raise ValueError(f"Cannot create database directory (permission denied)")
+        except OSError as e:
+            logger.error(f"Failed to create database directory: {e}")
+            raise ValueError(f"Failed to create database directory: {e}")
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+        except sqlite3.OperationalError as e:
+            logger.error(f"Cannot open database: {e}")
+            raise ValueError(f"Database error: {e}")
 
         # TDEE snapshots table
         cursor.execute("""
@@ -203,9 +223,11 @@ class TDEEHistoricalTracker:
         finally:
             conn.close()
 
+    @timing_decorator(threshold_ms=100)
     def get_snapshots(self, start_date: Optional[str] = None,
                      end_date: Optional[str] = None,
-                     limit: Optional[int] = None) -> List[TDEESnapshot]:
+                     limit: Optional[int] = None,
+                     max_days: int = 90) -> List[TDEESnapshot]:
         """
         Retrieve TDEE snapshots ordered by date (newest first).
 
@@ -213,10 +235,13 @@ class TDEEHistoricalTracker:
             start_date: Optional start date (YYYY-MM-DD)
             end_date: Optional end date (YYYY-MM-DD)
             limit: Optional limit on number of entries
+            max_days: Maximum days to retrieve (default 90 for performance)
 
         Returns:
             List of TDEESnapshot objects
         """
+        start_time = time.time()
+
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -224,9 +249,14 @@ class TDEEHistoricalTracker:
         query = "SELECT * FROM tdee_snapshots WHERE 1=1"
         params = []
 
+        # Performance optimization: limit to max_days if no start_date specified
         if start_date:
             query += " AND date >= ?"
             params.append(start_date)
+        elif max_days:
+            auto_start_date = (date.today() - timedelta(days=max_days)).isoformat()
+            query += " AND date >= ?"
+            params.append(auto_start_date)
 
         if end_date:
             query += " AND date <= ?"
@@ -241,6 +271,9 @@ class TDEEHistoricalTracker:
         cursor.execute(query, params)
         rows = cursor.fetchall()
         conn.close()
+
+        elapsed_ms = (time.time() - start_time) * 1000
+        log_query_performance("get_snapshots", len(rows), elapsed_ms)
 
         return [
             TDEESnapshot(
@@ -274,31 +307,45 @@ class TDEEHistoricalTracker:
         return snapshots[0] if snapshots else None
 
 
-def create_tdee_trend_chart(snapshots: List[TDEESnapshot]) -> go.Figure:
+@st.cache_data(ttl=300, show_spinner=False)
+def create_tdee_trend_chart(snapshot_dates: tuple, snapshot_data: tuple) -> go.Figure:
     """
     Create interactive Plotly chart showing TDEE trends over time.
 
+    PERFORMANCE: Cached for 5 minutes. Uses tuples for hashability.
+
     Args:
-        snapshots: List of TDEESnapshot objects (chronological order)
+        snapshot_dates: Tuple of dates (for cache key)
+        snapshot_data: Tuple of (formula_tdee, adaptive_tdee, avg_intake) tuples
 
     Returns:
         Plotly Figure object
     """
-    if not snapshots:
+    if not snapshot_dates:
+        logger.warning("No TDEE data available for chart creation")
         # Empty chart with message
         fig = go.Figure()
         fig.add_annotation(
-            text="No TDEE data available yet. Log weight and food for 14 days to start tracking.",
+            text="⚠️ Not enough data: Need at least 14 days of weight and food logging to calculate TDEE",
             showarrow=False,
-            font=dict(size=14)
+            font=dict(size=14, color='orange'),
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5
+        )
+        fig.update_layout(
+            xaxis={'visible': False},
+            yaxis={'visible': False},
+            height=400
         )
         return fig
 
-    # Extract data
-    dates = [s.date for s in snapshots]
-    formula_tdees = [s.formula_tdee for s in snapshots]
-    adaptive_tdees = [s.adaptive_tdee if s.adaptive_tdee else None for s in snapshots]
-    avg_intakes = [s.average_intake_14d if s.average_intake_14d else None for s in snapshots]
+    # Unpack data (already in chronological order)
+    dates = list(snapshot_dates)
+    formula_tdees = [d[0] for d in snapshot_data]
+    adaptive_tdees = [d[1] for d in snapshot_data]
+    avg_intakes = [d[2] for d in snapshot_data]
 
     # Create figure with secondary y-axis
     fig = go.Figure()
@@ -355,19 +402,45 @@ def create_tdee_trend_chart(snapshots: List[TDEESnapshot]) -> go.Figure:
     return fig
 
 
+def prepare_snapshots_for_chart(snapshots: List[TDEESnapshot]) -> Tuple[tuple, tuple]:
+    """
+    Convert snapshots to hashable tuples for caching.
+
+    Args:
+        snapshots: List of TDEESnapshot objects
+
+    Returns:
+        (dates_tuple, data_tuple) for cached chart functions
+    """
+    if not snapshots:
+        return ((), ())
+
+    dates = tuple(s.date for s in snapshots)
+    data = tuple(
+        (s.formula_tdee, s.adaptive_tdee, s.average_intake_14d)
+        for s in snapshots
+    )
+    return (dates, data)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
 def create_weight_progress_chart(
-    weight_entries: List[Tuple[str, float, float]]  # (date, actual_weight, trend_weight)
+    weight_dates: tuple,
+    weight_data: tuple  # (actual_weight, trend_weight) tuples
 ) -> go.Figure:
     """
     Create weight progress chart with actual vs. trend weight.
 
+    PERFORMANCE: Cached for 5 minutes. Uses tuples for hashability.
+
     Args:
-        weight_entries: List of (date, actual_weight, trend_weight) tuples
+        weight_dates: Tuple of dates
+        weight_data: Tuple of (actual_weight, trend_weight) tuples
 
     Returns:
         Plotly Figure object
     """
-    if not weight_entries:
+    if not weight_dates:
         fig = go.Figure()
         fig.add_annotation(
             text="No weight data available. Start logging your daily weight!",
@@ -376,9 +449,9 @@ def create_weight_progress_chart(
         )
         return fig
 
-    dates = [e[0] for e in weight_entries]
-    actual_weights = [e[1] for e in weight_entries]
-    trend_weights = [e[2] for e in weight_entries]
+    dates = list(weight_dates)
+    actual_weights = [d[0] for d in weight_data]
+    trend_weights = [d[1] for d in weight_data]
 
     fig = go.Figure()
 
@@ -559,18 +632,49 @@ def export_tdee_data_csv(snapshots: List[TDEESnapshot], output_path: str):
     Args:
         snapshots: List of TDEESnapshot objects
         output_path: Path to output CSV file
+
+    Raises:
+        ValueError: If no snapshots or export fails
     """
     if not snapshots:
-        raise ValueError("No snapshots to export")
+        logger.error("Cannot export: No TDEE snapshots provided")
+        raise ValueError("No snapshots to export. Log weight and food data first.")
+
+    logger.info(f"Exporting {len(snapshots)} TDEE snapshots to CSV: {output_path}")
+
+    # Validate output path is writable
+    output_dir = Path(output_path).parent
+    if not output_dir.exists():
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            raise ValueError(f"Export failed: Permission denied creating directory {output_dir}")
+        except OSError as e:
+            raise ValueError(f"Export failed: Cannot create directory ({str(e)})")
 
     # Convert to list of dicts
-    data = [asdict(s) for s in snapshots]
+    try:
+        data = [asdict(s) for s in snapshots]
+    except Exception as e:
+        logger.error(f"Failed to convert snapshots to dict: {e}")
+        raise ValueError(f"Export failed: Invalid data format")
 
     # Write CSV
-    with open(output_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=data[0].keys())
-        writer.writeheader()
-        writer.writerows(data)
+    try:
+        with open(output_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+        logger.info(f"CSV export successful: {output_path}")
+
+    except PermissionError:
+        logger.error(f"Permission denied writing file: {output_path}")
+        raise ValueError(f"Export failed: Permission denied writing to {output_path}")
+    except OSError as e:
+        logger.error(f"Failed to write CSV: {e}")
+        if "No space left" in str(e) or "Disk full" in str(e):
+            raise ValueError(f"Export failed: Insufficient disk space")
+        raise ValueError(f"Export failed: {str(e)}")
 
 
 def export_tdee_data_json(snapshots: List[TDEESnapshot], output_path: str):
@@ -580,16 +684,47 @@ def export_tdee_data_json(snapshots: List[TDEESnapshot], output_path: str):
     Args:
         snapshots: List of TDEESnapshot objects
         output_path: Path to output JSON file
+
+    Raises:
+        ValueError: If no snapshots or export fails
     """
     if not snapshots:
-        raise ValueError("No snapshots to export")
+        logger.error("Cannot export: No TDEE snapshots provided")
+        raise ValueError("No snapshots to export. Log weight and food data first.")
+
+    logger.info(f"Exporting {len(snapshots)} TDEE snapshots to JSON: {output_path}")
+
+    # Validate output path is writable
+    output_dir = Path(output_path).parent
+    if not output_dir.exists():
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            raise ValueError(f"Export failed: Permission denied creating directory {output_dir}")
+        except OSError as e:
+            raise ValueError(f"Export failed: Cannot create directory ({str(e)})")
 
     # Convert to list of dicts
-    data = [asdict(s) for s in snapshots]
+    try:
+        data = [asdict(s) for s in snapshots]
+    except Exception as e:
+        logger.error(f"Failed to convert snapshots to dict: {e}")
+        raise ValueError(f"Export failed: Invalid data format")
 
     # Write JSON
-    with open(output_path, 'w') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(output_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        logger.info(f"JSON export successful: {output_path}")
+
+    except PermissionError:
+        logger.error(f"Permission denied writing file: {output_path}")
+        raise ValueError(f"Export failed: Permission denied writing to {output_path}")
+    except OSError as e:
+        logger.error(f"Failed to write JSON: {e}")
+        if "No space left" in str(e) or "Disk full" in str(e):
+            raise ValueError(f"Export failed: Insufficient disk space")
+        raise ValueError(f"Export failed: {str(e)}")
 
 
 def generate_weekly_comparison(
