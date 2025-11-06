@@ -25,6 +25,32 @@ from body_measurements import BodyMeasurement, MeasurementComparison, BodyMeasur
 from workout_models import WorkoutSession
 
 
+def create_test_snapshot(**kwargs):
+    """Helper to create TDEESnapshot with defaults for testing"""
+    defaults = {
+        'snapshot_id': None,
+        'date': "2025-10-15",
+        'formula_tdee': 2400,
+        'adaptive_tdee': 2350,
+        'tdee_delta': -50,
+        'average_intake_14d': 2100.0,
+        'weight_lbs': 210.0,
+        'trend_weight_lbs': 209.5,
+        'weight_change_14d': -2.0,
+        'goal_rate_lbs_week': -1.0,
+        'actual_rate_lbs_week': -1.2,
+        'percent_deviation': 20.0,
+        'recommended_calories': 2100,
+        'calorie_adjustment': 0,
+        'recommended_protein_g': 210.0,
+        'recommended_carbs_g': 200.0,
+        'recommended_fat_g': 70.0,
+        'phase': "cut"
+    }
+    defaults.update(kwargs)
+    return TDEESnapshot(**defaults)
+
+
 class TestMonthlyProgressReportGeneration:
     """Test monthly progress report generation with mocked dependencies"""
 
@@ -70,19 +96,9 @@ class TestMonthlyProgressReportGeneration:
 
         # Setup TDEE snapshots (weekly)
         for i in range(4):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(base_date + timedelta(weeks=i)).isoformat(),
-                formula_tdee=2400,
-                adaptive_tdee=2350 - i * 10,
-                tdee_delta=-50,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+                adaptive_tdee=2350 - i * 10
             )
             mock_trackers['tdee'].save_snapshot(snapshot)
 
@@ -154,15 +170,13 @@ class TestMonthlyProgressReportGeneration:
 
         # Setup TDEE snapshots
         for i in range(4):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(base_date + timedelta(weeks=i)).isoformat(),
                 formula_tdee=2800,
                 adaptive_tdee=2850 + i * 10,
                 tdee_delta=50,
                 goal_rate_lbs_week=0.75,
                 recommended_calories=3200,
-                calorie_adjustment=0,
                 recommended_protein_g=200.0,
                 recommended_carbs_g=350.0,
                 recommended_fat_g=90.0,
@@ -295,33 +309,17 @@ class TestMonthlyProgressReportGeneration:
         mock_trackers['weight'].log_weight(210.0, log_date=base_date.isoformat())
 
         # Setup TDEE showing significant drop (metabolic adaptation)
-        snapshot_start = TDEESnapshot(
-            snapshot_id=None,
+        snapshot_start = create_test_snapshot(
             date="2025-10-01",
-            formula_tdee=2400,
             adaptive_tdee=2400,
-            tdee_delta=0,
-            goal_rate_lbs_week=-1.0,
-            recommended_calories=2100,
-            calorie_adjustment=0,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            tdee_delta=0
         )
-        snapshot_end = TDEESnapshot(
-            snapshot_id=None,
+        snapshot_end = create_test_snapshot(
             date="2025-10-28",
-            formula_tdee=2400,
             adaptive_tdee=2150,  # 250 cal drop!
             tdee_delta=-250,
-            goal_rate_lbs_week=-1.0,
             recommended_calories=1850,
-            calorie_adjustment=-250,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            calorie_adjustment=-250
         )
         mock_trackers['tdee'].save_snapshot(snapshot_start)
         mock_trackers['tdee'].save_snapshot(snapshot_end)
@@ -486,26 +484,14 @@ class TestProgressReportWorkflow:
 
         # TDEE snapshots (weekly)
         for week in range(4):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(base_date + timedelta(weeks=week)).isoformat(),
-                formula_tdee=2400,
                 adaptive_tdee=2350 - week * 15,
-                tdee_delta=-50,
-                average_intake_14d=2100.0,
                 weight_lbs=210.0 - week * 1.25,
                 trend_weight_lbs=210.0 - week * 1.2,
                 weight_change_14d=-1.2,
-                goal_rate_lbs_week=-1.0,
                 actual_rate_lbs_week=-1.0,
-                percent_deviation=0.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut",
-                confidence_score=0.85
+                percent_deviation=0.0
             )
             tdee_tracker.save_snapshot(snapshot)
 

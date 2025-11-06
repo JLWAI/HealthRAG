@@ -30,6 +30,32 @@ from tdee_analytics import (
 )
 
 
+def create_test_snapshot(**kwargs):
+    """Helper to create TDEESnapshot with defaults for testing"""
+    defaults = {
+        'snapshot_id': None,
+        'date': "2025-10-15",
+        'formula_tdee': 2400,
+        'adaptive_tdee': 2350,
+        'tdee_delta': -50,
+        'average_intake_14d': 2100.0,
+        'weight_lbs': 210.0,
+        'trend_weight_lbs': 209.5,
+        'weight_change_14d': -2.0,
+        'goal_rate_lbs_week': -1.0,
+        'actual_rate_lbs_week': -1.2,
+        'percent_deviation': 20.0,
+        'recommended_calories': 2100,
+        'calorie_adjustment': 0,
+        'recommended_protein_g': 210.0,
+        'recommended_carbs_g': 200.0,
+        'recommended_fat_g': 70.0,
+        'phase': "cut"
+    }
+    defaults.update(kwargs)
+    return TDEESnapshot(**defaults)
+
+
 class TestTDEEHistoricalTracker:
     """Test TDEEHistoricalTracker database operations"""
 
@@ -52,25 +78,7 @@ class TestTDEEHistoricalTracker:
 
     def test_save_snapshot_basic(self, tracker):
         """Test saving a basic TDEE snapshot"""
-        snapshot = TDEESnapshot(
-            snapshot_id=None,
-            date="2025-10-15",
-            formula_tdee=2400,
-            adaptive_tdee=2350,
-            tdee_delta=-50,
-            average_intake_14d=2100.0,
-            weight_lbs=210.0,
-            trend_weight_lbs=209.5,
-            weight_change_14d=-2.0,
-            goal_rate_lbs_week=-1.0,
-            actual_rate_lbs_week=-1.2,
-            percent_deviation=20.0,
-            recommended_calories=2100,
-            calorie_adjustment=0,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut",
+        snapshot = create_test_snapshot(
             confidence_score=0.85
         )
 
@@ -86,36 +94,21 @@ class TestTDEEHistoricalTracker:
     def test_save_snapshot_duplicate_date_replaces(self, tracker):
         """Test that saving same date replaces old snapshot"""
         # First snapshot
-        s1 = TDEESnapshot(
-            snapshot_id=None,
+        s1 = create_test_snapshot(
             date="2025-10-15",
-            formula_tdee=2400,
             adaptive_tdee=2350,
-            tdee_delta=-50,
-            goal_rate_lbs_week=-1.0,
-            recommended_calories=2100,
-            calorie_adjustment=0,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            recommended_calories=2100
         )
         tracker.save_snapshot(s1)
 
         # Second snapshot (same date, different TDEE)
-        s2 = TDEESnapshot(
-            snapshot_id=None,
+        s2 = create_test_snapshot(
             date="2025-10-15",
-            formula_tdee=2400,
             adaptive_tdee=2320,  # Updated
             tdee_delta=-80,
-            goal_rate_lbs_week=-1.0,
             recommended_calories=2050,  # Updated
             calorie_adjustment=-50,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=190.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            recommended_carbs_g=190.0
         )
         tracker.save_snapshot(s2)
 
@@ -129,19 +122,10 @@ class TestTDEEHistoricalTracker:
         """Test retrieving all snapshots"""
         # Save 5 snapshots
         for i in range(5):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(date(2025, 10, 1) + timedelta(days=i * 7)).isoformat(),
-                formula_tdee=2400,
                 adaptive_tdee=2350 - i * 10,
-                tdee_delta=-50 - i * 10,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+                tdee_delta=-50 - i * 10
             )
             tracker.save_snapshot(snapshot)
 
@@ -156,19 +140,8 @@ class TestTDEEHistoricalTracker:
         """Test filtering snapshots by date range"""
         # Save snapshots across 5 weeks
         for i in range(5):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
-                date=(date(2025, 10, 1) + timedelta(weeks=i)).isoformat(),
-                formula_tdee=2400,
-                adaptive_tdee=2350,
-                tdee_delta=-50,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+            snapshot = create_test_snapshot(
+                date=(date(2025, 10, 1) + timedelta(weeks=i)).isoformat()
             )
             tracker.save_snapshot(snapshot)
 
@@ -184,19 +157,8 @@ class TestTDEEHistoricalTracker:
         """Test limiting number of returned snapshots"""
         # Save 10 snapshots
         for i in range(10):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
-                date=(date(2025, 10, 1) + timedelta(days=i)).isoformat(),
-                formula_tdee=2400,
-                adaptive_tdee=2350,
-                tdee_delta=-50,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+            snapshot = create_test_snapshot(
+                date=(date(2025, 10, 1) + timedelta(days=i)).isoformat()
             )
             tracker.save_snapshot(snapshot)
 
@@ -207,19 +169,9 @@ class TestTDEEHistoricalTracker:
         """Test retrieving most recent snapshot"""
         # Save 3 snapshots
         for i in range(3):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(date(2025, 10, 1) + timedelta(days=i)).isoformat(),
-                formula_tdee=2400,
-                adaptive_tdee=2350 - i * 10,
-                tdee_delta=-50,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+                adaptive_tdee=2350 - i * 10
             )
             tracker.save_snapshot(snapshot)
 
@@ -239,7 +191,8 @@ class TestChartGeneration:
 
     def test_create_tdee_trend_chart_empty(self):
         """Test chart creation with no data"""
-        fig = create_tdee_trend_chart([])
+        # Empty tuples for new caching-optimized signature
+        fig = create_tdee_trend_chart(snapshot_dates=(), snapshot_data=())
 
         assert fig is not None
         # Should have annotation indicating no data
@@ -247,26 +200,22 @@ class TestChartGeneration:
 
     def test_create_tdee_trend_chart_with_data(self):
         """Test chart creation with snapshot data"""
-        snapshots = []
+        # Prepare data in tuple format for caching-optimized function
+        dates = []
+        data_tuples = []
         for i in range(10):
-            snapshot = TDEESnapshot(
-                snapshot_id=i + 1,
-                date=(date(2025, 10, 1) + timedelta(days=i * 3)).isoformat(),
-                formula_tdee=2400,
-                adaptive_tdee=2350 - i * 5,
-                tdee_delta=-50 - i * 5,
-                average_intake_14d=2100.0 - i * 10,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
-            )
-            snapshots.append(snapshot)
+            date_str = (date(2025, 10, 1) + timedelta(days=i * 3)).isoformat()
+            formula_tdee = 2400
+            adaptive_tdee = 2350 - i * 5
+            avg_intake = 2100.0 - i * 10
 
-        fig = create_tdee_trend_chart(snapshots)
+            dates.append(date_str)
+            data_tuples.append((formula_tdee, adaptive_tdee, avg_intake))
+
+        fig = create_tdee_trend_chart(
+            snapshot_dates=tuple(dates),
+            snapshot_data=tuple(data_tuples)
+        )
 
         assert fig is not None
         assert len(fig.data) == 3  # Formula, Adaptive, Average Intake
@@ -274,7 +223,8 @@ class TestChartGeneration:
 
     def test_create_weight_progress_chart_empty(self):
         """Test weight chart with no data"""
-        fig = create_weight_progress_chart([])
+        # Empty tuples for new caching-optimized signature
+        fig = create_weight_progress_chart(weight_dates=(), weight_data=())
 
         assert fig is not None
         # Should have annotation indicating no data
@@ -282,14 +232,21 @@ class TestChartGeneration:
 
     def test_create_weight_progress_chart_with_data(self):
         """Test weight chart with data"""
-        weight_entries = []
+        # Prepare data in tuple format for caching-optimized function
+        dates = []
+        data_tuples = []
         for i in range(14):
             date_str = (date(2025, 10, 1) + timedelta(days=i)).isoformat()
             actual_weight = 210.0 - i * 0.5
             trend_weight = 210.0 - i * 0.4  # Smoother trend
-            weight_entries.append((date_str, actual_weight, trend_weight))
 
-        fig = create_weight_progress_chart(weight_entries)
+            dates.append(date_str)
+            data_tuples.append((actual_weight, trend_weight))
+
+        fig = create_weight_progress_chart(
+            weight_dates=tuple(dates),
+            weight_data=tuple(data_tuples)
+        )
 
         assert fig is not None
         assert len(fig.data) == 2  # Daily weight + Trend weight
@@ -424,19 +381,11 @@ class TestDataExport:
         """Test exporting snapshots to CSV"""
         snapshots = []
         for i in range(3):
-            snapshot = TDEESnapshot(
+            snapshot = create_test_snapshot(
                 snapshot_id=i + 1,
                 date=(date(2025, 10, 1) + timedelta(days=i * 7)).isoformat(),
-                formula_tdee=2400,
                 adaptive_tdee=2350 - i * 10,
-                tdee_delta=-50 - i * 10,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+                tdee_delta=-50 - i * 10
             )
             snapshots.append(snapshot)
 
@@ -474,19 +423,11 @@ class TestDataExport:
         """Test exporting snapshots to JSON"""
         snapshots = []
         for i in range(3):
-            snapshot = TDEESnapshot(
+            snapshot = create_test_snapshot(
                 snapshot_id=i + 1,
                 date=(date(2025, 10, 1) + timedelta(days=i * 7)).isoformat(),
-                formula_tdee=2400,
                 adaptive_tdee=2350 - i * 10,
-                tdee_delta=-50 - i * 10,
-                goal_rate_lbs_week=-1.0,
-                recommended_calories=2100,
-                calorie_adjustment=0,
-                recommended_protein_g=210.0,
-                recommended_carbs_g=200.0,
-                recommended_fat_g=70.0,
-                phase="cut"
+                tdee_delta=-50 - i * 10
             )
             snapshots.append(snapshot)
 
@@ -525,40 +466,23 @@ class TestWeeklyComparison:
 
     def test_generate_weekly_comparison_basic(self):
         """Test basic weekly comparison"""
-        this_week = TDEESnapshot(
+        this_week = create_test_snapshot(
             snapshot_id=2,
             date="2025-10-15",
-            formula_tdee=2400,
             adaptive_tdee=2320,
             tdee_delta=-80,
             average_intake_14d=2050.0,
             trend_weight_lbs=208.0,
-            goal_rate_lbs_week=-1.0,
             actual_rate_lbs_week=-1.1,
             recommended_calories=2050,
-            calorie_adjustment=-50,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            calorie_adjustment=-50
         )
 
-        last_week = TDEESnapshot(
+        last_week = create_test_snapshot(
             snapshot_id=1,
             date="2025-10-08",
-            formula_tdee=2400,
-            adaptive_tdee=2350,
-            tdee_delta=-50,
-            average_intake_14d=2100.0,
             trend_weight_lbs=209.0,
-            goal_rate_lbs_week=-1.0,
-            actual_rate_lbs_week=-1.0,
-            recommended_calories=2100,
-            calorie_adjustment=0,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            actual_rate_lbs_week=-1.0
         )
 
         comparison = generate_weekly_comparison(this_week, last_week)
@@ -571,36 +495,20 @@ class TestWeeklyComparison:
 
     def test_generate_weekly_comparison_cutting_progress(self):
         """Test comparison summary for cutting phase with good progress"""
-        this_week = TDEESnapshot(
+        this_week = create_test_snapshot(
             snapshot_id=2,
             date="2025-10-15",
-            formula_tdee=2400,
             adaptive_tdee=2320,
             tdee_delta=-80,
             trend_weight_lbs=207.0,
-            goal_rate_lbs_week=-1.0,
             recommended_calories=2050,
-            calorie_adjustment=-50,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            calorie_adjustment=-50
         )
 
-        last_week = TDEESnapshot(
+        last_week = create_test_snapshot(
             snapshot_id=1,
             date="2025-10-08",
-            formula_tdee=2400,
-            adaptive_tdee=2350,
-            tdee_delta=-50,
-            trend_weight_lbs=208.5,
-            goal_rate_lbs_week=-1.0,
-            recommended_calories=2100,
-            calorie_adjustment=0,
-            recommended_protein_g=210.0,
-            recommended_carbs_g=200.0,
-            recommended_fat_g=70.0,
-            phase="cut"
+            trend_weight_lbs=208.5
         )
 
         comparison = generate_weekly_comparison(this_week, last_week)
@@ -611,7 +519,7 @@ class TestWeeklyComparison:
 
     def test_generate_weekly_comparison_bulking_progress(self):
         """Test comparison summary for bulking phase"""
-        this_week = TDEESnapshot(
+        this_week = create_test_snapshot(
             snapshot_id=2,
             date="2025-10-15",
             formula_tdee=2800,
@@ -620,14 +528,13 @@ class TestWeeklyComparison:
             trend_weight_lbs=186.0,
             goal_rate_lbs_week=0.5,
             recommended_calories=3200,
-            calorie_adjustment=0,
             recommended_protein_g=210.0,
             recommended_carbs_g=300.0,
             recommended_fat_g=90.0,
             phase="bulk"
         )
 
-        last_week = TDEESnapshot(
+        last_week = create_test_snapshot(
             snapshot_id=1,
             date="2025-10-08",
             formula_tdee=2800,
@@ -636,7 +543,6 @@ class TestWeeklyComparison:
             trend_weight_lbs=185.5,
             goal_rate_lbs_week=0.5,
             recommended_calories=3200,
-            calorie_adjustment=0,
             recommended_protein_g=210.0,
             recommended_carbs_g=300.0,
             recommended_fat_g=90.0,
@@ -664,25 +570,19 @@ class TestTDEEAnalyticsWorkflow:
         # Save 4 weeks of snapshots
         snapshots = []
         for i in range(4):
-            snapshot = TDEESnapshot(
-                snapshot_id=None,
+            snapshot = create_test_snapshot(
                 date=(date(2025, 10, 1) + timedelta(weeks=i)).isoformat(),
-                formula_tdee=2400,
                 adaptive_tdee=2350 - i * 20,
                 tdee_delta=-50 - i * 20,
                 average_intake_14d=2100.0 - i * 30,
                 weight_lbs=210.0 - i * 2,
                 trend_weight_lbs=210.0 - i * 1.8,
                 weight_change_14d=-1.8,
-                goal_rate_lbs_week=-1.0,
                 actual_rate_lbs_week=-1.3,
                 percent_deviation=30.0,
                 recommended_calories=2100 - i * 30,
                 calorie_adjustment=-30 if i > 0 else 0,
-                recommended_protein_g=210.0,
                 recommended_carbs_g=200.0 - i * 10,
-                recommended_fat_g=70.0,
-                phase="cut",
                 confidence_score=0.8 + i * 0.05
             )
             tracker.save_snapshot(snapshot)
@@ -691,8 +591,10 @@ class TestTDEEAnalyticsWorkflow:
         # Verify snapshots saved
         assert tracker.get_latest_snapshot() is not None
 
-        # Generate charts
-        trend_chart = create_tdee_trend_chart(snapshots)
+        # Generate charts (convert to tuple format)
+        dates = tuple(s.date for s in snapshots)
+        data_tuples = tuple((s.formula_tdee, s.adaptive_tdee, s.average_intake_14d) for s in snapshots)
+        trend_chart = create_tdee_trend_chart(snapshot_dates=dates, snapshot_data=data_tuples)
         assert trend_chart is not None
 
         # Export to CSV

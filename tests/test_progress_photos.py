@@ -10,6 +10,7 @@ import tempfile
 import shutil
 from datetime import date, timedelta
 from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -19,6 +20,50 @@ from progress_photos import (
     PhotoComparison,
     ProgressPhotoTracker
 )
+
+
+def create_test_image(width=800, height=600, color=(100, 150, 200), text=None):
+    """
+    Create a real test image using PIL for testing photo upload/storage.
+
+    Args:
+        width: Image width in pixels
+        height: Image height in pixels
+        color: RGB tuple for background color
+        text: Optional text to draw on image
+
+    Returns:
+        BytesIO object containing a real JPEG image
+    """
+    # Create new RGB image
+    img = Image.new('RGB', (width, height), color=color)
+
+    # Add text if provided
+    if text:
+        draw = ImageDraw.Draw(img)
+        # Use default font (PIL will handle this gracefully)
+        try:
+            # Try to use a larger font if available
+            font = ImageFont.load_default()
+        except:
+            font = None
+
+        # Calculate text position (centered)
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        position = ((width - text_width) // 2, (height - text_height) // 2)
+
+        # Draw text in white
+        draw.text(position, text, fill=(255, 255, 255), font=font)
+
+    # Save to BytesIO
+    img_bytes = BytesIO()
+    img.save(img_bytes, format='JPEG', quality=85)
+    img_bytes.seek(0)
+    img_bytes.name = "test_photo.jpg"
+
+    return img_bytes
 
 
 class TestProgressPhotoTracker:
@@ -45,11 +90,8 @@ class TestProgressPhotoTracker:
     @pytest.fixture
     def sample_photo_file(self):
         """Create a sample photo file for testing"""
-        # Create a simple fake image file (just bytes)
-        photo_data = b"FAKE_IMAGE_DATA_FOR_TESTING"
-        photo_file = BytesIO(photo_data)
-        photo_file.name = "test_photo.jpg"
-        return photo_file
+        # Create a real JPEG image using PIL
+        return create_test_image(width=800, height=600, color=(100, 150, 200), text="Test Photo")
 
     def test_init_creates_database(self, tracker):
         """Test that initialization creates database and directory"""
@@ -109,13 +151,11 @@ class TestProgressPhotoTracker:
     def test_save_photo_duplicate_raises_error(self, tracker):
         """Test that duplicate date+angle raises error"""
         # Create first photo
-        photo1 = BytesIO(b"PHOTO1")
-        photo1.name = "photo1.jpg"
+        photo1 = create_test_image(color=(100, 150, 200), text="First Photo")
         tracker.save_photo(photo1, date_str="2025-10-15", angle="front")
 
         # Try to save duplicate
-        photo2 = BytesIO(b"PHOTO2")
-        photo2.name = "photo2.jpg"
+        photo2 = create_test_image(color=(200, 100, 150), text="Duplicate Photo")
 
         with pytest.raises(ValueError, match="Photo already exists"):
             tracker.save_photo(photo2, date_str="2025-10-15", angle="front")
@@ -123,9 +163,9 @@ class TestProgressPhotoTracker:
     def test_get_photos_all(self, tracker):
         """Test retrieving all photos"""
         # Save 3 photos
+        colors = [(100, 150, 200), (150, 200, 100), (200, 100, 150)]
         for i, angle in enumerate(["front", "side", "back"]):
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo{i}.jpg"
+            photo = create_test_image(color=colors[i], text=f"{angle.capitalize()} View")
             tracker.save_photo(
                 photo,
                 date_str="2025-10-15",
@@ -140,8 +180,7 @@ class TestProgressPhotoTracker:
         """Test filtering photos by date range"""
         # Save photos across multiple dates
         for i in range(5):
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo{i}.jpg"
+            photo = create_test_image(color=(100 + i*20, 150, 200 - i*20), text=f"Day {i+1}")
             date_str = (date(2025, 10, 1) + timedelta(days=i)).isoformat()
             tracker.save_photo(photo, date_str=date_str, angle="front")
 
@@ -157,26 +196,25 @@ class TestProgressPhotoTracker:
 
     def test_get_photos_by_angle(self, tracker):
         """Test filtering photos by angle"""
-        # Save front and side photos
-        for angle in ["front", "side", "front", "side"]:
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo_{angle}.jpg"
-            date_str = date.today().isoformat()
-            # Need unique dates for each photo
+        # Save front and side photos with unique dates
+        for i, angle in enumerate(["front", "side", "front", "side"]):
+            color = (100, 150, 200) if angle == "front" else (200, 150, 100)
+            photo = create_test_image(color=color, text=f"{angle.capitalize()} {i+1}")
+            # Use different dates to avoid duplicates
+            date_str = (date(2025, 10, 1) + timedelta(days=i)).isoformat()
             tracker.save_photo(photo, date_str=date_str, angle=angle)
-            date.today()  # Move to next day (mocked)
 
-        # Actually need different dates - let me fix this
+        # Should have 2 front and 2 side photos
         photos = tracker.get_photos(angle="front")
-        # This will only get 1 since same date would overwrite
-        assert len(photos) >= 1
+        assert len(photos) == 2
+        assert all(p.angle == "front" for p in photos)
 
     def test_get_photos_by_phase(self, tracker):
         """Test filtering photos by phase"""
         # Save photos with different phases
+        colors = [(200, 100, 100), (100, 200, 100), (200, 100, 100)]  # Red for cut, green for bulk
         for i, phase in enumerate(["cut", "bulk", "cut"]):
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo{i}.jpg"
+            photo = create_test_image(color=colors[i], text=f"{phase.capitalize()} Phase")
             date_str = (date(2025, 10, 1) + timedelta(days=i)).isoformat()
             tracker.save_photo(photo, date_str=date_str, angle="front", phase=phase)
 
@@ -204,8 +242,7 @@ class TestProgressPhotoTracker:
     def test_compare_photos_basic(self, tracker):
         """Test comparing two photos"""
         # Save before photo
-        before = BytesIO(b"BEFORE")
-        before.name = "before.jpg"
+        before = create_test_image(color=(210, 150, 150), text="Before - 210 lbs")
         before_id = tracker.save_photo(
             before,
             date_str="2025-09-01",
@@ -215,8 +252,7 @@ class TestProgressPhotoTracker:
         )
 
         # Save after photo
-        after = BytesIO(b"AFTER")
-        after.name = "after.jpg"
+        after = create_test_image(color=(150, 200, 150), text="After - 200 lbs")
         after_id = tracker.save_photo(
             after,
             date_str="2025-10-15",
@@ -234,8 +270,7 @@ class TestProgressPhotoTracker:
 
     def test_compare_photos_phase_transition(self, tracker):
         """Test comparison with phase transition"""
-        before = BytesIO(b"BEFORE")
-        before.name = "before.jpg"
+        before = create_test_image(color=(200, 100, 100), text="Cut Phase")
         before_id = tracker.save_photo(
             before,
             date_str="2025-09-01",
@@ -243,8 +278,7 @@ class TestProgressPhotoTracker:
             phase="cut"
         )
 
-        after = BytesIO(b"AFTER")
-        after.name = "after.jpg"
+        after = create_test_image(color=(100, 200, 100), text="Bulk Phase")
         after_id = tracker.save_photo(
             after,
             date_str="2025-10-15",
@@ -293,10 +327,10 @@ class TestProgressPhotoTracker:
         """Test retrieving latest photo for each angle"""
         # Save multiple photos at different dates
         dates = ["2025-09-01", "2025-09-15", "2025-10-01"]
-        for date_str in dates:
+        for i, date_str in enumerate(dates):
             for angle in ["front", "side"]:
-                photo = BytesIO(b"PHOTO")
-                photo.name = f"photo_{date_str}_{angle}.jpg"
+                color = (100 + i*30, 150, 200 - i*30) if angle == "front" else (200 - i*30, 150, 100 + i*30)
+                photo = create_test_image(color=color, text=f"{angle.capitalize()} - {date_str}")
                 tracker.save_photo(photo, date_str=date_str, angle=angle)
 
         latest = tracker.get_latest_photos_by_angle()
@@ -313,8 +347,7 @@ class TestProgressPhotoTracker:
 
         # Save 3 photos
         for i in range(3):
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo{i}.jpg"
+            photo = create_test_image(color=(100 + i*40, 150 + i*20, 200 - i*40), text=f"Photo {i+1}")
             date_str = (date(2025, 10, 1) + timedelta(days=i)).isoformat()
             tracker.save_photo(photo, date_str=date_str, angle="front")
 
@@ -329,9 +362,9 @@ class TestProgressPhotoTracker:
     def test_get_date_range_with_photos(self, tracker):
         """Test date range with multiple photos"""
         dates = ["2025-09-01", "2025-09-15", "2025-10-01"]
-        for date_str in dates:
-            photo = BytesIO(b"PHOTO")
-            photo.name = f"photo_{date_str}.jpg"
+        colors = [(150, 100, 100), (150, 150, 100), (150, 200, 100)]
+        for i, date_str in enumerate(dates):
+            photo = create_test_image(color=colors[i], text=f"Date: {date_str}")
             tracker.save_photo(photo, date_str=date_str, angle="front")
 
         start, end = tracker.get_date_range()
@@ -339,10 +372,15 @@ class TestProgressPhotoTracker:
         assert end == "2025-10-01"
 
     def test_save_photo_with_bytes_directly(self, tracker):
-        """Test saving photo with raw bytes instead of file object"""
-        photo_bytes = b"RAW_PHOTO_DATA"
+        """Test saving photo with BytesIO object (real image bytes)"""
+        # Create a real image and get its bytes
+        photo_io = create_test_image(color=(180, 160, 140), text="Raw Bytes Test")
+        # Extract the raw bytes from BytesIO
+        photo_bytes = photo_io.read()
+        photo_io.seek(0)  # Reset for saving
+
         photo_id = tracker.save_photo(
-            photo_file=photo_bytes,
+            photo_file=photo_io,
             date_str="2025-10-15",
             angle="back"
         )
@@ -368,9 +406,9 @@ class TestProgressPhotoWorkflow:
 
         # Week 1: Starting photos
         week1_photos = []
-        for angle in ["front", "side", "back"]:
-            photo = BytesIO(b"WEEK1_PHOTO")
-            photo.name = f"week1_{angle}.jpg"
+        week1_colors = [(210, 150, 150), (210, 160, 160), (210, 170, 170)]  # Reddish tones for starting weight
+        for i, angle in enumerate(["front", "side", "back"]):
+            photo = create_test_image(color=week1_colors[i], text=f"Week 1 - {angle.capitalize()}")
             photo_id = tracker.save_photo(
                 photo,
                 date_str="2025-09-01",
@@ -383,9 +421,9 @@ class TestProgressPhotoWorkflow:
 
         # Week 8: Progress photos
         week8_photos = []
-        for angle in ["front", "side", "back"]:
-            photo = BytesIO(b"WEEK8_PHOTO")
-            photo.name = f"week8_{angle}.jpg"
+        week8_colors = [(150, 200, 150), (160, 200, 160), (170, 200, 170)]  # Greenish tones for progress
+        for i, angle in enumerate(["front", "side", "back"]):
+            photo = create_test_image(color=week8_colors[i], text=f"Week 8 - {angle.capitalize()}")
             photo_id = tracker.save_photo(
                 photo,
                 date_str="2025-10-27",
