@@ -1,0 +1,201 @@
+name: Browser Tests (E2E)
+
+on:
+  workflow_dispatch:  # Manual trigger only (expensive, slow)
+    inputs:
+      test_pattern:
+        description: 'Test pattern to run (e.g., test_phase4_comprehensive.py)'
+        required: false
+        default: 'tests/browser/'
+      browser:
+        description: 'Browser to test (chromium, firefox, webkit, or all)'
+        required: false
+        default: 'chromium'
+  schedule:
+    - cron: '0 3 * * 1'  # Weekly on Monday at 3 AM UTC
+
+jobs:
+  browser-tests:
+    name: E2E Tests - ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ${{ github.event.inputs.browser == 'all' && fromJSON('["chromium", "firefox", "webkit"]') || fromJSON(format('["{0}"]', github.event.inputs.browser || 'chromium')) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-browser-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-browser-
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libzbar0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Start Streamlit app
+        run: |
+          # Start Streamlit in background
+          streamlit run src/main.py --server.port=8501 --server.headless=true > streamlit.log 2>&1 &
+          echo $! > streamlit.pid
+
+          # Wait for app to be ready (max 60 seconds)
+          echo "Waiting for Streamlit to start..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8501/_stcore/health > /dev/null 2>&1; then
+              echo "Streamlit is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Streamlit failed to start within 60 seconds"
+              cat streamlit.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run browser tests
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          pytest ${{ github.event.inputs.test_pattern || 'tests/browser/' }} \
+            --browser=${{ matrix.browser }} \
+            --headed=false \
+            --slowmo=100 \
+            --video=on \
+            --screenshot=only-on-failure \
+            --tracing=retain-on-failure \
+            --output=test-results-${{ matrix.browser }} \
+            --html=pytest-browser-report-${{ matrix.browser }}.html \
+            --self-contained-html \
+            --junitxml=junit/browser-results-${{ matrix.browser }}.xml \
+            -v
+
+      - name: Stop Streamlit app
+        if: always()
+        run: |
+          if [ -f streamlit.pid ]; then
+            kill $(cat streamlit.pid) || true
+            rm streamlit.pid
+          fi
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: browser-test-results-${{ matrix.browser }}
+          path: |
+            test-results-${{ matrix.browser }}/
+            pytest-browser-report-${{ matrix.browser }}.html
+            junit/browser-results-${{ matrix.browser }}.xml
+            streamlit.log
+          retention-days: 30
+
+      - name: Upload test videos
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: browser-test-videos-${{ matrix.browser }}
+          path: test-results-${{ matrix.browser }}/**/*.webm
+          retention-days: 14
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: browser-test-screenshots-${{ matrix.browser }}
+          path: test-results-${{ matrix.browser }}/**/*.png
+          retention-days: 14
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: "junit/browser-results-${{ matrix.browser }}.xml"
+
+  report:
+    name: Test Report
+    runs-on: ubuntu-latest
+    needs: browser-tests
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create test summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let summary = '## 🎭 Browser Test Results\n\n';
+            summary += '| Browser | Status | Artifacts |\n';
+            summary += '|---------|--------|----------|\n';
+
+            const browsers = ['chromium', 'firefox', 'webkit'];
+            for (const browser of browsers) {
+              const artifactDir = `browser-test-results-${browser}`;
+              if (fs.existsSync(artifactDir)) {
+                const junitFile = `${artifactDir}/junit/browser-results-${browser}.xml`;
+                const status = fs.existsSync(junitFile) ? '✅ Passed' : '❌ Failed';
+                const videoCount = fs.existsSync(`browser-test-videos-${browser}`) ? 'Videos' : 'N/A';
+                summary += `| ${browser} | ${status} | ${videoCount} |\n`;
+              }
+            }
+
+            summary += '\n---\n';
+            summary += 'Download artifacts from the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+
+            console.log(summary);
+
+            // Write to step summary
+            await core.summary.addRaw(summary).write();
+
+  notify-on-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: browser-tests
+    if: failure() && github.event_name == 'schedule'
+
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '[ALERT] Weekly Browser Tests Failed',
+              body: `The weekly browser tests failed. Please investigate:\n\n` +
+                    `**Run:** ${context.runId}\n` +
+                    `**Workflow:** ${context.workflow}\n` +
+                    `**URL:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+                    `Check the test artifacts for videos and screenshots of failures.`,
+              labels: ['bug', 'testing', 'ci/cd']
+            });

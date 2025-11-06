@@ -1,0 +1,185 @@
+name: Code Quality
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-lint-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-lint-
+
+      - name: Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+
+      - name: Run flake8
+        run: |
+          echo "## 🔍 Flake8 Results" >> $GITHUB_STEP_SUMMARY
+          flake8 src/ tests/ --count --statistics --show-source --format='%(path)s:%(row)d:%(col)d: %(code)s %(text)s' > flake8-report.txt || true
+
+          if [ -s flake8-report.txt ]; then
+            echo "❌ Flake8 found issues:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat flake8-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ No flake8 issues found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run black format check
+        run: |
+          echo "## 🎨 Black Format Check" >> $GITHUB_STEP_SUMMARY
+          black --check --diff src/ tests/ > black-report.txt 2>&1 || true
+
+          if grep -q "would be reformatted" black-report.txt; then
+            echo "❌ Black found formatting issues:" >> $GITHUB_STEP_SUMMARY
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            cat black-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Fix with:** \`black src/ tests/\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Code is properly formatted" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run isort import check
+        run: |
+          echo "## 📦 Import Sort Check" >> $GITHUB_STEP_SUMMARY
+          isort --check-only --diff src/ tests/ > isort-report.txt 2>&1 || true
+
+          if grep -q "would be reformatted" isort-report.txt || [ $? -ne 0 ]; then
+            echo "❌ isort found import sorting issues:" >> $GITHUB_STEP_SUMMARY
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            cat isort-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Fix with:** \`isort src/ tests/\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Imports are properly sorted" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run mypy type check
+        continue-on-error: true
+        run: |
+          echo "## 🔬 MyPy Type Check" >> $GITHUB_STEP_SUMMARY
+          mypy src/ --ignore-missing-imports --show-error-codes > mypy-report.txt 2>&1 || true
+
+          if grep -q "error:" mypy-report.txt; then
+            echo "⚠️ MyPy found type issues (non-blocking):" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat mypy-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No type errors found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-reports
+          path: |
+            flake8-report.txt
+            black-report.txt
+            isort-report.txt
+            mypy-report.txt
+          retention-days: 30
+
+      - name: Comment PR with lint results
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## ⚠️ Code Quality Issues Found\n\n';
+
+            const files = ['flake8-report.txt', 'black-report.txt', 'isort-report.txt'];
+
+            for (const file of files) {
+              if (fs.existsSync(file) && fs.statSync(file).size > 0) {
+                const content = fs.readFileSync(file, 'utf8');
+                const tool = file.replace('-report.txt', '');
+                comment += `### ${tool}\n\`\`\`\n${content.slice(0, 1000)}\n\`\`\`\n\n`;
+              }
+            }
+
+            comment += '---\n';
+            comment += '**Fix commands:**\n';
+            comment += '```bash\n';
+            comment += 'black src/ tests/\n';
+            comment += 'isort src/ tests/\n';
+            comment += 'flake8 src/ tests/\n';
+            comment += '```\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Bandit security linter
+        run: |
+          pip install bandit
+          bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            trivy-results.sarif
+            bandit-report.json
+          retention-days: 30
