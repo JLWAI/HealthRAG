@@ -2367,91 +2367,160 @@ def render_adaptive_tdee():
 
     # Display status
     if not insight.has_sufficient_data:
+        progress = insight.days_logged / 14
+
         st.info(
-            f"📊 **Data Collection Progress:** {insight.days_logged}/14 days logged\n\n"
-            f"Log weight daily and track food for at least 14 days to unlock Adaptive TDEE.\n\n"
-            f"**Why 14 days?** This provides enough data to calculate accurate trends "
-            f"while filtering out daily fluctuations."
+            f"📊 **Building Your Adaptive TDEE Model**\n\n"
+            f"Progress: {insight.days_logged}/14 days logged ({progress*100:.0f}% complete)\n\n"
+            f"Keep logging your weight daily and tracking your food intake. "
+            f"Once you reach 14 days, HealthRAG will calculate your personalized TDEE "
+            f"based on your actual results!\n\n"
+            f"💡 **Why 14 days?** This provides enough data to calculate accurate trends "
+            f"while filtering out daily water weight fluctuations."
         )
 
-        # Show progress bar
-        progress = insight.days_logged / 14
-        st.progress(progress)
+        # Show progress bar with percentage
+        st.progress(progress, text=f"{insight.days_logged}/14 days ({progress*100:.0f}%)")
 
         # Show formula TDEE in the meantime
+        st.markdown("---")
         st.markdown("### 📐 Formula-Based TDEE (Mifflin-St Jeor)")
-        st.metric("Estimated TDEE", f"{insight.formula_tdee} cal/day")
-        st.caption("This is an estimate. Adaptive TDEE will be more accurate once you have 14 days of data.")
+        st.metric(
+            "Estimated TDEE",
+            f"{insight.formula_tdee} cal/day",
+            help="This is a formula-based estimate. Your actual TDEE may be higher or lower."
+        )
+        st.caption(
+            "⚠️ This is an estimate based on population averages. "
+            "Your Adaptive TDEE (unlocked at 14 days) will be personalized to YOUR body's actual response."
+        )
+
+        # Add helpful tips
+        with st.expander("💡 Tips for Accurate Data Collection", expanded=False):
+            st.markdown(
+                "**For Best Results:**\n"
+                "- Weigh yourself daily at the same time (morning, after bathroom, before eating)\n"
+                "- Log all food and drinks as accurately as possible\n"
+                "- Don't worry about being perfect - consistency matters more than perfection\n"
+                "- Water weight fluctuations are normal - the trend is what matters\n\n"
+                "**What to Expect:**\n"
+                "- Daily weight will fluctuate (2-5 lbs is normal)\n"
+                "- Trend weight smooths out these fluctuations\n"
+                "- After 14 days, you'll see your true rate of change"
+            )
 
         return
 
     # Sufficient data - show full adaptive TDEE analysis
-    st.success(f"✅ {insight.days_logged} days of data - Adaptive TDEE is active!")
+    st.success(
+        f"✅ **Adaptive TDEE is Active!** ({insight.days_logged} days of data)\n\n"
+        "Your TDEE is now calculated from your actual results, not population averages."
+    )
 
-    # Main metrics
+    # Add celebration toast on first unlock
+    if insight.days_logged == 14:
+        st.balloons()
+        st.toast("Adaptive TDEE unlocked! 🎉", icon="🎯")
+
+    # Main metrics with improved tooltips
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric(
             "Formula TDEE",
             f"{insight.formula_tdee} cal",
-            help="Mifflin-St Jeor formula estimate"
+            help="📐 Mifflin-St Jeor formula (population average)"
         )
 
     with col2:
+        # Color-code the delta
+        delta_color = "normal" if insight.tdee_delta and abs(insight.tdee_delta) > 100 else "off"
         st.metric(
-            "Adaptive TDEE",
+            "Adaptive TDEE ⭐",
             f"{insight.adaptive_tdee} cal",
             delta=f"{insight.tdee_delta:+d} cal" if insight.tdee_delta else None,
-            help="Back-calculated from your actual data"
+            delta_color=delta_color,
+            help="🎯 Back-calculated from YOUR actual weight change + intake (this is your real TDEE!)"
         )
 
     with col3:
         st.metric(
             "Avg Intake (14d)",
             f"{insight.average_intake:.0f} cal",
-            help="Average daily calories over last 14 days"
+            help="📊 Your average daily calorie intake over the last 14 days"
         )
 
     with col4:
         weight_change_label = f"{insight.weight_change_14d:+.1f} lbs" if insight.weight_change_14d else "N/A"
+
+        # Color-code weight change based on phase
+        if insight.weight_change_14d:
+            phase = insight.macro_adjustment.phase if insight.macro_adjustment else "maintain"
+            if phase == "cut":
+                delta_color_weight = "inverse" if insight.weight_change_14d < 0 else "normal"
+            elif phase == "bulk":
+                delta_color_weight = "normal" if insight.weight_change_14d > 0 else "inverse"
+            else:
+                delta_color_weight = "off"
+        else:
+            delta_color_weight = "off"
+
         st.metric(
             "Weight Change (14d)",
             weight_change_label,
-            help="Trend weight change over 14 days"
+            delta_color=delta_color_weight,
+            help="⚖️ Your trend weight change over 14 days (smoothed to filter out water weight)"
         )
 
     st.markdown("---")
 
-    # TDEE Comparison
-    st.subheader("📊 TDEE Comparison: Formula vs. Reality")
+    # TDEE Comparison with better visual hierarchy
+    st.subheader("📊 TDEE Analysis: Formula vs. Your Reality")
+    st.caption("Understanding the difference between population averages and your personal metabolism")
 
     if insight.tdee_delta:
         delta_pct = (insight.tdee_delta / insight.formula_tdee) * 100
 
-        if abs(delta_pct) < 5:
-            st.success(
-                f"✅ **Your actual TDEE matches the formula closely** (within {abs(delta_pct):.1f}%)\n\n"
-                f"The Mifflin-St Jeor formula is working well for you."
-            )
-        elif insight.tdee_delta > 0:
-            st.info(
-                f"📈 **Your actual TDEE is {insight.tdee_delta} cal higher than the formula** (+{delta_pct:.1f}%)\n\n"
-                f"Possible reasons:\n"
-                f"- Higher NEAT (Non-Exercise Activity Thermogenesis)\n"
-                f"- More active than activity level suggests\n"
-                f"- Higher metabolic rate (good genetics!)\n\n"
-                f"**Recommendation:** Use {insight.adaptive_tdee} cal as your baseline."
-            )
-        else:
-            st.info(
-                f"📉 **Your actual TDEE is {abs(insight.tdee_delta)} cal lower than the formula** ({delta_pct:.1f}%)\n\n"
-                f"Possible reasons:\n"
-                f"- Lower NEAT (Non-Exercise Activity Thermogenesis)\n"
-                f"- Less active than activity level suggests\n"
-                f"- Adaptive thermogenesis (metabolic adaptation)\n\n"
-                f"**Recommendation:** Use {insight.adaptive_tdee} cal as your baseline."
-            )
+        # Create visual comparison
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            if abs(delta_pct) < 5:
+                st.success(
+                    f"✅ **Your actual TDEE matches the formula closely** (within {abs(delta_pct):.1f}%)\n\n"
+                    f"The Mifflin-St Jeor formula is working well for you. This suggests you're fairly "
+                    f"typical for your demographics."
+                )
+            elif insight.tdee_delta > 0:
+                st.info(
+                    f"📈 **Your actual TDEE is {insight.tdee_delta} cal HIGHER than the formula** (+{delta_pct:.1f}%)\n\n"
+                    f"**What this means:** You can eat MORE than the formula suggests and still hit your goals!\n\n"
+                    f"**Possible reasons:**\n"
+                    f"- 🚶 Higher NEAT (Non-Exercise Activity Thermogenesis) - you move more throughout the day\n"
+                    f"- 💪 More active than your activity level suggests\n"
+                    f"- 🧬 Higher baseline metabolic rate (genetic advantage)\n"
+                    f"- 🔥 Good thyroid function\n\n"
+                    f"**✅ Recommendation:** Use your Adaptive TDEE ({insight.adaptive_tdee} cal) as your baseline, "
+                    f"not the formula estimate."
+                )
+            else:
+                st.warning(
+                    f"📉 **Your actual TDEE is {abs(insight.tdee_delta)} cal LOWER than the formula** ({delta_pct:.1f}%)\n\n"
+                    f"**What this means:** You need to eat LESS than the formula suggests to hit your goals.\n\n"
+                    f"**Possible reasons:**\n"
+                    f"- 🪑 Lower NEAT (Non-Exercise Activity Thermogenesis) - you're more sedentary\n"
+                    f"- 📉 Less active than your selected activity level\n"
+                    f"- 🔻 Adaptive thermogenesis (metabolic adaptation from prolonged dieting)\n"
+                    f"- ⚖️ Lower baseline metabolic rate\n\n"
+                    f"**✅ Recommendation:** Use your Adaptive TDEE ({insight.adaptive_tdee} cal) as your baseline. "
+                    f"If you're cutting, consider a diet break to restore metabolic rate."
+                )
+
+        with col2:
+            st.markdown("**Key Metrics:**")
+            st.metric("Formula", f"{insight.formula_tdee} cal")
+            st.metric("Actual", f"{insight.adaptive_tdee} cal")
+            st.metric("Difference", f"{insight.tdee_delta:+d} cal", delta=f"{delta_pct:+.1f}%")
 
     st.markdown("---")
 
@@ -2490,16 +2559,19 @@ def render_adaptive_tdee():
 
         st.markdown("---")
 
-        # Recommendation
-        st.markdown("### 💡 Recommendation")
+        # Recommendation with visual hierarchy
+        st.markdown("### 💡 Weekly Recommendation")
+        st.caption("Adherence-neutral coaching based on your actual results")
 
-        # Color-code based on reason
+        # Color-code based on reason with better messaging
         if adj.reason == "on_track":
-            st.success(adj.coaching_message)
+            st.success(f"✅ {adj.coaching_message}")
         elif "too_fast" in adj.reason:
-            st.warning(adj.coaching_message)
+            st.warning(f"⚠️ {adj.coaching_message}")
+        elif "too_slow" in adj.reason:
+            st.info(f"📊 {adj.coaching_message}")
         else:
-            st.info(adj.coaching_message)
+            st.info(f"ℹ️ {adj.coaching_message}")
 
         # Show macro changes
         if adj.calorie_change != 0:
@@ -2540,30 +2612,53 @@ def render_adaptive_tdee():
 
             with col2:
                 if st.button("✅ Apply Adjustment", type="primary", use_container_width=True):
+                    st.toast("Macro adjustment noted! Update your profile to apply.", icon="✅")
                     st.info(
-                        "💡 To apply this adjustment, update your profile weight and recalculate your nutrition plan. "
-                        "The system will automatically use the new baseline."
+                        "💡 **How to apply this adjustment:**\n\n"
+                        "1. Go to your Profile settings\n"
+                        "2. Update your current weight\n"
+                        "3. Recalculate your nutrition plan\n"
+                        "4. The system will use your new Adaptive TDEE\n\n"
+                        "HealthRAG will continue tracking and provide weekly updates automatically."
                     )
 
-        # Educational note
+        # Educational note with collapsible section
         st.markdown("---")
-        st.markdown(
-            "### 📚 How Adaptive TDEE Works\n\n"
-            "**Back-Calculation Formula:**\n"
-            "```\n"
-            "TDEE = Avg_Calories + (Weight_Change_lbs × 3500 / 14)\n"
-            "```\n\n"
-            "**Why this works:**\n"
-            "- 1 lb of fat ≈ 3500 calories\n"
-            "- If you lost 1 lb in 14 days eating 2100 cal/day:\n"
-            "  - You were in a 250 cal/day deficit (3500 ÷ 14)\n"
-            "  - Your TDEE = 2100 + 250 = 2350 cal/day\n\n"
-            "**Adherence-Neutral Adjustments:**\n"
-            "- Within ±20% of goal: No change (natural variation)\n"
-            "- Within ±50% of goal: ±100 cal adjustment\n"
-            "- Beyond ±50%: ±150 cal adjustment\n\n"
-            "This approach is based on MacroFactor's methodology and Renaissance Periodization principles."
-        )
+
+        with st.expander("📚 How Adaptive TDEE Works (Science & Methodology)", expanded=False):
+            st.markdown(
+                "### The Science Behind Adaptive TDEE\n\n"
+                "**Back-Calculation Formula:**\n"
+                "```\n"
+                "TDEE = Avg_Calories + (Weight_Change_lbs × 3500 / 14)\n"
+                "```\n\n"
+                "**Why this works:**\n"
+                "- 1 lb of fat ≈ 3500 calories of energy\n"
+                "- If you lost 1 lb in 14 days eating 2100 cal/day:\n"
+                "  - You were in a 250 cal/day deficit (3500 ÷ 14)\n"
+                "  - Your TDEE = 2100 + 250 = 2350 cal/day\n\n"
+                "**Adherence-Neutral Adjustment Logic:**\n"
+                "- **Within ±20% of goal:** No change (natural variation, stay the course)\n"
+                "- **Within ±50% of goal:** ±100 cal adjustment (minor tweak needed)\n"
+                "- **Beyond ±50%:** ±150 cal adjustment (significant correction needed)\n\n"
+                "**Why adherence-neutral?**\n"
+                "We adjust your calorie target, not judge your adherence. If you're not hitting "
+                "your goals, it could be:\n"
+                "- Inaccurate logging (very common)\n"
+                "- TDEE estimate was wrong\n"
+                "- Activity level changed\n"
+                "- Metabolic adaptation\n\n"
+                "Rather than saying 'try harder,' we adjust YOUR target to match YOUR reality.\n\n"
+                "**Evidence Base:**\n"
+                "- MacroFactor methodology (Greg Nuckols, Mike Israetel)\n"
+                "- Renaissance Periodization nutrition principles\n"
+                "- EWMA (Exponentially Weighted Moving Average) for trend smoothing\n"
+                "- 14-day rolling window for stability vs. responsiveness\n\n"
+                "**References:**\n"
+                "- [MacroFactor: The Science of Smart Nutrition Coaching](https://macrofactorapp.com/science)\n"
+                "- Renaissance Periodization Diet 2.0\n"
+                "- Nuckols, G. (2021). Energy balance, TDEE, and weight management"
+            )
 
     # ========== ENHANCED TDEE ANALYTICS (MacroFactor-inspired) ==========
     st.markdown("---")

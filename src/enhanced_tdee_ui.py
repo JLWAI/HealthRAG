@@ -52,16 +52,25 @@ def render_tdee_trend_visualization(tdee_tracker: TDEEHistoricalTracker, days: i
     """
     st.subheader("📈 TDEE Trend Analysis")
 
-    start_date = (date.today() - timedelta(days=days)).isoformat()
-    snapshots = tdee_tracker.get_snapshots(start_date=start_date)
-    snapshots.reverse()  # Chronological order
+    # Loading state
+    with st.spinner("Loading TDEE data..."):
+        start_date = (date.today() - timedelta(days=days)).isoformat()
+        snapshots = tdee_tracker.get_snapshots(start_date=start_date)
+        snapshots.reverse()  # Chronological order
 
+    # Empty state with helpful message
     if len(snapshots) < 2:
-        st.info(f"Need at least 2 TDEE snapshots to show trend. Keep logging!")
+        st.info(
+            "📊 **Not enough data yet**\n\n"
+            f"You have {len(snapshots)} TDEE snapshot(s). Keep logging your weight and food "
+            "for at least 2 weeks to see your TDEE trend.\n\n"
+            "💡 **Tip:** The more data you log, the more accurate your trend becomes!"
+        )
         return
 
-    # Create and display chart
-    fig = create_tdee_trend_chart(snapshots)
+    # Create and display chart with loading spinner
+    with st.spinner("Generating chart..."):
+        fig = create_tdee_trend_chart(snapshots)
     st.plotly_chart(fig, use_container_width=True)
 
     # Summary stats
@@ -90,12 +99,24 @@ def render_weight_progress_chart(weight_tracker: WeightTracker, days: int = 30):
     """
     st.subheader("⚖️ Weight Progress & Water Weight Alerts")
 
-    start_date = (date.today() - timedelta(days=days)).isoformat()
-    weight_entries = weight_tracker.get_weights(start_date=start_date)
-    weight_entries.reverse()  # Chronological order
+    # Loading state
+    with st.spinner("Loading weight data..."):
+        start_date = (date.today() - timedelta(days=days)).isoformat()
+        weight_entries = weight_tracker.get_weights(start_date=start_date)
+        weight_entries.reverse()  # Chronological order
 
+    # Empty state with CTA
     if not weight_entries:
-        st.info("Start logging your daily weight to see progress!")
+        st.info(
+            "📊 **No weight data yet**\n\n"
+            "Start logging your daily weight to track progress and see trends!\n\n"
+            "💡 **Best practice:** Weigh yourself first thing in the morning, "
+            "after using the bathroom, before eating or drinking."
+        )
+
+        # Add CTA button
+        if st.button("➕ Go to Weight Tracking", use_container_width=True, type="primary"):
+            st.info("Navigate to the 'Weight Tracking' section to log your weight")
         return
 
     # Calculate trend weights
@@ -148,12 +169,21 @@ def render_goal_prediction(
     """
     st.subheader("🎯 Goal Date Prediction")
 
-    # Get recent weight data
-    weight_entries = weight_tracker.get_weights(limit=14)
-    weight_entries.reverse()
+    # Loading state
+    with st.spinner("Analyzing your progress..."):
+        # Get recent weight data
+        weight_entries = weight_tracker.get_weights(limit=14)
+        weight_entries.reverse()
 
+    # Empty state with progress indicator
     if len(weight_entries) < 14:
-        st.info(f"Need 14 days of data for accurate prediction. Current: {len(weight_entries)} days")
+        progress = len(weight_entries) / 14
+        st.info(
+            f"📊 **Building prediction model...**\n\n"
+            f"You have {len(weight_entries)} of 14 days needed for accurate predictions.\n\n"
+            "💡 Keep logging your daily weight to unlock goal predictions!"
+        )
+        st.progress(progress, text=f"{len(weight_entries)}/14 days logged ({progress*100:.0f}%)")
         return
 
     # Calculate trend weight and rate
@@ -252,38 +282,63 @@ def render_body_measurements():
         notes = st.text_area("Notes (optional)")
 
         if st.button("💾 Save Measurements", type="primary", use_container_width=True):
-            measurement = BodyMeasurement(
-                measurement_id=None,
-                date=measurement_date.isoformat(),
-                neck_inches=neck if neck > 0 else None,
-                chest_inches=chest if chest > 0 else None,
-                shoulders_inches=shoulders if shoulders > 0 else None,
-                bicep_left_inches=bicep_left if bicep_left > 0 else None,
-                bicep_right_inches=bicep_right if bicep_right > 0 else None,
-                waist_inches=waist if waist > 0 else None,
-                hips_inches=hips if hips > 0 else None,
-                thigh_left_inches=thigh_left if thigh_left > 0 else None,
-                thigh_right_inches=thigh_right if thigh_right > 0 else None,
-                calf_left_inches=calf_left if calf_left > 0 else None,
-                calf_right_inches=calf_right if calf_right > 0 else None,
-                notes=notes if notes else None
-            )
+            # Validate at least one measurement is provided
+            has_measurement = any([
+                neck > 0, chest > 0, shoulders > 0, bicep_left > 0, bicep_right > 0,
+                waist > 0, hips > 0, thigh_left > 0, thigh_right > 0, calf_left > 0, calf_right > 0
+            ])
 
-            tracker.log_measurements(measurement)
-            st.success(f"✅ Measurements saved for {measurement_date}")
+            if not has_measurement:
+                st.error("❌ Please enter at least one measurement")
+            else:
+                # Loading state for save operation
+                with st.spinner("Saving measurements..."):
+                    measurement = BodyMeasurement(
+                        measurement_id=None,
+                        date=measurement_date.isoformat(),
+                        neck_inches=neck if neck > 0 else None,
+                        chest_inches=chest if chest > 0 else None,
+                        shoulders_inches=shoulders if shoulders > 0 else None,
+                        bicep_left_inches=bicep_left if bicep_left > 0 else None,
+                        bicep_right_inches=bicep_right if bicep_right > 0 else None,
+                        waist_inches=waist if waist > 0 else None,
+                        hips_inches=hips if hips > 0 else None,
+                        thigh_left_inches=thigh_left if thigh_left > 0 else None,
+                        thigh_right_inches=thigh_right if thigh_right > 0 else None,
+                        calf_left_inches=calf_left if calf_left > 0 else None,
+                        calf_right_inches=calf_right if calf_right > 0 else None,
+                        notes=notes if notes else None
+                    )
 
-            # Calculate waist-to-hip ratio if both present
-            if waist > 0 and hips > 0:
-                whr = tracker.calculate_waist_to_hip_ratio(measurement)
-                st.info(f"📊 Waist-to-Hip Ratio: {whr:.3f}")
+                    tracker.log_measurements(measurement)
+
+                # Success feedback with toast
+                st.success(f"✅ Measurements saved for {measurement_date}")
+                st.toast(f"Measurements saved successfully!", icon="✅")
+
+                # Calculate waist-to-hip ratio if both present
+                if waist > 0 and hips > 0:
+                    whr = tracker.calculate_waist_to_hip_ratio(measurement)
+                    st.info(f"📊 Waist-to-Hip Ratio: {whr:.3f}")
 
     with tab2:
         st.markdown("### Measurement Progress")
 
-        measurements = tracker.get_measurements(limit=90)
+        # Loading state
+        with st.spinner("Loading measurement history..."):
+            measurements = tracker.get_measurements(limit=90)
 
+        # Empty state with helpful message
         if len(measurements) < 2:
-            st.info("Log measurements over time to see progress!")
+            st.info(
+                "📏 **Track your body composition over time**\n\n"
+                "Log measurements regularly (weekly or bi-weekly) to see changes in:\n"
+                "- Muscle growth (arms, chest, shoulders)\n"
+                "- Fat loss (waist, hips)\n"
+                "- Body recomposition\n\n"
+                f"Current measurements logged: {len(measurements)}\n"
+                "Need at least 2 to show progress comparison."
+            )
         else:
             measurements.reverse()  # Chronological order
 
@@ -332,60 +387,73 @@ def render_monthly_report(month: int, year: int):
     st.markdown("---")
     st.header("📊 Monthly Progress Report")
 
-    # Initialize all trackers
-    weight_tracker = WeightTracker(db_path="data/weights.db")
-    tdee_tracker = TDEEHistoricalTracker(db_path="data/tdee_history.db")
-    measurement_tracker = BodyMeasurementTracker(db_path="data/measurements.db")
-    food_logger = FoodLogger(db_path="data/food_log.db")
-    workout_db = WorkoutDatabase(db_path="data/workouts.db")
+    # Loading state for report generation
+    with st.spinner("Generating your comprehensive monthly report..."):
+        # Initialize all trackers
+        weight_tracker = WeightTracker(db_path="data/weights.db")
+        tdee_tracker = TDEEHistoricalTracker(db_path="data/tdee_history.db")
+        measurement_tracker = BodyMeasurementTracker(db_path="data/measurements.db")
+        food_logger = FoodLogger(db_path="data/food_log.db")
+        workout_db = WorkoutDatabase(db_path="data/workouts.db")
 
-    # Get user profile for phase
-    profile = UserProfile()
-    phase = profile.get_goals().phase if profile.exists() else "maintain"
+        # Get user profile for phase
+        profile = UserProfile()
+        phase = profile.get_goals().phase if profile.exists() else "maintain"
 
-    # Generate report
-    try:
-        report = generate_monthly_progress_report(
-            month=month,
-            year=year,
-            weight_tracker=weight_tracker,
-            tdee_tracker=tdee_tracker,
-            measurement_tracker=measurement_tracker,
-            food_logger=food_logger,
-            workout_db=workout_db,
-            phase=phase
-        )
+        # Generate report
+        try:
+            report = generate_monthly_progress_report(
+                month=month,
+                year=year,
+                weight_tracker=weight_tracker,
+                tdee_tracker=tdee_tracker,
+                measurement_tracker=measurement_tracker,
+                food_logger=food_logger,
+                workout_db=workout_db,
+                phase=phase
+            )
 
-        # Display report
-        st.markdown(f"### {date(year, month, 1).strftime('%B %Y')} Summary")
+            # Display report
+            st.markdown(f"### {date(year, month, 1).strftime('%B %Y')} Summary")
 
-        st.markdown(f"**Overall Rating:** {report.overall_rating}")
-        st.markdown(f"*{report.summary}*")
+            st.markdown(f"**Overall Rating:** {report.overall_rating}")
+            st.markdown(f"*{report.summary}*")
 
-        # Visualize
-        fig = create_monthly_report_visualization(report)
-        st.plotly_chart(fig, use_container_width=True)
+            # Visualize with loading spinner
+            with st.spinner("Creating visualizations..."):
+                fig = create_monthly_report_visualization(report)
+            st.plotly_chart(fig, use_container_width=True)
 
-        # Achievements
-        if report.achievements:
-            st.success("🏆 **Achievements:**")
-            for achievement in report.achievements:
-                st.markdown(f"- {achievement}")
+            # Achievements with celebration
+            if report.achievements:
+                st.success("🏆 **Achievements:**")
+                for achievement in report.achievements:
+                    st.markdown(f"- {achievement}")
+                st.balloons()  # Celebration animation
 
-        # Areas for improvement
-        if report.areas_for_improvement:
-            st.warning("⚠️ **Areas for Improvement:**")
-            for area in report.areas_for_improvement:
-                st.markdown(f"- {area}")
+            # Areas for improvement
+            if report.areas_for_improvement:
+                st.warning("⚠️ **Areas for Improvement:**")
+                for area in report.areas_for_improvement:
+                    st.markdown(f"- {area}")
 
-        # Recommendations
-        if report.recommendations:
-            st.info("💡 **Recommendations for Next Month:**")
-            for rec in report.recommendations:
-                st.markdown(f"- {rec}")
+            # Recommendations
+            if report.recommendations:
+                st.info("💡 **Recommendations for Next Month:**")
+                for rec in report.recommendations:
+                    st.markdown(f"- {rec}")
 
-    except Exception as e:
-        st.error(f"Could not generate report: {e}")
+            st.toast("Monthly report generated!", icon="📊")
+
+        except Exception as e:
+            st.error(
+                f"❌ **Could not generate report**\n\n"
+                f"Error: {str(e)}\n\n"
+                f"💡 **Troubleshooting:**\n"
+                f"- Make sure you have logged data for {date(year, month, 1).strftime('%B %Y')}\n"
+                f"- Check that all tracking features are being used\n"
+                f"- Try generating a report for a different month"
+            )
 
 
 def render_export_options(tdee_tracker: TDEEHistoricalTracker):
@@ -407,35 +475,52 @@ def render_export_options(tdee_tracker: TDEEHistoricalTracker):
         export_format = st.selectbox("Format", ["CSV", "JSON"])
 
     if st.button("⬇️ Export TDEE Data", use_container_width=True):
-        start_date = (date.today() - timedelta(days=days_to_export)).isoformat()
-        snapshots = tdee_tracker.get_snapshots(start_date=start_date)
-        snapshots.reverse()  # Chronological order
+        # Loading state for export
+        with st.spinner(f"Preparing {export_format} export..."):
+            start_date = (date.today() - timedelta(days=days_to_export)).isoformat()
+            snapshots = tdee_tracker.get_snapshots(start_date=start_date)
+            snapshots.reverse()  # Chronological order
 
+        # Empty state check
         if not snapshots:
-            st.warning("No data to export!")
-        else:
-            # Create temp file
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=f'.{export_format.lower()}') as f:
-                if export_format == "CSV":
-                    export_tdee_data_csv(snapshots, f.name)
-                else:
-                    export_tdee_data_json(snapshots, f.name)
-
-                temp_path = f.name
-
-            # Read and offer download
-            with open(temp_path, 'r') as f:
-                data = f.read()
-
-            st.download_button(
-                label=f"📥 Download {export_format}",
-                data=data,
-                file_name=f"tdee_export_{date.today().isoformat()}.{export_format.lower()}",
-                mime='text/csv' if export_format == 'CSV' else 'application/json',
-                use_container_width=True
+            st.warning(
+                "⚠️ **No data to export**\n\n"
+                f"No TDEE snapshots found in the last {days_to_export} days.\n\n"
+                "💡 Keep logging weight and food to build your TDEE history!"
             )
+        else:
+            try:
+                # Create temp file with progress
+                with st.spinner(f"Generating {export_format} file..."):
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=f'.{export_format.lower()}') as f:
+                        if export_format == "CSV":
+                            export_tdee_data_csv(snapshots, f.name)
+                        else:
+                            export_tdee_data_json(snapshots, f.name)
 
-            # Clean up
-            Path(temp_path).unlink()
+                        temp_path = f.name
 
-            st.success(f"✅ Exported {len(snapshots)} TDEE snapshots!")
+                # Read and offer download
+                with open(temp_path, 'r') as f:
+                    data = f.read()
+
+                st.download_button(
+                    label=f"📥 Download {export_format}",
+                    data=data,
+                    file_name=f"tdee_export_{date.today().isoformat()}.{export_format.lower()}",
+                    mime='text/csv' if export_format == 'CSV' else 'application/json',
+                    use_container_width=True
+                )
+
+                # Clean up
+                Path(temp_path).unlink()
+
+                st.success(f"✅ Ready to download! {len(snapshots)} TDEE snapshots exported.")
+                st.toast(f"Export ready: {len(snapshots)} snapshots", icon="📥")
+
+            except Exception as e:
+                st.error(
+                    f"❌ **Export failed**\n\n"
+                    f"Error: {str(e)}\n\n"
+                    f"Please try again or contact support if the issue persists."
+                )
