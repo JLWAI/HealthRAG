@@ -16,10 +16,7 @@ A completely **FREE**, **local** AI-powered health and fitness advisor that uses
 
 ```bash
 # Start everything with one command
-./start_healthrag.sh
-
-# Or manually:
-docker-compose up --build
+docker compose up --build
 
 # Access at: http://localhost:8501
 ```
@@ -155,9 +152,6 @@ rag.switch_backend("mlx")
 
 ## Troubleshooting
 
-### Corrupted PDF
-One known issue: `thePaleoSolution_FoodMatrix.pdf` is corrupted. The system automatically skips it. Replace with a valid copy if available.
-
 ### MLX Not Available
 If MLX isn't available, the system falls back to Ollama automatically.
 
@@ -213,7 +207,7 @@ This is a personal project, but suggestions welcome! Open an issue or submit a P
 
 ## License
 
-[Your License Here]
+MIT License - Feel free to use, modify, and distribute this project. See the LICENSE file for details.
 
 ## Acknowledgments
 

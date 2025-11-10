@@ -41,9 +41,10 @@ streamlit.log
 data/vectorstore/
 data/pdfs/*.pdf
 data/pdfs/*.acsm
+data/pdfs/*.xlsx
 
-# Known corrupted files (all zeros, not recoverable)
-data/pdfs/thePaleoSolution_FoodMatrix.pdf
+# Archived files
+archived/
 
 # Jupyter
 .ipynb_checkpoints
