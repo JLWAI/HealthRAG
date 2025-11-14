@@ -14,6 +14,12 @@ htmlcov/
 *.db
 *.sqlite
 
+# Browser testing artifacts (Playwright)
+test-results/
+playwright-report/
+trace-results/
+.playwright/
+
 # Virtual environments
 venv/
 venv_mlx/

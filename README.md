@@ -12,7 +12,32 @@ A completely **FREE**, **local** AI-powered health and fitness advisor that uses
 
 ## Quick Start
 
-### Option 1: Docker (Cross-Platform, Recommended)
+### Option 1: Local Development (Python venv)
+
+**One-time setup:**
+```bash
+# Run the automated setup script (installs all dependencies)
+chmod +x setup_dependencies.sh
+./setup_dependencies.sh
+```
+
+**Daily usage:**
+```bash
+# Activate virtual environment (includes ZBar library path for barcode scanning)
+source activate_venv.sh
+
+# Start the application
+streamlit run src/main.py
+
+# Access at: http://localhost:8501
+```
+
+**To deactivate:**
+```bash
+deactivate
+```
+
+### Option 2: Docker (Cross-Platform, Recommended)
 
 ```bash
 # Start everything with one command
@@ -21,7 +46,7 @@ docker compose up --build
 # Access at: http://localhost:8501
 ```
 
-### Option 2: Local MLX (macOS Only - Faster)
+### Option 3: Local MLX (macOS Only - Faster)
 
 ```bash
 # Run the setup script
@@ -97,6 +122,109 @@ HealthRAG/
 - Only answers from your documents
 - Source attribution
 - No hallucination - explicit when info not available
+
+### 📷 Camera Barcode Scanning (Privacy-First)
+- **Privacy-focused**: Camera OFF by default, user must explicitly enable
+- **Automatic detection**: Uses pyzbar to decode UPC/EAN barcodes
+- **Instant lookup**: Queries Open Food Facts database (2.8M+ products)
+- **Full nutrition info**: Calories, protein, carbs, fat, serving sizes
+- **Quick logging**: Add scanned products directly to food log
+- **Manual fallback**: Original manual entry always available
+- **Success rate**: 70-80% in good conditions (lighting, centering)
+
+**How to use:**
+1. Navigate to: "🍽️ Nutrition Tracking" → "🔍 Search & Add" tab
+2. Click "📷 Enable Camera" button
+3. Position barcode to webcam (centered, good lighting)
+4. Take photo - automatic detection + product lookup
+5. Select servings/meal type and add to log
+6. Click "🚫 Disable Camera" when done
+
+### ⚖️ Weight Tracking & Adaptive TDEE
+
+Track your weight with **MacroFactor-style trend analysis** for data-driven coaching:
+
+**Features:**
+- **EWMA Trend Weight**: Exponentially Weighted Moving Average (alpha=0.3) smooths daily fluctuations
+- **7-Day Moving Average**: Simple moving average for comparison
+- **Rate of Change**: Weekly rate (lbs/week) calculated from trend data
+- **Goal Tracking**: Visual delta from target weight
+- **Interactive Charts**: Plotly visualization with hover details
+- **Coaching Insights**: Automatic recommendations based on rate of change
+
+**How to use:**
+1. Navigate to: "⚖️ Weight Tracking & Trends"
+2. **Log Weight** tab: Enter daily weight (replaces existing entry for same date)
+3. **Weight Trends** tab: View charts, trends, and insights
+4. Log consistently (7+ days for weekly trends, 14+ days for rate of change)
+
+**What the trends mean:**
+- **Daily Weight** (blue dots): Your actual scale readings
+- **Trend Weight** (blue line): EWMA-smoothed weight (less reactive to daily fluctuations)
+- **7-Day Average** (green dashed): Simple moving average
+- **Goal Line** (red dotted): Your target weight from profile
+
+**Coaching insights:**
+- ✅ Stable: ±0.25 lbs/week (maintenance)
+- 📉 Cutting: -0.5 to -2.0 lbs/week (sustainable fat loss)
+- ⚠️ Too fast: > 2.0 lbs/week (consider slowing down)
+- 📈 Bulking: +0.5 to +2.0 lbs/week (muscle gain)
+
+**Database:** Weight data stored in `data/weights.db` (SQLite)
+
+---
+
+### 🔬 Adaptive TDEE & Weekly Check-Ins
+
+**MacroFactor-style back-calculated TDEE** using your actual data for data-driven adjustments:
+
+**Features:**
+- **Back-Calculated TDEE**: Calculates your true TDEE from actual weight change + calorie intake (14-day rolling window)
+- **Formula**: `TDEE = Avg_Calories - (Weight_Change_lbs × 3500 / Days)`
+- **Weekly Check-In**: Compares goal rate vs actual rate, recommends macro adjustments
+- **Adherence-Neutral Logic**: Assumes perfect tracking, adjusts based on results not compliance
+- **Smart Thresholds**:
+  - Within ±20% of goal: No change (natural variation)
+  - Within ±50% of goal: ±100 cal adjustment (minor tweak)
+  - Beyond ±50% of goal: ±150 cal adjustment (significant correction)
+- **Phase-Aware**: Different logic for cut/bulk/maintain/recomp phases
+
+**How to use:**
+1. Navigate to: "🔬 Adaptive TDEE & Check-In"
+2. Log 14+ days of weight and food intake
+3. View adaptive TDEE comparison vs formula estimate
+4. Review weekly check-in recommendations
+5. Apply macro adjustments with one click
+
+**What the metrics mean:**
+- **Formula TDEE**: Mifflin-St Jeor estimate from your stats (static)
+- **Adaptive TDEE**: Back-calculated from your actual data (dynamic)
+- **TDEE Delta**: Difference between adaptive and formula (± cal/day)
+- **Avg Intake**: Your average daily calories (last 14 days)
+- **Weight Change**: Trend weight change using EWMA smoothing
+
+**Coaching insights:**
+- ✅ On track: Actual rate within ±20% of goal (keep current macros)
+- ⚠️ Losing too fast: Actual rate > goal (increase calories +100-150)
+- 📉 Losing too slow: Actual rate < goal (decrease calories -100-150)
+- 📈 Gaining too fast/slow: Same logic for bulking phases
+- 🔄 Maintenance: Absolute threshold (±0.25 lbs/week = stable)
+
+**Example:**
+```
+Week 1-2 data:
+- Weight: 210 → 208 lbs (trend: -2 lbs)
+- Avg intake: 2100 cal/day
+- Adaptive TDEE: 2100 - (-2 × 3500 / 14) = 2600 cal/day
+
+Goal: -1.0 lb/week
+Actual: -1.0 lb/week
+✅ On track! Keep current macros.
+```
+
+**Database:** Combined data from `data/weights.db` + `data/food_log.db`
+
+---
 
 ## Configuration
 

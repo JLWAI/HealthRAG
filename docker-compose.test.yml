@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # ===== HealthRAG Application (Under Test) =====
+  healthrag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      # Streamlit server configuration
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+
+      # Application environment
+      - PYTHONUNBUFFERED=1
+
+    # Health check to ensure app is ready before tests start
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+    networks:
+      - healthrag-test
+
+    volumes:
+      # Persist databases between test runs
+      - ./data:/app/data
+
+
+  # ===== Playwright Test Runner =====
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.playwright
+
+    environment:
+      # Test configuration
+      - BASE_URL=http://healthrag:8501
+      - HEADLESS=${HEADLESS:-true}
+      - BROWSER=${BROWSER:-chromium}
+      - SLOWMO=${SLOWMO:-0}
+      - VIDEO=${VIDEO:-on-failure}
+      - TRACE=${TRACE:-on-failure}
+
+      # pytest configuration
+      - PYTEST_CURRENT_TEST=true
+      - PYTHONUNBUFFERED=1
+
+    volumes:
+      # Mount test results for host access
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+      - ./trace-results:/app/trace-results
+
+      # Mount source code for live editing (optional)
+      # - ./tests:/app/tests
+
+    depends_on:
+      healthrag:
+        condition: service_healthy
+
+    networks:
+      - healthrag-test
+
+    # Default command: Run all browser tests
+    command: >
+      sh -c "
+        echo '========================================' &&
+        echo '    HealthRAG Browser Test Suite       ' &&
+        echo '========================================' &&
+        echo 'Target: http://healthrag:8501' &&
+        echo 'Browser: ${BROWSER:-chromium}' &&
+        echo 'Headless: ${HEADLESS:-true}' &&
+        echo '========================================' &&
+        echo '' &&
+        echo 'Waiting for HealthRAG to be ready...' &&
+        sleep 5 &&
+        echo '' &&
+        echo 'Starting Playwright tests...' &&
+        pytest tests/browser/ -v
+          --html=playwright-report/index.html
+          --self-contained-html
+          --tracing=${TRACE:-on-failure}
+          --video=${VIDEO:-on-failure}
+          --screenshot=only-on-failure
+          -ra &&
+        echo '' &&
+        echo '========================================' &&
+        echo '   Test Results Available:              ' &&
+        echo '   - playwright-report/index.html       ' &&
+        echo '   - trace-results/ (if failures)       ' &&
+        echo '   - test-results/videos/ (if failures) ' &&
+        echo '========================================'
+      "
+
+
+networks:
+  healthrag-test:
+    driver: bridge
+
+
+# ===== Usage Examples =====
+#
+# Run all tests:
+#   docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Run specific tier:
+#   docker-compose -f docker-compose.test.yml run playwright-tests \
+#     pytest tests/browser/test_tier1_personas.py -v
+#
+# Run with Firefox:
+#   BROWSER=firefox docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Run with WebKit (Safari):
+#   BROWSER=webkit docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Debug mode (headed browser, slow motion):
+#   HEADLESS=false SLOWMO=1000 docker-compose -f docker-compose.test.yml up
+#
+# Always record video:
+#   VIDEO=always docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Cross-browser testing:
+#   for browser in chromium firefox webkit; do
+#     BROWSER=$browser docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#   done
+#
+# View results:
+#   open playwright-report/index.html
+#   open trace-results/trace.zip  # Use Playwright Trace Viewer
+#
+# Cleanup:
+#   docker-compose -f docker-compose.test.yml down -v
+#   rm -rf test-results playwright-report trace-results
