@@ -1,0 +1,270 @@
+{
+  "metadata": {
+    "source": "S Tier Exercises.rtf, Jeff Nippard's Tier List.pdf",
+    "description": "Exercise tier rankings for muscle hypertrophy (S+ > S > A > B > C)",
+    "last_updated": "2025-11-04"
+  },
+  "tier_system": {
+    "S_plus": "Best of the best - highest muscle growth stimulus",
+    "S": "Excellent exercises - great for hypertrophy",
+    "A": "Great exercises - solid choice for most programs",
+    "B": "Good exercises - effective with proper execution",
+    "C": "Acceptable exercises - better alternatives exist"
+  },
+  "exercises_by_muscle": {
+    "glutes": {
+      "S_plus": [
+        {
+          "name": "Walking Lunge",
+          "notes": "Identified as the 'best of the best'"
+        }
+      ],
+      "S": [
+        {
+          "name": "Machine Hip Abductions",
+          "notes": "Also #1 for upper glutes"
+        },
+        {
+          "name": "Walking Lunges",
+          "notes": ""
+        },
+        {
+          "name": "Elevated Front Foot Lunges",
+          "notes": "On a small box"
+        },
+        {
+          "name": "45° Back Extension",
+          "notes": ""
+        }
+      ]
+    },
+    "quads": {
+      "S_plus": [
+        {
+          "name": "Hack Squat",
+          "notes": "Identified as the 'best of the best'",
+          "alternative": "High bar barbell back squat if hack squat unavailable"
+        }
+      ],
+      "S": [
+        {
+          "name": "Barbell Back Squat",
+          "notes": "High bar preferred for quads"
+        },
+        {
+          "name": "Hack Squat",
+          "notes": ""
+        },
+        {
+          "name": "Pendulum Squat",
+          "notes": ""
+        },
+        {
+          "name": "Smith Machine Squat",
+          "notes": ""
+        },
+        {
+          "name": "Bulgarian Split Squats",
+          "notes": ""
+        }
+      ]
+    },
+    "triceps": {
+      "S_plus": [
+        {
+          "name": "Overhead Cable Tricep Extension",
+          "notes": "Identified as the 'best of the best'"
+        }
+      ],
+      "S": [
+        {
+          "name": "Overhead Cable Triceps Extension",
+          "notes": ""
+        },
+        {
+          "name": "Skull Crushers",
+          "notes": ""
+        }
+      ]
+    },
+    "back": {
+      "S_plus": [
+        {
+          "name": "Chest Supported Row",
+          "notes": "Identified as the 'best of the best'"
+        }
+      ],
+      "S": [
+        {
+          "name": "Wide Grip Lat Pulldowns",
+          "notes": ""
+        },
+        {
+          "name": "Neutral Grip Lat Pulldowns",
+          "notes": ""
+        },
+        {
+          "name": "Half Kneeling One Arm Lat Pulldowns",
+          "notes": ""
+        },
+        {
+          "name": "Chest Supported Rows",
+          "notes": ""
+        },
+        {
+          "name": "Cable Rows",
+          "notes": ""
+        },
+        {
+          "name": "Wide Grip Cable Rows",
+          "notes": ""
+        },
+        {
+          "name": "Reverse Pec Deck",
+          "notes": "Done sitting sideways"
+        }
+      ]
+    },
+    "biceps": {
+      "S_plus": [
+        {
+          "name": "Face Away Bayesian Cable Curl",
+          "notes": "Identified as the 'best of the best'",
+          "alternative": "45° preacher curl as a close second"
+        }
+      ],
+      "S": [
+        {
+          "name": "Preacher Curl",
+          "notes": ""
+        },
+        {
+          "name": "Machine Preacher Curl",
+          "notes": ""
+        },
+        {
+          "name": "Face Away Bayesian Cable Curl",
+          "notes": ""
+        }
+      ]
+    },
+    "shoulders": {
+      "S_plus": [
+        {
+          "name": "Cable Lateral Raise",
+          "notes": "Identified as the 'best of the best' for overall shoulder development"
+        }
+      ],
+      "S": [
+        {
+          "name": "Cable Lateral Raise",
+          "notes": "#1 for side delts"
+        },
+        {
+          "name": "Cable Y Raise",
+          "notes": ""
+        },
+        {
+          "name": "Behind the Back Cuffed Lateral Raise",
+          "notes": ""
+        },
+        {
+          "name": "Reverse Cable Crossover",
+          "notes": "#1 rear delt builder"
+        }
+      ],
+      "notes": {
+        "front_delts": "Machine shoulder press is #1 for front delts",
+        "side_delts": "Cable lateral raise is #1 for side delts"
+      }
+    }
+  },
+  "equipment_requirements": {
+    "cable_exercises": [
+      "Overhead Cable Tricep Extension",
+      "Cable Lateral Raise",
+      "Cable Y Raise",
+      "Cable Rows",
+      "Wide Grip Cable Rows",
+      "Reverse Cable Crossover",
+      "Face Away Bayesian Cable Curl"
+    ],
+    "machine_exercises": [
+      "Machine Hip Abductions",
+      "Hack Squat",
+      "Pendulum Squat",
+      "Smith Machine Squat",
+      "Machine Preacher Curl",
+      "Machine Shoulder Press",
+      "Reverse Pec Deck"
+    ],
+    "barbell_exercises": [
+      "Barbell Back Squat",
+      "Skull Crushers"
+    ],
+    "dumbbell_exercises": [
+      "Bulgarian Split Squats",
+      "Preacher Curl"
+    ],
+    "bodyweight_exercises": [
+      "Walking Lunge",
+      "Elevated Front Foot Lunges",
+      "45° Back Extension"
+    ]
+  },
+  "home_gym_compatibility": {
+    "fully_available": [
+      "Barbell Back Squat",
+      "Smith Machine Squat",
+      "Skull Crushers",
+      "Bulgarian Split Squats",
+      "Walking Lunge",
+      "Elevated Front Foot Lunges",
+      "45° Back Extension",
+      "Overhead Cable Tricep Extension",
+      "Cable Lateral Raise",
+      "Cable Y Raise",
+      "Cable Rows",
+      "Wide Grip Cable Rows",
+      "Reverse Cable Crossover",
+      "Wide Grip Lat Pulldowns",
+      "Neutral Grip Lat Pulldowns",
+      "Chest Supported Rows",
+      "Machine Preacher Curl",
+      "Preacher Curl"
+    ],
+    "partially_available": [
+      "Machine Hip Abductions (substitute with band hip abductions)",
+      "Hack Squat (substitute with barbell back squat or Smith squat)",
+      "Pendulum Squat (substitute with back squat)",
+      "Reverse Pec Deck (substitute with reverse cable crossover)"
+    ]
+  },
+  "planet_fitness_compatibility": {
+    "fully_available": [
+      "Machine Hip Abductions",
+      "Hack Squat",
+      "Smith Machine Squat",
+      "Overhead Cable Tricep Extension",
+      "Skull Crushers",
+      "Wide Grip Lat Pulldowns",
+      "Neutral Grip Lat Pulldowns",
+      "Cable Rows",
+      "Wide Grip Cable Rows",
+      "Reverse Pec Deck",
+      "Machine Preacher Curl",
+      "Cable Lateral Raise",
+      "Cable Y Raise",
+      "Reverse Cable Crossover",
+      "Machine Shoulder Press",
+      "Walking Lunge",
+      "Bulgarian Split Squats"
+    ],
+    "not_available": [
+      "Barbell Back Squat (use Smith machine or hack squat)",
+      "Chest Supported Rows (use seated row machine)",
+      "45° Back Extension (use lower back extension machine)",
+      "Half Kneeling One Arm Lat Pulldowns (use standard lat pulldown)"
+    ]
+  }
+}

@@ -1,0 +1,284 @@
+{
+  "metadata": {
+    "sources": [
+      "EBOOK_Renaissance_Diet_2.0.pdf",
+      "EBOOK_Simply_RP.pdf",
+      "EBOOK_Time_To_Eat.pdf",
+      "The Diet Adjustments Manual v.3.0.9.pdf"
+    ],
+    "description": "Renaissance Periodization nutrition guidelines for cutting, bulking, maintenance, and recomp",
+    "last_updated": "2025-11-04"
+  },
+  "protein_recommendations": {
+    "cutting": {
+      "grams_per_lb": [1.0, 1.2],
+      "rationale": "Preserve muscle mass in caloric deficit",
+      "priority": "High protein to prevent muscle loss"
+    },
+    "maintenance": {
+      "grams_per_lb": [0.8, 1.0],
+      "rationale": "Sustain current muscle mass",
+      "priority": "Moderate protein sufficient for maintenance"
+    },
+    "bulking": {
+      "grams_per_lb": [0.8, 1.0],
+      "rationale": "Build muscle in caloric surplus",
+      "priority": "Moderate protein, prioritize total calories"
+    },
+    "recomp": {
+      "grams_per_lb": [1.0, 1.2],
+      "rationale": "High protein aids simultaneous fat loss and muscle gain",
+      "priority": "High protein like cutting phase"
+    }
+  },
+  "fat_recommendations": {
+    "cutting": {
+      "percent_of_calories": [20, 30],
+      "grams_per_lb": [0.3, 0.4],
+      "rationale": "Lower fat allows more carbs for training while maintaining hormones"
+    },
+    "maintenance": {
+      "percent_of_calories": [25, 35],
+      "grams_per_lb": [0.4, 0.5],
+      "rationale": "Balanced for hormonal health and satiety"
+    },
+    "bulking": {
+      "percent_of_calories": [20, 30],
+      "grams_per_lb": [0.3, 0.4],
+      "rationale": "Lower fat allows more carbs for muscle building and training fuel"
+    },
+    "recomp": {
+      "percent_of_calories": [25, 35],
+      "grams_per_lb": [0.4, 0.5],
+      "rationale": "Moderate fat for hormones and satiety"
+    }
+  },
+  "carb_recommendations": {
+    "calculation": "Remainder calories after protein and fat",
+    "cutting": {
+      "typical_range_grams": [150, 250],
+      "notes": "Lower carbs due to caloric deficit, prioritize around training"
+    },
+    "maintenance": {
+      "typical_range_grams": [250, 350],
+      "notes": "Moderate carbs for training fuel and recovery"
+    },
+    "bulking": {
+      "typical_range_grams": [300, 500],
+      "notes": "High carbs for muscle building and intense training"
+    },
+    "timing": {
+      "pre_workout": "1-3 hours before, protein + carbs",
+      "post_workout": "0-2 hours after, protein + carbs (anabolic window helpful but not critical)",
+      "evening": "Can be higher fat if not training next morning"
+    }
+  },
+  "tdee_calculation": {
+    "bmr_formula": "Mifflin-St Jeor",
+    "males": {
+      "formula": "BMR = 10 × weight(kg) + 6.25 × height(cm) - 5 × age(years) + 5",
+      "example": "210 lb man, 72 inches, 35 years: BMR = 10×95.3 + 6.25×182.9 - 5×35 + 5 = 1,988 cal"
+    },
+    "females": {
+      "formula": "BMR = 10 × weight(kg) + 6.25 × height(cm) - 5 × age(years) - 161",
+      "example": "145 lb woman, 65 inches, 28 years: BMR = 10×65.8 + 6.25×165.1 - 5×28 - 161 = 1,418 cal"
+    },
+    "activity_factors": {
+      "sedentary": {
+        "multiplier": 1.2,
+        "description": "Little or no exercise, desk job"
+      },
+      "light": {
+        "multiplier": 1.375,
+        "description": "Light exercise 1-3 days/week"
+      },
+      "moderate": {
+        "multiplier": 1.55,
+        "description": "Moderate exercise 3-5 days/week"
+      },
+      "active": {
+        "multiplier": 1.725,
+        "description": "Heavy exercise 6-7 days/week"
+      },
+      "very_active": {
+        "multiplier": 1.9,
+        "description": "Very heavy exercise, physical job, training 2x/day"
+      }
+    },
+    "tdee_formula": "TDEE = BMR × Activity Factor"
+  },
+  "calorie_adjustments": {
+    "cutting": {
+      "tdee_adjustment": -500,
+      "weekly_weight_change": -1.0,
+      "notes": "Aggressive cut, 1 lb/week",
+      "duration_recommended": "8-16 weeks"
+    },
+    "cutting_slow": {
+      "tdee_adjustment": -250,
+      "weekly_weight_change": -0.5,
+      "notes": "Sustainable cut, 0.5 lb/week",
+      "duration_recommended": "12-24 weeks"
+    },
+    "maintenance": {
+      "tdee_adjustment": 0,
+      "weekly_weight_change": 0,
+      "notes": "Body recomp possible with training",
+      "duration_recommended": "Indefinite"
+    },
+    "lean_bulk": {
+      "tdee_adjustment": 300,
+      "weekly_weight_change": 0.5,
+      "notes": "Minimize fat gain, 0.5 lb/week",
+      "duration_recommended": "12-24 weeks"
+    },
+    "aggressive_bulk": {
+      "tdee_adjustment": 500,
+      "weekly_weight_change": 1.0,
+      "notes": "Faster muscle gain, more fat, 1 lb/week",
+      "duration_recommended": "8-16 weeks"
+    }
+  },
+  "meal_frequency": {
+    "optimal_meals_per_day": [3, 5],
+    "rationale": "Muscle protein synthesis peaks 3-5 times/day",
+    "minimum_effective": 3,
+    "maximum_practical": 6,
+    "notes": "More frequent meals may aid satiety and energy stability"
+  },
+  "meal_timing": {
+    "pre_workout": {
+      "timing": "1-3 hours before training",
+      "composition": "Protein + carbs, low fat",
+      "example": "Chicken breast, rice, vegetables"
+    },
+    "post_workout": {
+      "timing": "0-2 hours after training",
+      "composition": "Protein + carbs, low-moderate fat",
+      "example": "Whey protein shake, banana, oatmeal",
+      "notes": "Anabolic window is real but less critical than total daily intake"
+    },
+    "before_bed": {
+      "composition": "Protein, moderate fat, low carbs",
+      "example": "Casein protein, Greek yogurt, nuts",
+      "notes": "Slow-digesting protein supports overnight recovery"
+    }
+  },
+  "diet_adjustment_algorithm": {
+    "description": "MacroFactor-style adaptive TDEE (RP-aligned)",
+    "steps": [
+      "1. Track weight daily, calculate EWMA (Exponential Weighted Moving Average, α=0.3)",
+      "2. Calculate 7-day rolling average weight",
+      "3. Back-calculate TDEE: TDEE = Avg_Calories + (Weight_Change × 3500 / Days)",
+      "4. Compare actual vs. target rate of weight change",
+      "5. Adjust calories weekly based on adherence-neutral thresholds"
+    ],
+    "ewma_formula": "EWMA_today = α × weight_today + (1 - α) × EWMA_yesterday",
+    "alpha": 0.3,
+    "back_calculation_formula": "TDEE = Average_Calories_Consumed + (Weight_Change_lbs × 3500 / Days_Elapsed)",
+    "adjustment_thresholds": {
+      "within_20_percent": {
+        "action": "No change",
+        "rationale": "Rate of change is on track"
+      },
+      "within_50_percent": {
+        "action": "Adjust ±150 calories",
+        "rationale": "Moderate adjustment needed"
+      },
+      "beyond_50_percent": {
+        "action": "Adjust ±100 calories",
+        "rationale": "Smaller adjustment for safety"
+      }
+    },
+    "assessment_timeline": {
+      "week_1_2": "Assess baseline (weight, energy, hunger, cravings, gym performance)",
+      "week_3_plus": "Adjust every 7-14 days based on rate of weight change"
+    }
+  },
+  "example_calculations": {
+    "example_1_beginner_ben_cutting": {
+      "name": "Beginner Ben",
+      "stats": {
+        "weight_lbs": 210,
+        "height_inches": 72,
+        "age": 35,
+        "sex": "male",
+        "activity_level": "sedentary"
+      },
+      "bmr": 2044,
+      "tdee": 2453,
+      "phase": "cutting",
+      "target_calories": 1953,
+      "macros": {
+        "protein_g": 231,
+        "protein_calories": 924,
+        "fat_g": 65,
+        "fat_calories": 585,
+        "carbs_g": 111,
+        "carbs_calories": 444
+      }
+    },
+    "example_2_intermediate_ian_bulking": {
+      "name": "Intermediate Ian",
+      "stats": {
+        "weight_lbs": 185,
+        "height_inches": 70,
+        "age": 28,
+        "sex": "male",
+        "activity_level": "active"
+      },
+      "bmr": 1878,
+      "tdee": 3240,
+      "phase": "bulking",
+      "target_calories": 3540,
+      "macros": {
+        "protein_g": 167,
+        "protein_calories": 668,
+        "fat_g": 59,
+        "fat_calories": 531,
+        "carbs_g": 585,
+        "carbs_calories": 2340
+      }
+    },
+    "example_3_cutting_claire": {
+      "name": "Cutting Claire",
+      "stats": {
+        "weight_lbs": 145,
+        "height_inches": 65,
+        "age": 28,
+        "sex": "female",
+        "activity_level": "moderate"
+      },
+      "bmr": 1402,
+      "tdee": 2173,
+      "phase": "cutting",
+      "target_calories": 1673,
+      "macros": {
+        "protein_g": 160,
+        "protein_calories": 640,
+        "fat_g": 50,
+        "fat_calories": 450,
+        "carbs_g": 146,
+        "carbs_calories": 583
+      }
+    }
+  },
+  "micronutrient_tracking": {
+    "priority_micronutrients": [
+      "Vitamin D (2000-4000 IU/day)",
+      "Calcium (1000-1200 mg/day)",
+      "Iron (8-18 mg/day, higher for females)",
+      "Magnesium (300-400 mg/day)",
+      "Zinc (8-11 mg/day)",
+      "Omega-3 fatty acids (250-500 mg EPA+DHA/day)",
+      "Fiber (25-35 g/day)"
+    ],
+    "notes": "Most micronutrients covered by varied diet. Consider multivitamin and fish oil supplements."
+  },
+  "hydration": {
+    "baseline": "0.5-1 oz per lb bodyweight per day",
+    "training_day_increase": "Add 16-24 oz per hour of training",
+    "cutting_phase": "Increase to upper range for satiety",
+    "example": "200 lb person: 100-200 oz/day (12-25 cups)"
+  }
+}

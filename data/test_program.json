@@ -1,0 +1,1798 @@
+{
+  "template_name": "upper_lower_4x",
+  "start_date": "2025-10-28",
+  "equipment_used": [
+    "dumbbells",
+    "bench",
+    "incline_bench",
+    "pull_up_bar",
+    "bodyweight",
+    "smith_machine",
+    "cables",
+    "leg_press_machine",
+    "chest_press_machine",
+    "lat_pulldown_machine",
+    "hip_abduction_machine"
+  ],
+  "coverage_report": {
+    "total_exercises": 36,
+    "s_plus_available": 5,
+    "s_plus_total": 6,
+    "s_plus_coverage": 83.33333333333334,
+    "s_available": 18,
+    "s_total": 24,
+    "s_coverage": 75.0,
+    "missing_s_plus": [
+      "Hack Squat (Machine)"
+    ],
+    "missing_s": [
+      "Reverse Pec Deck (Rear Delts)",
+      "Machine Shoulder Press",
+      "Machine Preacher Curl",
+      "Barbell Back Squat",
+      "Pendulum Squat (Machine)",
+      "45-Degree Back Extension"
+    ]
+  },
+  "created_at": "2025-10-28",
+  "weeks": [
+    {
+      "week_number": 1,
+      "is_deload": false,
+      "notes": "Week 1 of accumulation",
+      "total_weekly_sets": 84,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 30,
+          "estimated_duration_min": 225,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "6-8 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "12-15 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 12,
+          "estimated_duration_min": 90,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 30,
+          "estimated_duration_min": 225,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "12-15 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "6-8 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 12,
+          "estimated_duration_min": 90,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 2,
+      "is_deload": false,
+      "notes": "Week 2 of accumulation",
+      "total_weekly_sets": 98,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 35,
+          "estimated_duration_min": 262,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "6-8 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "12-15 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 14,
+          "estimated_duration_min": 105,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 35,
+          "estimated_duration_min": 262,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "12-15 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "6-8 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 14,
+          "estimated_duration_min": 105,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 3,
+      "is_deload": false,
+      "notes": "Week 3 of accumulation",
+      "total_weekly_sets": 112,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 40,
+          "estimated_duration_min": 300,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "6-8 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "12-15 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 16,
+          "estimated_duration_min": 120,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 40,
+          "estimated_duration_min": 300,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "12-15 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "6-8 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 16,
+          "estimated_duration_min": 120,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 2,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 4,
+      "is_deload": false,
+      "notes": "Week 4 of accumulation",
+      "total_weekly_sets": 126,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 45,
+          "estimated_duration_min": 337,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 5,
+              "reps": "6-8 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "12-15 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 18,
+          "estimated_duration_min": 135,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 45,
+          "estimated_duration_min": 337,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "12-15 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 5,
+              "reps": "6-8 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 18,
+          "estimated_duration_min": 135,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 1,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 5,
+      "is_deload": false,
+      "notes": "Week 5 of accumulation",
+      "total_weekly_sets": 140,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 50,
+          "estimated_duration_min": 375,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 6,
+              "reps": "6-8 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "12-15 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 20,
+          "estimated_duration_min": 150,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 50,
+          "estimated_duration_min": 375,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "12-15 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Cable Y-Raise",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Targets upper/middle delts."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Wide Grip Lat Pulldown",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Essential for lat width. Planet Fitness has this."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 6,
+              "reps": "6-8 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Incline Dumbbell Press",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Excellent for upper chest. Available at home + Planet Fitness."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Preacher Curl (Barbell/Dumbbell)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has preacher curl station."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Skull Crusher (Lying Tricep Extension)",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can do at home with dumbbells or at gym with barbell."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 20,
+          "estimated_duration_min": 150,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Machine Hip Abduction",
+              "tier": "S",
+              "sets": 4,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has this. Great for glute medius."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 6,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Bulgarian Split Squat (Dumbbell)",
+              "tier": "S",
+              "sets": 5,
+              "reps": "8-12 reps",
+              "rir": 0,
+              "load_lbs": null,
+              "notes": "Can do at home or gym. Unilateral quad builder."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "week_number": 6,
+      "is_deload": true,
+      "notes": "DELOAD WEEK: Easy sets, focus on recovery",
+      "total_weekly_sets": 36,
+      "workouts": [
+        {
+          "day_name": "Upper A (Chest/Back Focus)",
+          "muscle_groups": [
+            "chest",
+            "back",
+            "shoulders",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 13,
+          "estimated_duration_min": 97,
+          "exercises": [
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "6-8 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "12-15 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower A (Quad Focus)",
+          "muscle_groups": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ],
+          "total_sets": 5,
+          "estimated_duration_min": 37,
+          "exercises": [
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            },
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            }
+          ]
+        },
+        {
+          "day_name": "Upper B (Shoulder/Arm Focus)",
+          "muscle_groups": [
+            "shoulders",
+            "back",
+            "chest",
+            "biceps",
+            "triceps"
+          ],
+          "total_sets": 13,
+          "estimated_duration_min": 97,
+          "exercises": [
+            {
+              "name": "Cable Lateral Raise",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "12-15 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Superior to dumbbell lateral raises for constant tension."
+            },
+            {
+              "name": "Chest Supported Row (Machine or Incline Bench)",
+              "tier": "S+",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has chest-supported row machine. Can also use incline bench + dumbbells."
+            },
+            {
+              "name": "Barbell Bench Press",
+              "tier": "S",
+              "sets": 3,
+              "reps": "6-8 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "King of chest exercises. Not available at Planet Fitness (no free barbells)."
+            },
+            {
+              "name": "Face Away Bayesian Cable Curl",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Cable station required. Unique stretch-based bicep exercise."
+            },
+            {
+              "name": "Overhead Cable Tricep Extension",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Requires cable station. Planet Fitness has these."
+            }
+          ]
+        },
+        {
+          "day_name": "Lower B (Glute/Hamstring Focus)",
+          "muscle_groups": [
+            "glutes",
+            "hamstrings",
+            "quads",
+            "calves"
+          ],
+          "total_sets": 5,
+          "estimated_duration_min": 37,
+          "exercises": [
+            {
+              "name": "Walking Lunge (Dumbbell)",
+              "tier": "S+",
+              "sets": 2,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Can be done with just bodyweight or with dumbbells. Excellent for glute development."
+            },
+            {
+              "name": "Smith Machine Squat",
+              "tier": "S",
+              "sets": 3,
+              "reps": "8-12 reps",
+              "rir": 3,
+              "load_lbs": null,
+              "notes": "Planet Fitness has Smith machine. Excellent barbell squat alternative."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

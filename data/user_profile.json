@@ -1,0 +1,55 @@
+{
+  "personal_info": {
+    "name": "Jason",
+    "weight_lbs": 221.0,
+    "height_inches": 69,
+    "age": 52,
+    "sex": "male",
+    "activity_level": "lightly_active"
+  },
+  "goals": {
+    "target_weight_lbs": 200.0,
+    "phase": "cut",
+    "timeline_weeks": 12,
+    "target_rate_per_week": null,
+    "primary_goal": "hypertrophy"
+  },
+  "experience": {
+    "training_level": "beginner",
+    "years_training": 0,
+    "injury_history": []
+  },
+  "equipment": [
+    "barbell",
+    "j_hooks",
+    "squat_rack",
+    "dumbbells",
+    "bench",
+    "incline_bench",
+    "decline_bench",
+    "smith_machine",
+    "smith_squat_rack",
+    "smith_bench_press",
+    "cables",
+    "functional_trainer",
+    "leg_extension_machine",
+    "leg_curl_machine",
+    "pull_up_bar",
+    "lat_pulldown_machine",
+    "cable_row_machine",
+    "chest_press_machine",
+    "landmine",
+    "lateral_raise_machine",
+    "rowing_machine",
+    "treadmill",
+    "elliptical"
+  ],
+  "schedule": {
+    "days_per_week": 4,
+    "minutes_per_session": 60,
+    "preferred_split": "upper_lower",
+    "preferred_time": "flexible"
+  },
+  "created_at": "2025-10-28T17:52:10.836511",
+  "updated_at": "2025-10-28T17:52:10.836531"
+}

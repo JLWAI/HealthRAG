@@ -1,0 +1,93 @@
+# Playwright Test Runner Container
+# Based on official Microsoft Playwright Python image
+
+FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
+
+# Metadata
+LABEL maintainer="HealthRAG"
+LABEL description="Playwright browser testing container for HealthRAG"
+LABEL version="1.0"
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional test dependencies
+RUN pip install --no-cache-dir \
+    pytest-playwright==0.4.3 \
+    playwright==1.40.0 \
+    pytest-asyncio==0.23.0 \
+    pytest-html==4.1.1 \
+    pytest-xdist==3.8.0 \
+    Faker==19.6.2
+
+# Install all Playwright browsers (chromium, firefox, webkit)
+RUN playwright install chromium firefox webkit
+
+# Install browser system dependencies
+RUN playwright install-deps
+
+# Copy application code
+COPY src/ ./src/
+COPY config/ ./config/
+COPY tests/ ./tests/
+
+# Create output directories
+RUN mkdir -p \
+    test-results \
+    test-results/videos \
+    test-results/screenshots \
+    playwright-report \
+    trace-results
+
+# Set Python path to find modules
+ENV PYTHONPATH=/app
+
+# Set environment defaults (can be overridden in docker-compose.yml)
+ENV BASE_URL=http://localhost:8501
+ENV HEADLESS=true
+ENV BROWSER=chromium
+ENV SLOWMO=0
+ENV VIDEO=on-failure
+ENV TRACE=on-failure
+
+# Default command: Run all browser tests
+CMD ["pytest", "tests/browser/", "-v", \
+     "--html=playwright-report/index.html", \
+     "--self-contained-html"]
+
+# ===== Build & Run Instructions =====
+#
+# Build image:
+#   docker build -f tests/Dockerfile.playwright -t healthrag-playwright .
+#
+# Run tests (standalone):
+#   docker run --rm \
+#     -e BASE_URL=http://host.docker.internal:8501 \
+#     -v $(pwd)/test-results:/app/test-results \
+#     -v $(pwd)/playwright-report:/app/playwright-report \
+#     healthrag-playwright
+#
+# Run with Docker Compose (recommended):
+#   docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Interactive shell for debugging:
+#   docker run --rm -it \
+#     -e BASE_URL=http://host.docker.internal:8501 \
+#     healthrag-playwright /bin/bash
+#
+# Run specific test file:
+#   docker run --rm \
+#     -e BASE_URL=http://host.docker.internal:8501 \
+#     healthrag-playwright \
+#     pytest tests/browser/test_tier1_personas.py -v

@@ -24,9 +24,9 @@ def process_new_pdfs():
     for pdf in pdf_files:
         print(f"  - {os.path.basename(pdf)}")
     
-    # Initialize RAG system
+    # Initialize RAG system (defaults to Ollama for cross-platform compatibility)
     print("\n🚀 Initializing RAG system...")
-    rag = HealthRAG(backend="mlx")
+    rag = HealthRAG(backend="ollama")
     
     # Add documents to vectorstore
     print("\n📝 Processing and adding documents...")
