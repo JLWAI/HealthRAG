@@ -1,18 +1,94 @@
-# HealthRAG
+# HealthRAG v2.0 - AI Personal Trainer & Nutritionist
 
-A completely **FREE**, **local** AI-powered health and fitness advisor that uses Retrieval-Augmented Generation (RAG) to provide personalized advice from your own fitness and nutrition documents.
+A completely **FREE**, **local** AI-powered personal trainer and nutritionist that combines evidence-based knowledge from expert sources (Renaissance Periodization, Jeff Nippard, BFFM) with personalized tracking and adaptive programming to guide you toward your fitness goals.
 
-## Why HealthRAG?
+## 🎯 What is HealthRAG v2.0?
 
-- **💰 Zero Cost**: No API fees, completely free to run
+HealthRAG v2.0 is your **complete AI fitness coach** that:
+- **Knows YOU**: Personal stats, goals, equipment, training history
+- **Generates Programs**: Evidence-based training & nutrition plans
+- **Tracks Progress**: Weight, workouts, meals, measurements
+- **Adapts Recommendations**: Adjusts based on YOUR actual results
+- **Provides Coaching**: Quick answers grounded in expert sources
+
+**Replaces:** Personal trainer ($200-500/month) + Nutrition coaching ($100-300/month) + Tracking apps ($10-30/month)
+**Your Cost:** $0 (100% free, local, private)
+
+## 🌟 Why HealthRAG v2.0?
+
+- **💰 Zero Cost**: No API fees, no subscriptions, completely free to run
 - **🔒 100% Private**: Your data never leaves your machine
 - **🚀 No API Keys**: Uses local Ollama or Apple Silicon MLX
-- **📚 Your Documents**: Query your personal library of fitness PDFs
+- **📚 Expert Knowledge**: Query Renaissance Periodization, Jeff Nippard, BFFM PDFs
+- **🏋️ Personalized**: Programs tailored to your equipment, schedule, experience
+- **📊 Adaptive**: Adjusts based on your actual progress, not generic plans
 - **⚡ Fast**: Optimized for Apple Silicon with MLX support
 
-## Quick Start
+## ✨ Complete Feature Set
 
-### Option 1: Local Development (Python venv)
+### 👤 **User Profile System**
+- Complete profile with personal stats (weight, height, age, sex, activity level)
+- Goal setting (cut/bulk/maintain/recomp) with target rates
+- Training experience tracking (beginner/intermediate/advanced)
+- Equipment inventory (home gym, commercial, minimal)
+- Schedule preferences (days/week, split type)
+- Multi-user support with profile switching
+
+### 🏋️ **Program Generation**
+- **500+ Exercise Database** from Jeff Nippard's tier list (S/A/B/C/D tiers)
+- **Intelligent Exercise Selection** based on equipment and goals
+- **Mesocycle Templates**: Upper/Lower, PPL, Full Body splits
+- **Volume Prescription**: MEV/MAV/MRV methodology from Renaissance Periodization
+- **Progressive Overload**: RIR-based weekly progression
+- **Exercise Alternatives**: Equipment-aware substitutions
+- **Program Export**: PDF/Excel export for training logs
+
+### 💪 **Workout Tracking**
+- Complete workout logging (sets, reps, weight, RIR, RPE)
+- AI workout coach with form cues and recommendations
+- Autoregulation system based on RP principles
+- Workout database (SQLite) for progress tracking
+- Performance analytics and strength progression charts
+
+### 🍽️ **Nutrition Tracking**
+- **Food Logging** with barcode scanning (privacy-first, camera OFF by default)
+- **USDA FDC Integration**: 400K+ foods from USDA database
+- **Open Food Facts Integration**: 2.8M+ products with barcode lookup
+- **Meal Templates**: One-click logging for frequent meals
+- **Macro Tracking**: Real-time progress vs daily targets
+- **Camera Barcode Scanning**: Instant product lookup
+
+### ⚖️ **Weight Tracking & Trends**
+- **EWMA Trend Weight**: MacroFactor-style exponentially weighted moving average
+- **7-Day Moving Average**: Simple smoothing for comparison
+- **Rate of Change**: Weekly rate (lbs/week) calculated from trend
+- **Goal Tracking**: Visual delta from target weight
+- **Interactive Charts**: Plotly visualization with hover details
+- **Coaching Insights**: Automatic recommendations based on trends
+
+### 🔬 **Adaptive TDEE & Weekly Check-Ins**
+- **Back-Calculated TDEE**: True TDEE from actual weight change + intake (14-day rolling)
+- **MacroFactor Algorithm**: `TDEE = Avg_Calories - (Weight_Change × 3500 / Days)`
+- **Weekly Check-In**: Compares goal rate vs actual, recommends adjustments
+- **Adherence-Neutral Logic**: Assumes perfect tracking, adjusts based on results
+- **Smart Thresholds**: ±100-150 cal adjustments based on deviation from goal
+- **Phase-Aware**: Different logic for cut/bulk/maintain/recomp
+
+### 🍎 **Apple Health Integration** (macOS)
+- Import weight data from Apple Health
+- Import workout data
+- Import nutrition data
+- Automatic sync with HealthRAG databases
+
+### 💬 **RAG-Based Coaching**
+- Evidence-based answers from expert PDFs
+- Profile-aware responses (considers YOUR stats and goals)
+- Source attribution for all recommendations
+- No hallucination - grounded in documents
+
+## 🚀 Quick Start
+
+### Option 1: Local Development (Recommended)
 
 **One-time setup:**
 ```bash
@@ -37,7 +113,7 @@ streamlit run src/main.py
 deactivate
 ```
 
-### Option 2: Docker (Cross-Platform, Recommended)
+### Option 2: Docker (Cross-Platform)
 
 ```bash
 # Start everything with one command
@@ -59,174 +135,179 @@ streamlit run src/main.py
 # Access at: http://localhost:8501
 ```
 
-## Adding Your Documents
+## 📖 Getting Started Guide
 
-1. Copy your PDF files to `data/pdfs/`
-2. Run the processing script:
-   ```bash
-   python3 process_pdfs.py
-   ```
-3. Ask questions about your documents!
+### 1. Add Your Documents (Optional)
 
-## Usage Examples
+Copy fitness/nutrition PDFs to `data/pdfs/` and process them:
+```bash
+python3 process_pdfs.py
+```
 
-Ask questions like:
+**Recommended PDFs:**
+- Renaissance Periodization (RP) programs
+- Jeff Nippard training guides
+- Body For Life Movement (BFFM)
+- Any fitness/nutrition resources
+
+### 2. Create Your Profile
+
+1. Open http://localhost:8501
+2. Navigate to sidebar: **"👤 User Profile"**
+3. Fill in:
+   - Personal stats (weight, height, age, sex, activity level)
+   - Goals (target weight, phase: cut/bulk/maintain, timeline)
+   - Training experience (beginner/intermediate/advanced)
+   - Equipment available (select from presets or custom)
+   - Schedule (days/week, preferred split)
+4. Click **"Save Profile"**
+
+### 3. Get Your Baseline Metrics
+
+HealthRAG automatically calculates:
+- ✅ **TDEE** (Total Daily Energy Expenditure) - Mifflin-St Jeor formula
+- ✅ **BMR** (Basal Metabolic Rate)
+- ✅ **Target Calories** based on your phase
+- ✅ **Macro Targets** (protein/carbs/fat split)
+
+### 4. Generate Your Training Program
+
+1. Navigate to: **"🏋️ Program Generator"**
+2. Select:
+   - Training split (Upper/Lower, PPL, Full Body)
+   - Program duration (4-8 weeks)
+   - Volume level (MEV/MAV based on experience)
+3. Click **"Generate Program"**
+4. Review exercises, sets, reps, RIR progression
+5. Export to PDF/Excel for gym use
+
+### 5. Start Tracking
+
+**Daily Workflow:**
+- 📊 **Log Weight**: "⚖️ Weight Tracking" → Enter daily weight
+- 💪 **Log Workout**: "💪 Workout Tracker" → Log sets/reps/weight/RIR
+- 🍽️ **Log Meals**: "🍽️ Nutrition Tracking" → Search foods or scan barcodes
+- 📈 **Review Progress**: Check trends, charts, and coaching insights
+
+**Weekly Check-In:**
+- 🔬 Navigate to: "🔬 Adaptive TDEE & Check-In"
+- Review weekly rate of change vs goal
+- Apply recommended macro adjustments (±100-150 cal)
+- Update program based on strength progression
+
+### 6. Ask Your Coach
+
+Navigate to **"💬 Chat with RAG"** and ask:
 - "What's the Renaissance Periodization approach to muscle gain?"
 - "How should I structure my workout for hypertrophy?"
-- "What's the optimal protein intake for body recomposition?"
-- "What does Jeff Nippard recommend for training volume?"
+- "What's my optimal protein intake?" (profile-aware!)
+- "Should I deload this week?" (based on your logs)
 
-## Technical Stack
+## 📊 Technical Stack
 
 | Component | Technology | Details |
 |-----------|-----------|---------|
 | **LLM** | Ollama / MLX | Llama 3.1 (70B/8B) - Local inference |
 | **Embeddings** | Sentence Transformers | all-MiniLM-L6-v2 - Local embeddings |
 | **Vector DB** | ChromaDB | Local vector storage |
-| **UI** | Streamlit | Web interface |
+| **Tracking DB** | SQLite | Workouts, nutrition, weight data |
+| **UI** | Streamlit | Web interface with tabs |
+| **Charts** | Plotly | Interactive progress charts |
 | **Framework** | LangChain | RAG orchestration |
+| **Barcode** | pyzbar + ZBar | Camera barcode scanning |
+| **Food Data** | USDA FDC + Open Food Facts | 3M+ food products |
 
-## Project Structure
+## 📂 Project Structure
 
 ```
 HealthRAG/
 ├── src/
-│   ├── main.py              # Streamlit web interface
-│   └── rag_system.py        # Core RAG implementation
+│   ├── main.py                      # Streamlit UI (all tabs)
+│   ├── rag_system.py                # Core RAG engine
+│   ├── profile.py                   # User profile management
+│   ├── calculations.py              # TDEE/macro calculators
+│   │
+│   ├── exercise_database.py         # 500+ exercises (Nippard tiers)
+│   ├── exercise_selection.py        # Equipment-aware selection
+│   ├── exercise_alternatives.py     # Substitutions
+│   ├── mesocycle_templates.py       # Training splits
+│   ├── volume_prescription.py       # MEV/MAV/MRV
+│   ├── progressive_overload.py      # RIR progression
+│   ├── program_generator.py         # Complete program builder
+│   ├── program_manager.py           # Program versioning
+│   ├── program_export.py            # PDF/Excel export
+│   │
+│   ├── workout_logger.py            # Workout logging
+│   ├── workout_database.py          # Workout DB
+│   ├── workout_coach.py             # AI coaching
+│   ├── workout_models.py            # Data models
+│   ├── autoregulation.py            # RPE/RIR system
+│   │
+│   ├── food_logger.py               # Food logging
+│   ├── food_api_fdc.py              # USDA FDC integration
+│   ├── food_api_off.py              # Open Food Facts integration
+│   ├── food_search_integrated.py    # Unified search
+│   ├── food_models.py               # Data models
+│   ├── meal_templates.py            # One-click meals
+│   │
+│   ├── adaptive_tdee.py             # MacroFactor-style TDEE
+│   └── apple_health.py              # Apple Health import
+│
 ├── data/
-│   ├── pdfs/                # Your PDF documents
-│   └── vectorstore/         # ChromaDB vector database
-├── config/
-│   └── settings.py          # Configuration settings
-├── Dockerfile               # Docker container setup
-├── docker-compose.yml       # Docker orchestration
-├── start_healthrag.sh       # Docker startup script
-├── run_local_mlx.sh         # MLX local setup
-├── process_pdfs.py          # PDF processing script
-├── requirements.txt         # Ollama dependencies
-└── requirements_local.txt   # MLX dependencies
+│   ├── pdfs/                        # Your PDF documents
+│   ├── vectorstore/                 # ChromaDB embeddings
+│   ├── user_profile.json            # Profile storage
+│   ├── workouts.db                  # Workout logs (SQLite)
+│   ├── food_log.db                  # Nutrition logs (SQLite)
+│   └── weights.db                   # Weight tracking (SQLite)
+│
+├── tests/
+│   ├── test_profile.py              # Profile tests
+│   ├── test_calculations.py         # TDEE/macro tests
+│   ├── test_workout_*.py            # Workout tests
+│   ├── test_adaptive_tdee.py        # Adaptive TDEE tests
+│   ├── fixtures/personas.py         # Test personas
+│   └── browser/                     # Playwright browser tests
+│
+├── docs/
+│   ├── VISION.md                    # v2.0 product vision
+│   ├── PHASE4_PLAN.md               # Implementation roadmap
+│   ├── KNOWLEDGE_BASE.md            # Claude agent knowledge
+│   ├── TESTING.md                   # Testing strategy
+│   └── WORKOUT_TRACKING_GUIDE.md    # User guides
+│
+├── .github/workflows/               # CI/CD automation
+├── setup_dependencies.sh            # Automated setup
+├── activate_venv.sh                 # Venv activation
+└── process_pdfs.py                  # PDF processing
 ```
 
-## Features
+## 🧪 Testing
 
-### Dual Backend Support
-- **MLX Backend**: Native Apple Silicon acceleration (M1/M2/M3)
-- **Ollama Backend**: Docker-based, works on any platform
+```bash
+# Run all tests
+pytest tests/
 
-### Smart Document Processing
-- Automatic PDF chunking (1000 chars, 200 overlap)
-- Persistent vector store
-- Error handling for corrupted files
+# Run with coverage
+pytest --cov=src tests/
 
-### Grounded Responses
-- Only answers from your documents
-- Source attribution
-- No hallucination - explicit when info not available
+# Run specific test suite
+pytest tests/test_calculations.py -v
 
-### 📷 Camera Barcode Scanning (Privacy-First)
-- **Privacy-focused**: Camera OFF by default, user must explicitly enable
-- **Automatic detection**: Uses pyzbar to decode UPC/EAN barcodes
-- **Instant lookup**: Queries Open Food Facts database (2.8M+ products)
-- **Full nutrition info**: Calories, protein, carbs, fat, serving sizes
-- **Quick logging**: Add scanned products directly to food log
-- **Manual fallback**: Original manual entry always available
-- **Success rate**: 70-80% in good conditions (lighting, centering)
-
-**How to use:**
-1. Navigate to: "🍽️ Nutrition Tracking" → "🔍 Search & Add" tab
-2. Click "📷 Enable Camera" button
-3. Position barcode to webcam (centered, good lighting)
-4. Take photo - automatic detection + product lookup
-5. Select servings/meal type and add to log
-6. Click "🚫 Disable Camera" when done
-
-### ⚖️ Weight Tracking & Adaptive TDEE
-
-Track your weight with **MacroFactor-style trend analysis** for data-driven coaching:
-
-**Features:**
-- **EWMA Trend Weight**: Exponentially Weighted Moving Average (alpha=0.3) smooths daily fluctuations
-- **7-Day Moving Average**: Simple moving average for comparison
-- **Rate of Change**: Weekly rate (lbs/week) calculated from trend data
-- **Goal Tracking**: Visual delta from target weight
-- **Interactive Charts**: Plotly visualization with hover details
-- **Coaching Insights**: Automatic recommendations based on rate of change
-
-**How to use:**
-1. Navigate to: "⚖️ Weight Tracking & Trends"
-2. **Log Weight** tab: Enter daily weight (replaces existing entry for same date)
-3. **Weight Trends** tab: View charts, trends, and insights
-4. Log consistently (7+ days for weekly trends, 14+ days for rate of change)
-
-**What the trends mean:**
-- **Daily Weight** (blue dots): Your actual scale readings
-- **Trend Weight** (blue line): EWMA-smoothed weight (less reactive to daily fluctuations)
-- **7-Day Average** (green dashed): Simple moving average
-- **Goal Line** (red dotted): Your target weight from profile
-
-**Coaching insights:**
-- ✅ Stable: ±0.25 lbs/week (maintenance)
-- 📉 Cutting: -0.5 to -2.0 lbs/week (sustainable fat loss)
-- ⚠️ Too fast: > 2.0 lbs/week (consider slowing down)
-- 📈 Bulking: +0.5 to +2.0 lbs/week (muscle gain)
-
-**Database:** Weight data stored in `data/weights.db` (SQLite)
-
----
-
-### 🔬 Adaptive TDEE & Weekly Check-Ins
-
-**MacroFactor-style back-calculated TDEE** using your actual data for data-driven adjustments:
-
-**Features:**
-- **Back-Calculated TDEE**: Calculates your true TDEE from actual weight change + calorie intake (14-day rolling window)
-- **Formula**: `TDEE = Avg_Calories - (Weight_Change_lbs × 3500 / Days)`
-- **Weekly Check-In**: Compares goal rate vs actual rate, recommends macro adjustments
-- **Adherence-Neutral Logic**: Assumes perfect tracking, adjusts based on results not compliance
-- **Smart Thresholds**:
-  - Within ±20% of goal: No change (natural variation)
-  - Within ±50% of goal: ±100 cal adjustment (minor tweak)
-  - Beyond ±50% of goal: ±150 cal adjustment (significant correction)
-- **Phase-Aware**: Different logic for cut/bulk/maintain/recomp phases
-
-**How to use:**
-1. Navigate to: "🔬 Adaptive TDEE & Check-In"
-2. Log 14+ days of weight and food intake
-3. View adaptive TDEE comparison vs formula estimate
-4. Review weekly check-in recommendations
-5. Apply macro adjustments with one click
-
-**What the metrics mean:**
-- **Formula TDEE**: Mifflin-St Jeor estimate from your stats (static)
-- **Adaptive TDEE**: Back-calculated from your actual data (dynamic)
-- **TDEE Delta**: Difference between adaptive and formula (± cal/day)
-- **Avg Intake**: Your average daily calories (last 14 days)
-- **Weight Change**: Trend weight change using EWMA smoothing
-
-**Coaching insights:**
-- ✅ On track: Actual rate within ±20% of goal (keep current macros)
-- ⚠️ Losing too fast: Actual rate > goal (increase calories +100-150)
-- 📉 Losing too slow: Actual rate < goal (decrease calories -100-150)
-- 📈 Gaining too fast/slow: Same logic for bulking phases
-- 🔄 Maintenance: Absolute threshold (±0.25 lbs/week = stable)
-
-**Example:**
-```
-Week 1-2 data:
-- Weight: 210 → 208 lbs (trend: -2 lbs)
-- Avg intake: 2100 cal/day
-- Adaptive TDEE: 2100 - (-2 × 3500 / 14) = 2600 cal/day
-
-Goal: -1.0 lb/week
-Actual: -1.0 lb/week
-✅ On track! Keep current macros.
+# Run browser tests (requires Playwright)
+pytest tests/browser/ -v
 ```
 
-**Database:** Combined data from `data/weights.db` + `data/food_log.db`
+## 📚 Documentation
 
----
+- **[VISION.md](VISION.md)** - v2.0 product vision and roadmap
+- **[PHASE4_PLAN.md](PHASE4_PLAN.md)** - Phase 4 implementation plan
+- **[WORKOUT_TRACKING_GUIDE.md](WORKOUT_TRACKING_GUIDE.md)** - How to log workouts
+- **[MULTI_USER_GUIDE.md](MULTI_USER_GUIDE.md)** - Multi-profile management
+- **[docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md)** - Claude agent knowledge base
+- **[docs/TESTING.md](docs/TESTING.md)** - Testing strategy and local-first workflow
 
-## Configuration
+## 🔧 Configuration
 
 Edit `config/settings.py` to customize:
 
@@ -238,56 +319,25 @@ CHUNK_OVERLAP = 200                   # Chunk overlap
 RETRIEVAL_K = 5                       # Number of docs to retrieve
 ```
 
-## Backend Switching
+## 🐛 Troubleshooting
 
-Switch between backends in the Streamlit UI:
-1. MLX (Apple Silicon) - Faster, macOS only
-2. Ollama (Docker) - Cross-platform
-
-Or configure in code:
-```python
-from src.rag_system import HealthRAG
-
-# Use MLX
-rag = HealthRAG(backend="mlx")
-
-# Use Ollama
-rag = HealthRAG(backend="ollama")
-
-# Switch backends
-rag.switch_backend("mlx")
-```
-
-## Performance
-
-- **First Run**: Downloads ~4-8GB model (one time)
-- **Embedding**: Once per document (cached)
-- **Query Response**: 5-15 seconds typical
-- **Works Offline**: After initial setup
-
-## Requirements
-
-### Docker Option
-- Docker Desktop
-- 16GB RAM recommended
-- 10GB disk space for models
-
-### MLX Option
-- macOS with Apple Silicon (M1/M2/M3)
-- Python 3.10+
-- 16GB RAM recommended
-- 10GB disk space for models
-
-## Troubleshooting
-
-### MLX Not Available
-If MLX isn't available, the system falls back to Ollama automatically.
+### Barcode Scanning Not Working
+- **macOS**: Install ZBar: `brew install zbar`
+- **Linux**: Install ZBar: `sudo apt-get install libzbar0`
+- **Windows**: Download ZBar from http://zbar.sourceforge.net/
+- Camera must be enabled in browser/OS permissions
 
 ### Ollama Connection Error
-Make sure Docker is running or Ollama is started:
 ```bash
+# Start Ollama service
 ollama serve
+
+# Pull model
+ollama pull llama3.1:8b
 ```
+
+### MLX Not Available
+MLX only works on macOS with Apple Silicon. System falls back to Ollama automatically.
 
 ### Port Already in Use
 Change ports in `docker-compose.yml`:
@@ -296,56 +346,86 @@ ports:
   - "8502:8501"  # Change 8502 to any available port
 ```
 
-## Development
-
-### Adding Tests
+### Missing Dependencies
 ```bash
-# Create tests in tests/ directory
-pytest tests/
+# Reinstall all dependencies
+chmod +x setup_dependencies.sh
+./setup_dependencies.sh
 ```
 
-### Processing New PDFs
-```bash
-python3 process_pdfs.py
-```
+## 🔐 Privacy & Security
 
-### Rebuilding Vector Store
-```bash
-rm -rf data/vectorstore/
-python3 process_pdfs.py
-```
-
-## Privacy & Security
-
-- **All processing is local** - No cloud APIs
+- **All processing is local** - No cloud APIs (except optional food databases)
 - **Your documents stay private** - Never uploaded anywhere
 - **No telemetry** - No tracking or analytics
 - **Open source** - Audit the code yourself
+- **Camera privacy** - OFF by default, user must explicitly enable
 
-## Known Limitations
+## 💡 Usage Examples
 
-- PDF-only support (no Word docs, images, etc.)
-- English language optimized (other languages may vary)
-- Requires significant RAM for large document collections
-- Response quality depends on your document quality
+### Profile-Aware Coaching
+```
+You: "How much protein do I need?"
+HealthRAG: "Based on your profile (210 lbs, cutting phase),
+Renaissance Periodization recommends 1.0-1.2g/lb = 210-252g protein.
+Your current target is 220g (from your macros). This is optimal for
+preserving muscle during fat loss."
+```
 
-## Contributing
+### Program Generation
+```
+You: Generate upper/lower split, 4 days/week, intermediate volume
+HealthRAG: [Generates complete 6-week program]
+- Day 1: Upper A (8 exercises, 16-18 sets)
+- Day 2: Lower A (7 exercises, 14-16 sets)
+- Day 3: Rest
+- Day 4: Upper B (8 exercises, 16-18 sets)
+- Day 5: Lower B (7 exercises, 14-16 sets)
+- Progression: RIR 3 → 2 → 1 → deload
+```
+
+### Adaptive TDEE
+```
+Week 1-2 Data:
+- Weight: 210 → 208 lbs (trend: -2 lbs, -1 lb/week)
+- Avg intake: 2100 cal/day
+- Adaptive TDEE: 2600 cal/day (formula TDEE: 2550, delta: +50)
+
+Goal: -1.0 lb/week
+Actual: -1.0 lb/week
+✅ On track! Keep current macros (2100 cal).
+```
+
+## 🌍 Contributing
 
 This is a personal project, but suggestions welcome! Open an issue or submit a PR.
 
-## License
+## 📄 License
 
-MIT License - Feel free to use, modify, and distribute this project. See the LICENSE file for details.
+MIT License - Feel free to use, modify, and distribute this project. See the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 Built with:
-- [LangChain](https://github.com/langchain-ai/langchain)
-- [Ollama](https://ollama.ai/)
-- [MLX](https://github.com/ml-explore/mlx)
-- [ChromaDB](https://www.trychroma.com/)
-- [Streamlit](https://streamlit.io/)
+- [LangChain](https://github.com/langchain-ai/langchain) - RAG framework
+- [Ollama](https://ollama.ai/) - Local LLM inference
+- [MLX](https://github.com/ml-explore/mlx) - Apple Silicon acceleration
+- [ChromaDB](https://www.trychroma.com/) - Vector database
+- [Streamlit](https://streamlit.io/) - Web UI
+- [Plotly](https://plotly.com/) - Interactive charts
+- [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar) - Barcode scanning
+
+**Expert Sources:**
+- Renaissance Periodization (RP) - Dr. Mike Israetel
+- Jeff Nippard - Science-based training
+- Body For Life Movement (BFFM) - Tom Venuto
 
 ---
 
-**Note**: This is a personal health advisor tool. Always consult qualified healthcare professionals for medical advice.
+## ⚠️ Disclaimer
+
+This is a personal health advisor tool built for educational and informational purposes. **Always consult qualified healthcare professionals** for medical advice, especially before starting any new diet or exercise program.
+
+---
+
+**HealthRAG v2.0** - Your AI Personal Trainer & Nutritionist, 100% Free, 100% Private, 100% Local 🏋️🍽️📊
