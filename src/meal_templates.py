@@ -522,6 +522,77 @@ class MealTemplateManager:
             description=description
         )
 
+    def get_frequent_foods(self, min_count: int = 3, limit: int = 5) -> List[Dict]:
+        """
+        Find foods that have been logged frequently but aren't part of templates yet.
+
+        Useful for suggesting template creation to users who repeatedly log the same foods.
+
+        Args:
+            min_count: Minimum number of times a food must be logged to be considered
+            limit: Maximum number of results to return
+
+        Returns:
+            List of dicts with food info and log count, sorted by frequency
+        """
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Find frequently logged foods not in any template
+        cursor.execute("""
+            SELECT f.id, f.name, f.serving_size, f.calories, f.protein_g,
+                   COUNT(fe.id) as log_count,
+                   MAX(fe.date) as last_logged
+            FROM foods f
+            JOIN food_entries fe ON f.id = fe.food_id
+            WHERE f.id NOT IN (
+                SELECT DISTINCT food_id FROM template_foods
+            )
+            GROUP BY f.id
+            HAVING log_count >= ?
+            ORDER BY log_count DESC, last_logged DESC
+            LIMIT ?
+        """, (min_count, limit))
+
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'food_id': row['id'],
+                'name': row['name'],
+                'serving_size': row['serving_size'],
+                'calories': row['calories'],
+                'protein_g': row['protein_g'],
+                'log_count': row['log_count'],
+                'last_logged': row['last_logged']
+            })
+
+        conn.close()
+        return results
+
+    def suggest_template_creation(self, min_count: int = 4) -> Optional[Dict]:
+        """
+        Check if there are frequently logged foods that should be saved as templates.
+
+        Returns the most frequently logged food that isn't in a template yet.
+
+        Args:
+            min_count: Minimum number of logs to trigger suggestion
+
+        Returns:
+            Dict with food info and suggestion message, or None if no suggestion
+        """
+        frequent = self.get_frequent_foods(min_count=min_count, limit=1)
+
+        if frequent:
+            food = frequent[0]
+            return {
+                'food': food,
+                'message': f"You've logged '{food['name']}' {food['log_count']} times. Save as a quick-access template?"
+            }
+
+        return None
+
 
 if __name__ == "__main__":
     # Test the meal template system

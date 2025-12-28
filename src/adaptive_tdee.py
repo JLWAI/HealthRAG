@@ -677,7 +677,7 @@ def get_adaptive_tdee_insight(
         # Get daily calories from food logger
         daily_nutrition = []
         for entry in weight_entries:
-            day_summary = food_logger.get_daily_summary(entry.date)
+            day_summary = food_logger.get_daily_nutrition(entry.date)
             daily_nutrition.append(day_summary.total_calories)
 
         # Calculate adaptive TDEE

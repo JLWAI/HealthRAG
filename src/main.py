@@ -689,9 +689,10 @@ def render_proactive_dashboard(profile: UserProfile):
 
     Shows user's name, goals, and nutrition plan automatically
     without requiring them to ask "What are my macros?"
+
+    Collapsible after first view to reduce daily friction.
     """
     st.markdown("---")
-    st.subheader("🏃‍♂️ Your Personalized Plan")
 
     # Load profile data
     profile.load()
@@ -701,40 +702,43 @@ def render_proactive_dashboard(profile: UserProfile):
     # Get user's name
     name = personal_info.get('name', 'there')
 
-    # Greeting
-    st.markdown(f"**Welcome, {name}!** Here's your plan:")
-
     # Generate nutrition plan
     plan = calculate_nutrition_plan(personal_info, goals)
-
-    # Display goals summary
     phase = goals['phase'].capitalize()
-    current_weight = personal_info['weight_lbs']
-    target_weight = goals.get('target_weight_lbs')
-    timeline_weeks = goals.get('timeline_weeks')
+    daily_cals = int(plan['tdee_adjusted'])
 
-    # Goals card
-    st.markdown(f"""
+    # Collapsible dashboard (expanded by default, user can collapse for faster daily access)
+    with st.expander(f"🏃‍♂️ Your Plan: {phase} @ {daily_cals:,} cal/day", expanded=True):
+        # Greeting
+        st.markdown(f"**Welcome, {name}!** Here's your plan:")
+
+        # Display goals summary
+        current_weight = personal_info['weight_lbs']
+        target_weight = goals.get('target_weight_lbs')
+        timeline_weeks = goals.get('timeline_weeks')
+
+        # Goals card
+        st.markdown(f"""
 ### 📊 Your Current Goals
 
 **Phase:** {phase}
 **Current Weight:** {current_weight} lbs
 """)
 
-    if target_weight and timeline_weeks:
-        arrow = "→" if goals['phase'] != 'recomp' else "⇄"
-        st.markdown(f"**Target:** {current_weight} lbs {arrow} {target_weight} lbs in {timeline_weeks} weeks")
+        if target_weight and timeline_weeks:
+            arrow = "→" if goals['phase'] != 'recomp' else "⇄"
+            st.markdown(f"**Target:** {current_weight} lbs {arrow} {target_weight} lbs in {timeline_weeks} weeks")
 
-    if goals['phase'] == 'recomp':
-        st.markdown(f"**Focus:** Build muscle + lose fat (maintain {current_weight} lbs ±2)")
+        if goals['phase'] == 'recomp':
+            st.markdown(f"**Focus:** Build muscle + lose fat (maintain {current_weight} lbs ±2)")
 
-    st.markdown("---")
+        st.markdown("---")
 
-    # Nutrition Plan
-    st.markdown(f"""
+        # Nutrition Plan
+        st.markdown(f"""
 ### 🍽️ Nutrition Plan ({phase} Phase)
 
-**Daily Target:** {int(plan['tdee_adjusted']):,} calories
+**Daily Target:** {daily_cals:,} calories
 - **Protein:** {int(plan['macros']['protein_g'])}g ({int(plan['macros']['protein_pct'])}%)
 - **Fat:** {int(plan['macros']['fat_g'])}g ({int(plan['macros']['fat_pct'])}%)
 - **Carbs:** {int(plan['macros']['carbs_g'])}g ({int(plan['macros']['carbs_pct'])}%)
@@ -747,10 +751,10 @@ def render_proactive_dashboard(profile: UserProfile):
 **Source:** RP Diet 2.0, RP Diet Adjustments Manual
 """)
 
-    st.markdown("---")
+        st.markdown("---")
 
-    # Getting Started
-    st.markdown(f"""
+        # Getting Started
+        st.markdown(f"""
 ### 📈 Getting Started
 
 1. **Log weight daily** (AM, fasted, same scale)
@@ -759,8 +763,6 @@ def render_proactive_dashboard(profile: UserProfile):
 
 **Need adjustments?** Message me below in the chat! 👇
 """)
-
-    st.markdown("---")
 
 
 def render_training_program(profile: UserProfile):
@@ -1159,72 +1161,185 @@ def render_workout_logging():
 
         # Exercise logging
         st.markdown("#### Add Sets")
-        st.markdown("Log each set as you complete it")
 
-        # Initialize session state for sets
+        # Initialize session state for sets and exercise context
         if 'current_workout_sets' not in st.session_state:
             st.session_state.current_workout_sets = []
+        if 'last_exercise' not in st.session_state:
+            st.session_state.last_exercise = ""
+        if 'last_weight' not in st.session_state:
+            st.session_state.last_weight = 0.0
 
-        # Add set form
-        with st.form("add_set_form", clear_on_submit=True):
-            col1, col2, col3, col4 = st.columns(4)
+        # Entry mode toggle
+        entry_mode = st.radio(
+            "Entry Mode",
+            ["Single Set", "Bulk Entry"],
+            horizontal=True,
+            help="Single: Log one set at a time | Bulk: Paste multiple sets at once"
+        )
 
-            with col1:
-                exercise = st.text_input("Exercise", placeholder="e.g., Barbell Bench Press")
-            with col2:
-                weight = st.number_input("Weight (lbs)", min_value=0.0, max_value=1000.0, value=0.0, step=2.5)
-            with col3:
-                reps = st.number_input("Reps", min_value=1, max_value=50, value=8)
-            with col4:
-                rir = st.selectbox("RIR", [0, 1, 2, 3, 4], index=2)
+        if entry_mode == "Bulk Entry":
+            # Bulk entry mode
+            st.markdown("**Paste sets in format:** `Exercise: weight x reps @RIR`")
+            st.caption("Example: `Bench Press: 185x8 @2, 185x6 @1, 185x5 @0`")
 
-            set_notes = st.text_input("Set Notes (optional)", placeholder="e.g., Felt strong, struggled on last rep")
+            bulk_input = st.text_area(
+                "Paste sets here",
+                height=100,
+                placeholder="Bench Press: 185x8 @2, 185x6 @1, 185x5 @0\nSquat: 225x5 @2, 225x5 @2, 225x5 @1",
+                key="bulk_set_input"
+            )
 
-            submitted = st.form_submit_button("➕ Add Set")
-            if submitted and exercise:
-                workout_set = WorkoutSet(
-                    exercise_name=exercise,
-                    weight_lbs=weight,
-                    reps=reps,
-                    rir=rir,
-                    notes=set_notes if set_notes else None
-                )
-                st.session_state.current_workout_sets.append(workout_set)
+            if st.button("📥 Parse & Add Sets", type="primary"):
+                if bulk_input.strip():
+                    parsed_sets = []
+                    errors = []
 
-                # Real-time coach feedback
-                coach = WorkoutCoach()
-                # Count how many sets of this exercise already logged
-                exercise_sets = [s for s in st.session_state.current_workout_sets if s.exercise_name == exercise]
-                set_number = len(exercise_sets)
+                    for line in bulk_input.strip().split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
 
-                # Get feedback (using default hypertrophy targets)
-                feedback = coach.analyze_set(
-                    exercise_name=exercise,
-                    set_number=set_number,
-                    weight=weight,
-                    reps=reps,
-                    rir=rir,
-                    target_reps_min=8,
-                    target_reps_max=12,
-                    target_rir=2
-                )
+                        try:
+                            # Parse format: "Exercise: weight x reps @RIR, weight x reps @RIR"
+                            if ':' in line:
+                                exercise_name, sets_part = line.split(':', 1)
+                                exercise_name = exercise_name.strip()
+                            else:
+                                # Use last exercise name if not specified
+                                exercise_name = st.session_state.last_exercise or "Unknown Exercise"
+                                sets_part = line
 
-                st.success(f"✅ Set {set_number} logged: {exercise} - {weight} lbs × {reps} @ {rir} RIR")
+                            # Parse each set (comma-separated)
+                            for set_str in sets_part.split(','):
+                                set_str = set_str.strip()
+                                if not set_str:
+                                    continue
 
-                # Show coach feedback with appropriate emoji
-                if feedback.status == "perfect":
-                    st.success(f"💯 {feedback.message}")
-                elif feedback.status == "excellent":
-                    st.success(f"🔥 {feedback.message}")
-                elif feedback.status == "good":
-                    st.info(f"✅ {feedback.message}")
-                elif feedback.status == "too_hard":
-                    st.warning(f"⚠️ {feedback.message}")
+                                # Parse "185x8 @2" or "185x8" or "185 x 8 @ 2"
+                                import re
+                                # Match pattern: weight x reps [@RIR]
+                                match = re.match(r'(\d+\.?\d*)\s*[xX×]\s*(\d+)\s*(?:@\s*(\d+))?', set_str)
+                                if match:
+                                    weight = float(match.group(1))
+                                    reps = int(match.group(2))
+                                    rir = int(match.group(3)) if match.group(3) else 2  # Default RIR=2
+
+                                    parsed_sets.append(WorkoutSet(
+                                        exercise_name=exercise_name,
+                                        weight_lbs=weight,
+                                        reps=reps,
+                                        rir=rir,
+                                        notes=None
+                                    ))
+                                else:
+                                    errors.append(f"Could not parse: {set_str}")
+                        except Exception as e:
+                            errors.append(f"Error parsing line: {line}")
+
+                    if parsed_sets:
+                        st.session_state.current_workout_sets.extend(parsed_sets)
+                        st.success(f"✅ Added {len(parsed_sets)} sets!")
+                        if errors:
+                            st.warning(f"Skipped {len(errors)} invalid entries")
+                        st.rerun()
+                    elif errors:
+                        st.error(f"Could not parse any sets. Errors: {', '.join(errors[:3])}")
                 else:
-                    st.info(f"💡 {feedback.message}")
+                    st.warning("Please paste some sets first")
 
-                st.caption(f"💡 **Next:** {feedback.next_action}")
-                st.rerun()
+        else:
+            # Single set mode (existing flow)
+            st.markdown("Log each set as you complete it. Exercise & weight persist between sets.")
+
+            # Quick buttons to clear exercise context or copy from last set
+            col_clear, col_last = st.columns(2)
+            with col_clear:
+                if st.button("🔄 New Exercise", help="Clear exercise name for a different exercise"):
+                    st.session_state.last_exercise = ""
+                    st.session_state.last_weight = 0.0
+                    st.rerun()
+            with col_last:
+                if st.session_state.current_workout_sets:
+                    last_set = st.session_state.current_workout_sets[-1]
+                    if st.button(f"📋 Copy Last ({last_set.exercise_name[:15]}...)" if len(last_set.exercise_name) > 15 else f"📋 Copy Last ({last_set.exercise_name})"):
+                        st.session_state.last_exercise = last_set.exercise_name
+                        st.session_state.last_weight = last_set.weight_lbs
+                        st.rerun()
+
+            # Add set form (doesn't clear on submit to preserve exercise context)
+            with st.form("add_set_form", clear_on_submit=False):
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    exercise = st.text_input(
+                        "Exercise",
+                        value=st.session_state.last_exercise,
+                        placeholder="e.g., Barbell Bench Press"
+                    )
+                with col2:
+                    weight = st.number_input(
+                        "Weight (lbs)",
+                        min_value=0.0,
+                        max_value=1000.0,
+                        value=st.session_state.last_weight,
+                        step=2.5
+                    )
+                with col3:
+                    reps = st.number_input("Reps", min_value=1, max_value=50, value=8)
+                with col4:
+                    rir = st.selectbox("RIR", [0, 1, 2, 3, 4], index=2)
+
+                set_notes = st.text_input("Set Notes (optional)", placeholder="e.g., Felt strong, struggled on last rep")
+
+                submitted = st.form_submit_button("➕ Add Set", type="primary")
+                if submitted and exercise:
+                    # Update session state for next set
+                    st.session_state.last_exercise = exercise
+                    st.session_state.last_weight = weight
+                    workout_set = WorkoutSet(
+                        exercise_name=exercise,
+                        weight_lbs=weight,
+                        reps=reps,
+                        rir=rir,
+                        notes=set_notes if set_notes else None
+                    )
+                    st.session_state.current_workout_sets.append(workout_set)
+
+                    # Real-time coach feedback
+                    coach = WorkoutCoach()
+                    # Count how many sets of this exercise already logged
+                    exercise_sets = [s for s in st.session_state.current_workout_sets if s.exercise_name == exercise]
+                    set_number = len(exercise_sets)
+
+                    # Get feedback (using default hypertrophy targets)
+                    feedback = coach.analyze_set(
+                        exercise_name=exercise,
+                        set_number=set_number,
+                        weight=weight,
+                        reps=reps,
+                        rir=rir,
+                        target_reps_min=8,
+                        target_reps_max=12,
+                        target_rir=2
+                    )
+
+                    st.success(f"✅ Set {set_number} logged: {exercise} - {weight} lbs × {reps} @ {rir} RIR")
+
+                    # Show coach feedback with appropriate emoji
+                    if feedback.status == "perfect":
+                        st.success(f"💯 {feedback.message}")
+                    elif feedback.status == "excellent":
+                        st.success(f"🔥 {feedback.message}")
+                    elif feedback.status == "good":
+                        st.info(f"✅ {feedback.message}")
+                    elif feedback.status == "too_hard":
+                        st.warning(f"⚠️ {feedback.message}")
+                    else:
+                        st.info(f"💡 {feedback.message}")
+
+                    st.caption(f"💡 **Next:** {feedback.next_action}")
+                    st.rerun()
 
         # Display current sets
         if st.session_state.current_workout_sets:
@@ -1504,6 +1619,41 @@ def render_nutrition_tracking():
     search = IntegratedFoodSearch(logger)
     manager = MealTemplateManager("data/food_log.db", logger)
 
+    # Check for template suggestions (auto-suggest frequently logged foods)
+    suggestion = manager.suggest_template_creation(min_count=4)
+    if suggestion:
+        with st.expander("💡 Template Suggestion", expanded=True):
+            food = suggestion['food']
+            st.info(f"You've logged **{food['name']}** {food['log_count']} times!")
+            st.caption(f"{food['serving_size']} | {food['calories']:.0f} cal | {food['protein_g']:.0f}g protein")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                template_name = st.text_input(
+                    "Template name",
+                    value=food['name'],
+                    key="suggest_template_name"
+                )
+            with col2:
+                template_meal = st.selectbox(
+                    "Meal type",
+                    ["breakfast", "lunch", "dinner", "snack"],
+                    key="suggest_template_meal"
+                )
+
+            if st.button("✅ Create Quick Template", key="create_suggested_template", type="primary"):
+                try:
+                    template_id = manager.create_template(
+                        name=template_name,
+                        foods_with_servings=[(food['food_id'], 1.0)],
+                        meal_type=template_meal,
+                        description=f"Auto-suggested (logged {food['log_count']} times)"
+                    )
+                    st.success(f"✅ Created template '{template_name}'!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
     # Tabs for different features
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Today's Food",
@@ -1556,6 +1706,67 @@ def render_nutrition_tracking():
                 st.metric("Carbs", f"{daily_nutrition.total_carbs_g:.1f}g")
             with col4:
                 st.metric("Fat", f"{daily_nutrition.total_fat_g:.1f}g")
+
+            # Inline Quick Add (no tab switching needed)
+            st.markdown("#### Quick Add Food")
+            quick_search_col1, quick_search_col2 = st.columns([3, 1])
+            with quick_search_col1:
+                inline_search_query = st.text_input(
+                    "Search food...",
+                    placeholder="e.g., chicken breast, eggs, oatmeal",
+                    key="inline_food_search",
+                    label_visibility="collapsed"
+                )
+            with quick_search_col2:
+                # Determine meal type by time of day
+                current_hour = datetime.now().hour
+                if 5 <= current_hour < 11:
+                    default_meal = "breakfast"
+                elif 11 <= current_hour < 15:
+                    default_meal = "lunch"
+                elif 15 <= current_hour < 20:
+                    default_meal = "dinner"
+                else:
+                    default_meal = "snack"
+                inline_meal_type = st.selectbox(
+                    "Meal",
+                    ["breakfast", "lunch", "dinner", "snack"],
+                    index=["breakfast", "lunch", "dinner", "snack"].index(default_meal),
+                    key="inline_meal_type",
+                    label_visibility="collapsed"
+                )
+
+            if inline_search_query:
+                results = search.search(inline_search_query, limit=3)
+                if results:
+                    for i, result in enumerate(results):
+                        col_name, col_cals, col_add = st.columns([3, 1, 1])
+                        with col_name:
+                            st.write(f"**{result.name[:30]}{'...' if len(result.name) > 30 else ''}**")
+                            st.caption(f"{result.serving_size}")
+                        with col_cals:
+                            st.write(f"{result.calories:.0f} cal")
+                            st.caption(f"{result.protein_g:.0f}g P")
+                        with col_add:
+                            if st.button("Add", key=f"inline_add_{i}", type="primary"):
+                                # Add to database if not already there
+                                if not result.food_id:
+                                    food_id = search.add_result_to_database(result)
+                                else:
+                                    food_id = result.food_id
+                                # Log the food
+                                logger.log_food(
+                                    food_id=food_id,
+                                    servings=1.0,
+                                    log_date=date_str,
+                                    meal_type=inline_meal_type
+                                )
+                                st.success(f"✅ Added {result.name}!")
+                                st.rerun()
+                else:
+                    st.caption("No results. Try a different search term or use Search & Add tab for more options.")
+
+            st.markdown("---")
 
             # Display meals
             st.markdown("#### Meals")
@@ -2048,10 +2259,10 @@ def render_weight_tracking():
         if goals and hasattr(goals, 'target_weight_lbs'):
             goal_weight = goals.target_weight_lbs
 
-    # Tabs for different views
-    tab1, tab2 = st.tabs(["📊 Weight Trends", "📝 Log Weight"])
+    # Tabs for different views (Log Weight first for faster daily entry)
+    tab_log, tab_trends = st.tabs(["📝 Log Weight", "📊 Weight Trends"])
 
-    with tab1:
+    with tab_trends:
         st.subheader("📈 Weight Trend Analysis")
 
         # Get trend data (last 30 days)
@@ -2223,7 +2434,7 @@ def render_weight_tracking():
         else:
             st.info("No weight entries yet")
 
-    with tab2:
+    with tab_log:
         st.subheader("📝 Log Today's Weight")
 
         # Get latest weight for default value
@@ -2556,6 +2767,239 @@ def render_adaptive_tdee():
         )
 
 
+def render_quick_daily_log():
+    """
+    Quick Daily Log section for fast weight and nutrition logging.
+
+    Appears prominently at top of main page to encourage daily tracking.
+    """
+    st.markdown("---")
+    st.subheader("⚡ Quick Daily Log")
+
+    # Initialize trackers
+    weight_tracker = WeightTracker(db_path="data/weights.db")
+    food_logger = FoodLogger(db_path="data/food_log.db")
+
+    today = date.today().isoformat()
+
+    # Check what's already logged today
+    today_weight = None
+    weights_today = weight_tracker.get_weights(start_date=today, end_date=today)
+    if weights_today:
+        today_weight = weights_today[0].weight_lbs
+
+    today_nutrition = food_logger.get_daily_nutrition(today)
+    today_calories = today_nutrition.total_calories if today_nutrition else 0
+
+    # Get streak info
+    all_weights = weight_tracker.get_weights(limit=30)
+    streak = 0
+    if all_weights:
+        check_date = date.today()
+        for entry in all_weights:
+            if entry.date == check_date.isoformat():
+                streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+
+    # Status row
+    col_status1, col_status2, col_status3 = st.columns(3)
+
+    with col_status1:
+        if today_weight:
+            st.success(f"✅ Weight: {today_weight} lbs")
+        else:
+            st.warning("⏳ Weight not logged")
+
+    with col_status2:
+        if today_calories > 0:
+            st.success(f"✅ Food: {today_calories:,} cal")
+        else:
+            st.warning("⏳ No food logged")
+
+    with col_status3:
+        if streak > 0:
+            st.info(f"🔥 {streak} day streak!")
+        else:
+            st.info("Start your streak today!")
+
+    # Quick log row
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**📊 Log Weight**")
+        weight_col1, weight_col2 = st.columns([2, 1])
+        with weight_col1:
+            new_weight = st.number_input(
+                "Weight (lbs)",
+                min_value=50.0,
+                max_value=500.0,
+                value=today_weight if today_weight else 220.0,
+                step=0.1,
+                key="quick_weight_input",
+                label_visibility="collapsed"
+            )
+        with weight_col2:
+            if st.button("Log Weight", key="quick_log_weight", type="primary"):
+                try:
+                    weight_tracker.log_weight(new_weight, today)
+                    st.success(f"✅ Logged {new_weight} lbs")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+    with col2:
+        # Determine meal type by time of day
+        current_hour = datetime.now().hour
+        if 5 <= current_hour < 11:
+            suggested_meal_type = "breakfast"
+        elif 11 <= current_hour < 15:
+            suggested_meal_type = "lunch"
+        elif 15 <= current_hour < 20:
+            suggested_meal_type = "dinner"
+        else:
+            suggested_meal_type = "snack"
+
+        st.markdown(f"**🍽️ Quick Add ({suggested_meal_type.title()})**")
+
+        # Get meal templates filtered by time of day, then fall back to all
+        template_manager = MealTemplateManager(db_path="data/food_log.db", food_logger=food_logger)
+        templates = template_manager.list_templates(meal_type=suggested_meal_type)
+
+        # If no templates for this meal type, show all
+        if not templates:
+            templates = template_manager.list_templates()
+
+        if templates:
+            template_names = [f"{t.name} ({t.total_calories:.0f} cal)" for t in templates[:5]]
+            selected = st.selectbox(
+                "Select template",
+                options=["-- Select --"] + template_names,
+                key="quick_meal_select",
+                label_visibility="collapsed"
+            )
+
+            if selected != "-- Select --":
+                # Find template by index (since display name includes calories)
+                selected_idx = template_names.index(selected)
+                template = templates[selected_idx]
+                if st.button(f"Log '{template.name}'", key="quick_log_meal", type="primary"):
+                    try:
+                        template_manager.log_template(template.template_id, today)
+                        st.success(f"✅ Logged {template.name}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        else:
+            st.caption(f"No {suggested_meal_type} templates. Create one in Nutrition Tracking.")
+
+    # TDEE status (if enough data)
+    entries = weight_tracker.get_weights(limit=14)
+    if len(entries) >= 14:
+        st.markdown("---")
+        st.markdown("**📈 Adaptive TDEE Status:** ✅ Active - 14+ days of data!")
+    elif len(entries) > 0:
+        days_left = 14 - len(entries)
+        st.markdown(f"**📈 Adaptive TDEE:** {len(entries)}/14 days logged ({days_left} more to activate)")
+    else:
+        st.markdown("**📈 Adaptive TDEE:** Log weight daily for 14 days to activate personalized recommendations")
+
+
+def render_sidebar_quick_log():
+    """
+    Persistent sidebar widget for quick daily logging.
+
+    Always visible regardless of which section user is viewing.
+    Provides fastest possible path to log weight and meals.
+    """
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("⚡ Quick Log")
+
+    today = date.today().isoformat()
+
+    # Initialize trackers
+    weight_tracker = WeightTracker(db_path="data/weights.db")
+    food_logger = FoodLogger(db_path="data/food_log.db")
+
+    # Check today's status
+    weights_today = weight_tracker.get_weights(start_date=today, end_date=today)
+    weight_logged = len(weights_today) > 0
+    today_weight = weights_today[0].weight_lbs if weight_logged else None
+
+    today_nutrition = food_logger.get_daily_nutrition(today)
+    food_logged = today_nutrition.total_calories > 0 if today_nutrition else False
+    today_cals = today_nutrition.total_calories if today_nutrition else 0
+
+    # Status indicators
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if weight_logged:
+            st.success(f"⚖️ {today_weight:.1f}")
+        else:
+            st.warning("⚖️ --")
+    with col2:
+        if food_logged:
+            st.success(f"🍽️ {today_cals:.0f}")
+        else:
+            st.warning("🍽️ --")
+
+    # Weight input
+    default_weight = today_weight if today_weight else 220.0
+    sidebar_weight = st.sidebar.number_input(
+        "Weight (lbs)",
+        min_value=50.0,
+        max_value=500.0,
+        value=default_weight,
+        step=0.1,
+        key="sidebar_weight_input",
+        label_visibility="collapsed"
+    )
+
+    if st.sidebar.button("📊 Log Weight", key="sidebar_log_weight_btn", use_container_width=True):
+        try:
+            weight_tracker.log_weight(sidebar_weight, today)
+            st.sidebar.success(f"✅ {sidebar_weight} lbs")
+            st.rerun()
+        except Exception as e:
+            st.sidebar.error(f"Error: {e}")
+
+    # Quick meal templates
+    st.sidebar.markdown("**Quick Meals:**")
+    template_manager = MealTemplateManager(db_path="data/food_log.db", food_logger=food_logger)
+
+    # Get time-appropriate templates
+    current_hour = datetime.now().hour
+    if 5 <= current_hour < 11:
+        meal_type = "breakfast"
+    elif 11 <= current_hour < 15:
+        meal_type = "lunch"
+    elif 15 <= current_hour < 20:
+        meal_type = "dinner"
+    else:
+        meal_type = "snack"
+
+    templates = template_manager.list_templates(meal_type=meal_type)
+    if not templates:
+        templates = template_manager.list_templates()
+
+    if templates:
+        for t in templates[:3]:  # Show top 3
+            if st.sidebar.button(
+                f"{t.name} ({t.total_calories:.0f}cal)",
+                key=f"sidebar_tmpl_{t.template_id}",
+                use_container_width=True
+            ):
+                try:
+                    template_manager.log_template(t.template_id, today)
+                    st.sidebar.success(f"✅ {t.name}")
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"Error: {e}")
+    else:
+        st.sidebar.caption("No templates yet")
+
+
 def main():
     st.set_page_config(
         page_title="Personal Health & Fitness Advisor",
@@ -2639,6 +3083,12 @@ def main():
 
     # Existing user - show sidebar profile info
     render_profile_view()
+
+    # Sidebar quick-log widget (always visible)
+    render_sidebar_quick_log()
+
+    # Quick Daily Log (prominent at top for easy tracking)
+    render_quick_daily_log()
 
     # Proactive Dashboard (show plan automatically if profile exists)
     if profile.exists():
