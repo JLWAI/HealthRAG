@@ -1,0 +1,80 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"  # 3 AM UTC (after weekly check workflow)
+    open-pull-requests-limit: 10
+
+    # Group updates by severity/type
+    groups:
+      # Security updates (auto-merge if tests pass)
+      security:
+        dependency-type: "all"
+        update-types: ["patch"]
+
+      # Minor and patch updates for production dependencies
+      production-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+      # Major updates (manual review required)
+      production-major:
+        dependency-type: "production"
+        update-types: ["major"]
+
+    # Assignees and reviewers
+    assignees:
+      - "jasonewillis"
+    reviewers:
+      - "jasonewillis"
+
+    # Labels for categorization
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Commit message prefix
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+
+    # Ignore specific dependencies (if needed)
+    ignore:
+      # Ignore major version bumps for these (review manually)
+      - dependency-name: "langchain"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "streamlit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mlx"
+        update-types: ["version-update:semver-major"]
+
+    # Only update dependencies in requirements files
+    allow:
+      - dependency-type: "all"
+
+    # Rebase strategy
+    rebase-strategy: "auto"
+
+    # Target branch
+    target-branch: "main"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    labels:
+      - "dependencies"
+      - "ci/cd"
+    commit-message:
+      prefix: "chore(ci)"

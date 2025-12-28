@@ -31,7 +31,7 @@ class MLXModel:
             self.model, self.tokenizer = load(self.model_name)
             print(f"MLX model loaded successfully")
         except Exception as e:
-            print(f"Failed to load MLX model: {e}")
+            print(f"Failed to load MLX model '{self.model_name}': {type(e).__name__} - {e}")
             self.model = None
             self.tokenizer = None
     
