@@ -19,6 +19,7 @@ from adaptive_tdee import (
     WeightTracker, calculate_trend_weight, calculate_adaptive_tdee,
     recommend_macro_adjustment, get_adaptive_tdee_insight, AdaptiveTDEEInsight
 )
+from body_measurements import BodyMeasurementTracker, BodyMeasurement, BodyFatEstimate
 import json
 import plotly.graph_objects as go
 
@@ -2859,6 +2860,425 @@ def render_adaptive_tdee():
         )
 
 
+def render_body_measurements():
+    """
+    Body measurements tracking with body fat estimation and trend analysis.
+
+    Features:
+    - Track 11 body measurements (waist, chest, arms, legs, etc.)
+    - Body fat estimation (WHtR, US Navy method)
+    - Progress visualization with charts
+    - Comparison vs. previous measurements
+    """
+    st.markdown("---")
+    st.header("📏 Body Measurements & Composition")
+
+    # Initialize trackers
+    tracker = BodyMeasurementTracker(db_path="data/body_measurements.db")
+
+    # Get user profile for BF calculations
+    profile = UserProfile()
+    if not profile.exists():
+        st.warning("⚠️ Create your profile first to use body fat estimation")
+        return
+
+    info = profile.get_personal_info()
+
+    # Tabs for different views
+    tab_log, tab_trends, tab_compare = st.tabs(["📝 Log Measurements", "📊 Trends", "📈 Progress"])
+
+    with tab_log:
+        st.subheader("📝 Log Body Measurements")
+
+        # Get latest measurement for default values
+        latest_entry = tracker.get_latest_measurement()
+
+        with st.form("log_measurements_form"):
+            measurement_date = st.date_input(
+                "Measurement Date",
+                value=date.today(),
+                help="Date of measurements"
+            )
+
+            st.markdown("#### Core Measurements")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                waist = st.number_input(
+                    "Waist (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.waist if latest_entry and latest_entry.waist else 30.0,
+                    step=0.1,
+                    help="At narrowest point (usually at navel)"
+                )
+
+                chest = st.number_input(
+                    "Chest (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.chest if latest_entry and latest_entry.chest else 38.0,
+                    step=0.1,
+                    help="At nipple line, relaxed"
+                )
+
+                neck = st.number_input(
+                    "Neck (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.neck if latest_entry and latest_entry.neck else 15.0,
+                    step=0.1,
+                    help="Just below larynx"
+                )
+
+            with col2:
+                hips = st.number_input(
+                    "Hips (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.hips if latest_entry and latest_entry.hips else 36.0,
+                    step=0.1,
+                    help="At widest point"
+                )
+
+                shoulders = st.number_input(
+                    "Shoulders (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.shoulders if latest_entry and latest_entry.shoulders else 46.0,
+                    step=0.1,
+                    help="Across deltoids"
+                )
+
+            st.markdown("#### Arms & Legs")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("**Arms (flexed):**")
+                left_arm = st.number_input(
+                    "Left Arm (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.left_arm if latest_entry and latest_entry.left_arm else 14.0,
+                    step=0.1
+                )
+                right_arm = st.number_input(
+                    "Right Arm (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.right_arm if latest_entry and latest_entry.right_arm else 14.0,
+                    step=0.1
+                )
+
+                st.markdown("**Thighs (mid-thigh):**")
+                left_thigh = st.number_input(
+                    "Left Thigh (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.left_thigh if latest_entry and latest_entry.left_thigh else 22.0,
+                    step=0.1
+                )
+                right_thigh = st.number_input(
+                    "Right Thigh (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.right_thigh if latest_entry and latest_entry.right_thigh else 22.0,
+                    step=0.1
+                )
+
+            with col2:
+                st.markdown("**Calves (widest point):**")
+                left_calf = st.number_input(
+                    "Left Calf (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.left_calf if latest_entry and latest_entry.left_calf else 15.0,
+                    step=0.1
+                )
+                right_calf = st.number_input(
+                    "Right Calf (inches)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=latest_entry.right_calf if latest_entry and latest_entry.right_calf else 15.0,
+                    step=0.1
+                )
+
+            notes = st.text_area(
+                "Notes (optional)",
+                placeholder="e.g., Morning measurements, post-workout pump, etc.",
+                help="Optional notes about the measurements"
+            )
+
+            submitted = st.form_submit_button("💾 Log Measurements", type="primary", use_container_width=True)
+
+            if submitted:
+                try:
+                    tracker.log_measurement(
+                        measurement_date=measurement_date.strftime("%Y-%m-%d"),
+                        waist=waist,
+                        chest=chest,
+                        hips=hips,
+                        neck=neck,
+                        shoulders=shoulders,
+                        left_arm=left_arm,
+                        right_arm=right_arm,
+                        left_thigh=left_thigh,
+                        right_thigh=right_thigh,
+                        left_calf=left_calf,
+                        right_calf=right_calf,
+                        notes=notes
+                    )
+                    st.success(f"✅ Logged measurements for {measurement_date.strftime('%Y-%m-%d')}")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(f"❌ Error: {e}")
+
+        # Body fat estimation
+        if latest_entry:
+            st.markdown("---")
+            st.markdown("### 🧮 Body Composition Estimate")
+
+            # Get current weight
+            weight_tracker = WeightTracker(db_path="data/weights.db")
+            latest_weight = weight_tracker.get_latest_weight()
+
+            if latest_weight:
+                # Calculate body fat
+                bf_estimate = tracker.calculate_body_fat(
+                    measurement=latest_entry,
+                    weight_lbs=latest_weight.weight_lbs,
+                    height_inches=info.height_inches,
+                    sex=info.sex
+                )
+
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    if bf_estimate.navy_method_bf:
+                        st.metric(
+                            "Body Fat %",
+                            f"{bf_estimate.navy_method_bf:.1f}%",
+                            help="US Navy Method (most accurate)"
+                        )
+                    else:
+                        st.metric("Body Fat %", "N/A", help="Need waist, neck, hips measurements")
+
+                with col2:
+                    if bf_estimate.waist_to_height_ratio:
+                        st.metric(
+                            "Waist-to-Height",
+                            f"{bf_estimate.waist_to_height_ratio:.3f}",
+                            help="< 0.5 = healthy"
+                        )
+                    else:
+                        st.metric("Waist-to-Height", "N/A")
+
+                with col3:
+                    if bf_estimate.bmi:
+                        st.metric(
+                            "BMI",
+                            f"{bf_estimate.bmi:.1f}",
+                            help="Body Mass Index"
+                        )
+                    else:
+                        st.metric("BMI", "N/A")
+
+                with col4:
+                    if bf_estimate.category:
+                        st.metric(
+                            "Category",
+                            bf_estimate.category,
+                            help="Fitness category based on BF%"
+                        )
+                    else:
+                        st.metric("Category", "N/A")
+
+                # Coaching insights
+                if bf_estimate.navy_method_bf:
+                    st.markdown("#### 💡 Body Composition Insights")
+
+                    bf = bf_estimate.navy_method_bf
+                    if info.sex.lower() == "male":
+                        if bf < 14:
+                            st.success("✅ Athletic body composition! Great for performance and aesthetics.")
+                        elif bf < 18:
+                            st.info("💪 Fitness level body composition. Healthy and sustainable.")
+                        elif bf < 25:
+                            st.info("📊 Average body composition. Room for improvement if desired.")
+                        else:
+                            st.warning("⚠️ Higher body fat. Consider a cutting phase to improve health markers.")
+                    else:  # female
+                        if bf < 21:
+                            st.success("✅ Athletic body composition! Great for performance and aesthetics.")
+                        elif bf < 25:
+                            st.info("💪 Fitness level body composition. Healthy and sustainable.")
+                        elif bf < 32:
+                            st.info("📊 Average body composition. Room for improvement if desired.")
+                        else:
+                            st.warning("⚠️ Higher body fat. Consider a cutting phase to improve health markers.")
+
+            else:
+                st.info("📊 Log your weight in the Weight Tracking section to calculate body fat percentage")
+
+    with tab_trends:
+        st.subheader("📊 Measurement Trends")
+
+        entries = tracker.get_measurements(limit=30)
+
+        if not entries:
+            st.info("👆 Log your first measurements to see trends!")
+            return
+
+        # Latest measurement summary
+        latest = entries[0]
+        st.markdown("### 📏 Latest Measurements")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            if latest.waist:
+                st.metric("Waist", f"{latest.waist:.1f}\"")
+            if latest.chest:
+                st.metric("Chest", f"{latest.chest:.1f}\"")
+
+        with col2:
+            if latest.hips:
+                st.metric("Hips", f"{latest.hips:.1f}\"")
+            if latest.shoulders:
+                st.metric("Shoulders", f"{latest.shoulders:.1f}\"")
+
+        with col3:
+            if latest.left_arm and latest.right_arm:
+                avg_arm = (latest.left_arm + latest.right_arm) / 2
+                st.metric("Arms (avg)", f"{avg_arm:.1f}\"")
+            if latest.left_thigh and latest.right_thigh:
+                avg_thigh = (latest.left_thigh + latest.right_thigh) / 2
+                st.metric("Thighs (avg)", f"{avg_thigh:.1f}\"")
+
+        with col4:
+            if latest.left_calf and latest.right_calf:
+                avg_calf = (latest.left_calf + latest.right_calf) / 2
+                st.metric("Calves (avg)", f"{avg_calf:.1f}\"")
+            if latest.neck:
+                st.metric("Neck", f"{latest.neck:.1f}\"")
+
+        st.caption(f"Measured on {latest.date}")
+
+        # Visualization
+        st.markdown("---")
+        st.subheader("📈 Measurement Charts")
+
+        # Prepare data
+        entries.reverse()  # Oldest first for chronological charts
+        dates = [e.date for e in entries]
+
+        # Create charts for each measurement type
+        charts_to_plot = [
+            ("Core Measurements", ["waist", "chest", "hips", "shoulders"]),
+            ("Arms", ["left_arm", "right_arm"]),
+            ("Legs", ["left_thigh", "right_thigh", "left_calf", "right_calf"])
+        ]
+
+        for chart_title, measurements in charts_to_plot:
+            fig = go.Figure()
+
+            for measurement in measurements:
+                values = [getattr(e, measurement) for e in entries]
+                # Only plot if there are non-None values
+                if any(v is not None for v in values):
+                    fig.add_trace(go.Scatter(
+                        x=dates,
+                        y=values,
+                        mode='lines+markers',
+                        name=measurement.replace('_', ' ').title(),
+                        hovertemplate='<b>%{x}</b><br>%{y:.1f}"<extra></extra>'
+                    ))
+
+            if fig.data:  # Only show chart if there's data
+                fig.update_layout(
+                    title=chart_title,
+                    xaxis_title="Date",
+                    yaxis_title="Inches",
+                    hovermode='x unified',
+                    height=400,
+                    showlegend=True
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+    with tab_compare:
+        st.subheader("📈 Progress Comparison")
+
+        entries = tracker.get_measurements(limit=30)
+
+        if len(entries) < 2:
+            st.info("📊 Log at least 2 measurements to see progress comparison")
+            return
+
+        # Calculate changes
+        changes = tracker.get_measurement_changes()
+
+        if not changes:
+            st.info("📊 No previous measurement to compare")
+            return
+
+        st.markdown(f"### 📊 Changes Since Last Measurement")
+        st.caption(f"Comparing {entries[0].date} vs. {entries[1].date}")
+
+        # Display changes
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("#### Core Measurements")
+            for field in ['waist', 'chest', 'hips', 'shoulders', 'neck']:
+                if field in changes and changes[field] is not None:
+                    change = changes[field]
+                    delta_color = "inverse" if field == "waist" else "normal"  # Waist decrease is good
+                    st.metric(
+                        field.replace('_', ' ').title(),
+                        f"{getattr(entries[0], field):.1f}\"",
+                        delta=f"{change:+.1f}\"",
+                        delta_color=delta_color
+                    )
+
+        with col2:
+            st.markdown("#### Arms & Legs")
+            for field in ['left_arm', 'right_arm', 'left_thigh', 'right_thigh', 'left_calf', 'right_calf']:
+                if field in changes and changes[field] is not None:
+                    change = changes[field]
+                    st.metric(
+                        field.replace('_', ' ').title(),
+                        f"{getattr(entries[0], field):.1f}\"",
+                        delta=f"{change:+.1f}\"",
+                        delta_color="normal"
+                    )
+
+        # Interpretation
+        st.markdown("---")
+        st.markdown("### 💡 Progress Insights")
+
+        # Count gains and losses
+        gains = sum(1 for v in changes.values() if v is not None and v > 0.1)
+        losses = sum(1 for v in changes.values() if v is not None and v < -0.1)
+
+        if gains > losses:
+            st.info(
+                f"📈 Overall growth: {gains} measurements increased, {losses} decreased.\n\n"
+                "This is typical during bulking/muscle building phases. "
+                "Keep tracking to ensure gains are primarily muscle, not fat."
+            )
+        elif losses > gains:
+            st.info(
+                f"📉 Overall reduction: {losses} measurements decreased, {gains} increased.\n\n"
+                "This is typical during cutting phases. "
+                "Make sure to maintain or increase muscle measurements (arms, legs) while losing waist."
+            )
+        else:
+            st.success(
+                "✅ Stable measurements with minimal changes.\n\n"
+                "This is typical during maintenance or recomp phases."
+            )
+
+
 def render_quick_daily_log():
     """
     Quick Daily Log section for fast weight and nutrition logging.
@@ -3190,6 +3610,7 @@ def main():
         render_nutrition_tracking()
         render_weight_tracking()
         render_adaptive_tdee()
+        render_body_measurements()
 
     # Chat section header
     st.subheader("💬 Chat with Your Coach")
