@@ -62,6 +62,28 @@ streamlit run src/main.py
 # Access at: http://localhost:8501
 ```
 
+### Option 4: Homelab Deployment (Proxmox/Docker)
+
+**For self-hosted infrastructure with shared Ollama service:**
+
+```bash
+# One-command deployment to homelab
+./deploy-to-homelab.sh
+
+# Deploys to:
+# - CT 100 (Docker Host): HealthRAG container
+# - CT 101 (Ollama): Shared LLM service
+#
+# Access at: http://192.168.0.210:8501 (or your Docker host IP)
+```
+
+**Architecture:** Microservices with shared Ollama backend
+- HealthRAG container: Lightweight (~2GB RAM), runs Streamlit UI
+- Ollama service: Centralized LLM inference for multiple services
+- Benefits: Resource efficient, consistent models, easy scaling
+
+See **[docs/HOMELAB_DEPLOYMENT.md](docs/HOMELAB_DEPLOYMENT.md)** for detailed setup, troubleshooting, and architecture guide.
+
 ## Adding Your Documents
 
 1. Copy your PDF files to `data/pdfs/`
