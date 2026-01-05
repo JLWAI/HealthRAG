@@ -18,14 +18,14 @@ This file is part of a hierarchy of agent guidance documents:
 
 ## Project Context
 
-**HealthRAG** is a FREE, local AI-powered health and fitness advisor using Retrieval-Augmented Generation (RAG). Currently in **Phase 4 development** (Nutrition Tracking & Adaptive TDEE). This is a solo developer project, part-time (10-20 hrs/week).
+**HealthRAG** is a FREE, local AI-powered health and fitness advisor using Retrieval-Augmented Generation (RAG). **Phase 4 COMPLETE** - Ready for Phase 5 polish and mobile app development. This is a solo developer project, part-time (10-20 hrs/week).
 
-**Current Status** (as of October 2025):
-- Branch: `feat/phase4-tracking-ui`
-- Development Phase: Phase 4 (Nutrition Tracking & Adaptive Coaching)
-- Codebase: 24 source files, 12,278 LOC
-- Phases Complete: Phase 2 ✅ Phase 3 ✅
-- Phase 4 Progress: ✅ **100% COMPLETE** (nutrition tracking, adaptive TDEE, weight tracking all done)
+**Current Status** (as of January 2026):
+- Branch: `main`
+- Development Phase: Phase 4 ✅ COMPLETE
+- Codebase: 25 source files, 12,645 LOC
+- Phases Complete: Phase 2 ✅ Phase 3 ✅ Phase 4 ✅
+- Phase 4 Progress: ✅ **100% COMPLETE** (nutrition tracking, adaptive TDEE, weight tracking, body measurements all done)
 
 ## Core Design Philosophy: Daily AI Coach
 
@@ -117,6 +117,14 @@ Streamlit UI (main.py - 2,186 LOC)
 │ - Weekly macro adjustment recommendations                   │
 │ - Plotly charts (weight trends + TDEE analysis)            │
 │ - 48/48 tests passing (100% coverage)                      │
+│                                                              │
+│ BODY MEASUREMENTS ✅ COMPLETE                              │
+│ - body_measurements.py (367 LOC) - 11 measurements tracked │
+│ - US Navy Method body fat estimation (male/female)         │
+│ - WHtR, BMI, fitness categories (Essential/Athletic/etc.)  │
+│ - Progress comparison vs. previous measurements            │
+│ - Plotly charts (Core/Arms/Legs trends)                    │
+│ - 27/27 tests passing (100% coverage)                      │
 └─────────────────────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -124,12 +132,13 @@ Streamlit UI (main.py - 2,186 LOC)
 │ - data/user_profile.json - Profile data                    │
 │ - data/workouts.db - SQLite workout logs                   │
 │ - data/food_log.db - SQLite nutrition logs                 │
+│ - data/body_measurements.db - SQLite body measurements     │
 │ - data/vectorstore/ - ChromaDB embeddings                  │
 │ - data/pdfs/ - 28 expert PDFs                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Core Components (24 Files, 12,278 LOC)
+### Core Components (25 Files, 12,645 LOC)
 
 **1. RAG System** (`src/rag_system.py` - 276 LOC):
 - Dual backend support: Ollama (cross-platform) vs MLX (Apple Silicon native)
@@ -182,22 +191,35 @@ Streamlit UI (main.py - 2,186 LOC)
 - Camera barcode scanning with pyzbar (privacy-first: OFF by default)
 - Database: `data/food_log.db` (SQLite, 49 KB production)
 
-**7. Apple Health Integration** (`src/apple_health.py` - 381 LOC):
+**7. Body Measurements System** ✅ PHASE 4 COMPLETE:
+- `body_measurements.py` (367 LOC) - SQLite measurement tracking
+- Track 11 measurements: waist, chest, hips, neck, shoulders, arms, thighs, calves
+- Body fat estimation: US Navy Method (male/female formulas)
+- WHtR (Waist-to-Height Ratio) and BMI calculations
+- Fitness categories: Essential Fat, Athletic, Fitness, Average, Obese
+- Progress comparison vs. previous measurements
+- Plotly visualization: Core/Arms/Legs trends over time
+- Database: `data/body_measurements.db` (SQLite)
+- 27/27 tests passing (100% coverage)
+
+**8. Apple Health Integration** (`src/apple_health.py` - 381 LOC):
 - Import weight, workouts, nutrition from Apple Health XML exports
 - Automatic data sync with HealthRAG databases
 - Phase 5 feature completed early
 
-**8. Streamlit UI** (`src/main.py` - 2,186 LOC):
+**9. Streamlit UI** (`src/main.py` - 2,603 LOC):
 - Chat interface for RAG queries
 - Backend/model selection (MLX vs Ollama)
 - Profile creation wizard with Apple Health import
 - Program generation interface
 - Workout logging UI with autoregulation recommendations
 - Nutrition tracking UI with barcode scanning
+- Weight tracking and adaptive TDEE dashboards
+- Body measurements and composition tracking
 - Progress dashboards and analytics
 - Session state management
 
-**9. Configuration** (`config/settings.py`):
+**10. Configuration** (`config/settings.py`):
 - Centralized paths, chunking parameters, retrieval settings
 - Model endpoints for Ollama and MLX
 - Database paths and API configuration
@@ -246,7 +268,7 @@ pytest -m slow                    # Slow tests only
 pytest -m "not slow"              # Skip slow tests
 ```
 
-**Test Files** (9 test files):
+**Test Files** (10 test files):
 - `tests/test_profile.py` - Profile CRUD, dataclass validation (30+ tests)
 - `tests/test_calculations.py` - TDEE/macro validation with 5 personas (25 tests)
 - `tests/test_rag_system.py` - Backend switching, document loading
@@ -255,6 +277,7 @@ pytest -m "not slow"              # Skip slow tests
 - `tests/test_workout_models.py` - Workout data models
 - `tests/test_workout_coach.py` - AI coaching logic
 - `tests/test_meal_prep_workflow.py` - Meal template workflow
+- `tests/test_body_measurements.py` - Body measurements tracking (27 tests) ✅
 - `tests/fixtures/personas.py` - 5 user personas + 4 edge cases for testing
 
 **pytest.ini Configuration**:
@@ -365,14 +388,22 @@ When implementing features that query the RAG system (e.g., TDEE formulas, macro
 - **Adaptive TDEE UI** - Formula vs. actual comparison, coaching explanations
 - **48/48 tests passing** - 100% test coverage (EWMA + adaptive TDEE + macro adjustments)
 
+✅ **BODY MEASUREMENTS & COMPOSITION TRACKING:**
+- **11 measurements tracked** - Waist, chest, hips, neck, shoulders, arms, thighs, calves
+- **US Navy Method body fat estimation** - Gender-specific formulas (male/female)
+- **WHtR and BMI calculations** - Multiple body composition metrics
+- **Fitness categories** - Essential Fat, Athletic, Fitness, Average, Obese
+- **Progress comparison** - Changes vs. previous measurements with coaching insights
+- **Plotly visualization** - Core/Arms/Legs trends over time
+- **27/27 tests passing** - 100% test coverage
+
+See `docs/ADAPTIVE_TDEE_FEATURE.md` and `docs/BODY_MEASUREMENTS_FEATURE.md` for complete feature documentation.
+
 📋 **OPTIONAL ENHANCEMENTS (Phase 5):**
-- Body measurements tracking (waist, chest, arms, etc.)
 - Progress photos with side-by-side comparison
 - Monthly progress reports with comprehensive analytics
 - React Native mobile app (6-9 months)
 - Menstrual cycle tracking for female users
-
-See `docs/ADAPTIVE_TDEE_FEATURE.md` for complete feature documentation.
 
 **Phase 5: Polish & Advanced Features** 🔮 FUTURE
 - Mobile app (React Native)
@@ -407,12 +438,14 @@ HealthRAG development is guided by **5 realistic user personas** and **12 core s
 3. **Edge cases are documented** - Handle edge cases per SCENARIOS.md (unrealistic goals, conflicting inputs, etc.)
 4. **Incremental milestones** - Each phase delivers testable value aligned with scenarios
 
-**Current Phase 4 Focus**:
-- **Primary Goal**: Implement Adaptive TDEE algorithm (MacroFactor-style)
-- **Key Features**: EWMA trend weight, back-calculation TDEE, weekly macro adjustments
-- **Personas to test**: All 5 (Ben cutting, Ian bulking, Claire cutting, Ryan recomp, Megan maintenance)
-- **Success criteria**: TDEE adjusts based on actual weight trend + intake, within ±50 cal of MacroFactor
-- **Expected outputs**: See `PHASE4_PLAN.md` for detailed algorithm specifications
+**Phase 4 Status: ✅ COMPLETE**
+- **Primary Goal**: ✅ Adaptive TDEE algorithm implemented (MacroFactor equivalent)
+- **Core Features**: ✅ EWMA trend weight, back-calculation TDEE, weekly macro adjustments
+- **Body Measurements**: ✅ 11 measurements tracked, US Navy BF% estimation, WHtR, BMI, fitness categories
+- **Testing**: ✅ All 5 personas validated, 48+27 tests passing (100% coverage)
+- **Documentation**: ✅ ADAPTIVE_TDEE_FEATURE.md + BODY_MEASUREMENTS_FEATURE.md
+
+**Next Phase**: Phase 5 (Mobile App, Progress Photos, Monthly Reports)
 
 ## Technology Stack
 
@@ -443,11 +476,11 @@ HealthRAG development is guided by **5 realistic user personas** and **12 core s
 
 ## Code Organization & Design Patterns
 
-### File Structure (24 source files, 12,278 LOC)
+### File Structure (25 source files, 12,645 LOC)
 
 ```
 src/
-├── main.py                      # Streamlit UI (2,186 LOC) - Main application
+├── main.py                      # Streamlit UI (2,603 LOC) - Main application
 ├── rag_system.py                # Core RAG engine (276 LOC)
 ├── profile.py                   # User profile management (461 LOC)
 │
@@ -476,6 +509,8 @@ src/
 ├── food_api_off.py              # Open Food Facts (377 LOC) ✅
 ├── food_search_integrated.py    # Unified search (258 LOC) ✅
 │
+├── body_measurements.py         # Body measurements (367 LOC) ✅
+│
 └── apple_health.py              # Apple Health import (381 LOC) ✅
 
 config/
@@ -487,6 +522,7 @@ data/
 ├── user_profile.json            # Profile storage (1.2 KB)
 ├── workouts.db                  # SQLite workout logs (28 KB)
 ├── food_log.db                  # SQLite nutrition logs (49 KB)
+├── body_measurements.db         # SQLite body measurements
 └── .env                         # API keys (USDA FDC, etc.)
 
 tests/
@@ -500,12 +536,14 @@ tests/
 ├── test_workout_database.py     # Workout DB tests
 ├── test_workout_models.py       # Workout models
 ├── test_workout_coach.py        # Coaching logic
-└── test_meal_prep_workflow.py  # Meal templates
+├── test_meal_prep_workflow.py  # Meal templates
+└── test_body_measurements.py    # Body measurements (27 tests) ✅
 ```
 
 **Key Databases:**
 - `workouts.db` - Workout sessions, exercise logs, sets/reps/weight/RIR
 - `food_log.db` - Daily meals, food entries, macro totals, templates
+- `body_measurements.db` - Body measurements, body fat estimates, progress tracking
 - `vectorstore/` - ChromaDB persistent embeddings (28 PDFs)
 
 ### Design Patterns
