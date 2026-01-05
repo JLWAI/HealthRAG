@@ -1159,6 +1159,51 @@ def render_workout_logging():
         with col2:
             workout_date = st.date_input("Workout Date", value=date.today())
 
+        # Load Previous Workout button
+        st.markdown("---")
+        col_load, col_info = st.columns([1, 2])
+        with col_load:
+            if st.button("📋 Load Previous Workout", help="Pre-fill exercises and weights from last session", type="secondary"):
+                # Get most recent workout
+                recent_workouts = logger.get_recent_workouts(limit=1)
+                if recent_workouts:
+                    prev_workout = recent_workouts[0]
+
+                    # Pre-fill current_workout_sets with previous workout's sets
+                    st.session_state.current_workout_sets = []
+                    for prev_set in prev_workout.sets:
+                        # Create new set with same exercise and weight, but clear reps/RIR for user to fill
+                        new_set = WorkoutSet(
+                            set_number=0,
+                            exercise_name=prev_set.exercise_name,
+                            weight_lbs=prev_set.weight_lbs,
+                            reps_completed=prev_set.reps_completed,  # Keep reps as starting point
+                            rir=prev_set.rir,  # Keep RIR as starting point
+                            notes=None
+                        )
+                        st.session_state.current_workout_sets.append(new_set)
+
+                    # Update exercise context for form
+                    if prev_workout.sets:
+                        st.session_state.last_exercise = prev_workout.sets[-1].exercise_name
+                        st.session_state.last_weight = prev_workout.sets[-1].weight_lbs
+
+                    st.success(f"✅ Loaded {len(prev_workout.sets)} sets from '{prev_workout.workout_name}' ({prev_workout.date})")
+                    st.info("💡 Review the loaded sets below. Adjust weights/reps as needed, or use 'Log Last Set' to repeat.")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ No previous workouts found. Log your first workout to use this feature!")
+
+        with col_info:
+            # Show preview of what will be loaded
+            recent_workouts = logger.get_recent_workouts(limit=1)
+            if recent_workouts:
+                prev_workout = recent_workouts[0]
+                unique_exercises = list(dict.fromkeys([s.exercise_name for s in prev_workout.sets]))
+                st.caption(f"**Preview:** {prev_workout.workout_name} ({prev_workout.date}) - {len(prev_workout.sets)} sets: {', '.join(unique_exercises[:3])}{'...' if len(unique_exercises) > 3 else ''}")
+            else:
+                st.caption("No previous workout to load")
+
         # Exercise logging
         st.markdown("#### Add Sets")
 
