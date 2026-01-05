@@ -12,7 +12,8 @@ CHUNK_OVERLAP = 200
 RETRIEVAL_K = 5
 
 # Local Model Configuration
-OLLAMA_BASE_URL = "http://localhost:11434"
+# Can be overridden with OLLAMA_BASE_URL environment variable (for homelab deployment)
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = "llama3.1:8b"
 
 # Embedding Model Configuration

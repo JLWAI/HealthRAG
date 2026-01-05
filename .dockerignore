@@ -1,0 +1,86 @@
+# Docker ignore file for homelab deployment
+# Excludes unnecessary files from Docker build context
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Virtual environments
+venv/
+venv_mlx/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+pdf_processing.log
+streamlit.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+docs/
+*.md
+!requirements.txt
+
+# Tests (not needed in production)
+tests/
+pytest.ini
+
+# Data (mounted as volumes)
+data/vectorstore/
+data/workouts.db
+data/food_log.db
+data/user_profile.json
+
+# Keep PDFs for processing, but exclude in .gitignore
+# data/pdfs/*.pdf will be mounted as volume
+
+# Temporary files
+*.tmp
+*.bak
+tmp/
+temp/
+
+# Environment variables (mounted at runtime)
+.env
+.env.local
+
+# Docker files (not needed inside container)
+Dockerfile
+Dockerfile.homelab
+docker-compose.yml
+docker-compose.homelab.yml
+.dockerignore
+
+# Scripts (not needed in container)
+start_healthrag.sh
+run_local_mlx.sh
+run_local_simple.sh
+
+# Browser testing artifacts
+test-results/
+playwright-report/
+trace-results/
+.playwright/

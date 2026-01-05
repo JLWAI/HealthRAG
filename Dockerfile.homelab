@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+# Homelab-optimized Dockerfile for HealthRAG
+# Lightweight container (no Ollama bundled)
+# Uses shared Ollama service on CT 101 (192.168.0.211:11434)
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libzbar0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY config/ ./config/
+COPY process_pdfs.py .
+
+# Create data directories (will be mounted as volumes)
+RUN mkdir -p data/pdfs data/vectorstore
+
+# Expose Streamlit port only (no Ollama)
+EXPOSE 8501
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Start Streamlit app
+CMD ["streamlit", "run", "src/main.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true"]

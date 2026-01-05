@@ -1,0 +1,41 @@
+version: '3.8'
+
+# Homelab-specific Docker Compose for HealthRAG
+# Deploys to CT 100 (Docker Host @ 192.168.0.210)
+# Uses shared Ollama from CT 101 (@ 192.168.0.211:11434)
+
+services:
+  healthrag:
+    build:
+      context: .
+      dockerfile: Dockerfile.homelab
+    container_name: healthrag
+    ports:
+      - "8501:8501"  # Streamlit UI
+    volumes:
+      - ./data:/app/data  # Persistent data (vectorstore, user profiles, DBs)
+      - ./data/pdfs:/app/data/pdfs:ro  # PDF knowledge base (read-only)
+    environment:
+      # Point to external Ollama server on CT 101
+      - OLLAMA_BASE_URL=http://192.168.0.211:11434
+      # Optional: USDA FDC API key for food database
+      # Uncomment and set in data/.env file
+      # - FDC_API_KEY=${FDC_API_KEY}
+    restart: unless-stopped
+    networks:
+      - homelab
+    labels:
+      - "description=HealthRAG - AI-powered health and fitness advisor"
+      - "homelab.service=healthrag"
+      - "homelab.container=CT100"
+      - "homelab.ollama=CT101"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  homelab:
+    driver: bridge
