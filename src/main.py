@@ -1226,9 +1226,10 @@ def render_workout_logging():
                                     rir = int(match.group(3)) if match.group(3) else 2  # Default RIR=2
 
                                     parsed_sets.append(WorkoutSet(
+                                        set_number=0,  # Will be updated when saved
                                         exercise_name=exercise_name,
                                         weight_lbs=weight,
-                                        reps=reps,
+                                        reps_completed=reps,
                                         rir=rir,
                                         notes=None
                                     ))
@@ -1252,7 +1253,7 @@ def render_workout_logging():
             # Single set mode (existing flow)
             st.markdown("Log each set as you complete it. Exercise & weight persist between sets.")
 
-            # Quick buttons to clear exercise context or copy from last set
+            # Quick buttons to clear exercise context or log last set
             col_clear, col_last = st.columns(2)
             with col_clear:
                 if st.button("🔄 New Exercise", help="Clear exercise name for a different exercise"):
@@ -1262,9 +1263,54 @@ def render_workout_logging():
             with col_last:
                 if st.session_state.current_workout_sets:
                     last_set = st.session_state.current_workout_sets[-1]
-                    if st.button(f"📋 Copy Last ({last_set.exercise_name[:15]}...)" if len(last_set.exercise_name) > 15 else f"📋 Copy Last ({last_set.exercise_name})"):
+                    # Show last set details
+                    st.caption(f"Last: {last_set.exercise_name[:20]} - {last_set.weight_lbs} lbs × {last_set.reps_completed} @ RIR {last_set.rir}")
+                    if st.button("🔁 Log Last Set", help="Repeat the last set with one click", type="primary"):
+                        # Create new set identical to last one
+                        workout_set = WorkoutSet(
+                            set_number=0,  # Will be updated when saved
+                            exercise_name=last_set.exercise_name,
+                            weight_lbs=last_set.weight_lbs,
+                            reps_completed=last_set.reps_completed,
+                            rir=last_set.rir,
+                            notes=None
+                        )
+                        st.session_state.current_workout_sets.append(workout_set)
+
+                        # Update session state for form
                         st.session_state.last_exercise = last_set.exercise_name
                         st.session_state.last_weight = last_set.weight_lbs
+
+                        # Real-time coach feedback
+                        coach = WorkoutCoach()
+                        exercise_sets = [s for s in st.session_state.current_workout_sets if s.exercise_name == last_set.exercise_name]
+                        set_number = len(exercise_sets)
+
+                        feedback = coach.analyze_set(
+                            exercise_name=last_set.exercise_name,
+                            set_number=set_number,
+                            weight=last_set.weight_lbs,
+                            reps=last_set.reps_completed,
+                            rir=last_set.rir,
+                            target_reps_min=8,
+                            target_reps_max=12,
+                            target_rir=2
+                        )
+
+                        st.success(f"✅ Set {set_number} logged: {last_set.exercise_name} - {last_set.weight_lbs} lbs × {last_set.reps_completed} @ {last_set.rir} RIR")
+
+                        if feedback.status == "perfect":
+                            st.success(f"💯 {feedback.message}")
+                        elif feedback.status == "excellent":
+                            st.success(f"🔥 {feedback.message}")
+                        elif feedback.status == "good":
+                            st.info(f"✅ {feedback.message}")
+                        elif feedback.status == "too_hard":
+                            st.warning(f"⚠️ {feedback.message}")
+                        else:
+                            st.info(f"💡 {feedback.message}")
+
+                        st.caption(f"💡 **Next:** {feedback.next_action}")
                         st.rerun()
 
             # Add set form (doesn't clear on submit to preserve exercise context)
@@ -1298,9 +1344,10 @@ def render_workout_logging():
                     st.session_state.last_exercise = exercise
                     st.session_state.last_weight = weight
                     workout_set = WorkoutSet(
+                        set_number=0,  # Will be updated when saved
                         exercise_name=exercise,
                         weight_lbs=weight,
-                        reps=reps,
+                        reps_completed=reps,
                         rir=rir,
                         notes=set_notes if set_notes else None
                     )
@@ -1350,7 +1397,7 @@ def render_workout_logging():
                 with col1:
                     st.markdown(f"""
 **Set {i+1}: {workout_set.exercise_name}**
-- {workout_set.weight_lbs} lbs × {workout_set.reps} reps @ {workout_set.rir} RIR
+- {workout_set.weight_lbs} lbs × {workout_set.reps_completed} reps @ {workout_set.rir} RIR
 {f"- Notes: {workout_set.notes}" if workout_set.notes else ""}
                     """)
                 with col2:
