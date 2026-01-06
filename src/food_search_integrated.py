@@ -106,6 +106,15 @@ class IntegratedFoodSearch:
             except Exception as e:
                 print(f"FDC search error: {e}")
 
+        # 3. Search Open Food Facts (for branded products)
+        if len(results) < limit:
+            try:
+                off_products = self.off_client.search_and_parse(query, limit=limit - len(results))
+                for product in off_products:
+                    results.append(self._off_to_search_result(product))
+            except Exception as e:
+                print(f"OFF search error: {e}")
+
         return results[:limit]
 
     def lookup_barcode(self, barcode: str) -> Optional[SearchResult]:
