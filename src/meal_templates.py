@@ -160,7 +160,7 @@ class MealTemplateManager:
                     (yogurt_id, 1.0),          # 1 cup
                     (creatine_id, 1.0)         # 5g
                 ],
-                meal_type="breakfast",
+                meal_type="meal",
                 description="Post-workout protein shake"
             )
         """
@@ -494,11 +494,11 @@ class MealTemplateManager:
             template_id
 
         Example:
-            # Turn Monday's breakfast into a template
+            # Turn Monday's meal into a template
             template_id = manager.create_template_from_date(
-                name="Weekday Breakfast",
+                name="Weekday Meal",
                 source_date="2025-01-13",
-                meal_type="breakfast"
+                meal_type="meal"
             )
         """
         # Get all entries for that date/meal
@@ -675,7 +675,7 @@ if __name__ == "__main__":
             (yogurt_id, 1.0),    # 1 cup yogurt
             (creatine_id, 1.0)   # 5g creatine
         ],
-        meal_type="breakfast",
+        meal_type="meal",
         description="Post-workout protein shake"
     )
 
@@ -706,15 +706,15 @@ if __name__ == "__main__":
     print("=" * 60)
 
     entries_created = manager.log_template(template_id)
-    print(f"✅ Created {entries_created} food entries for breakfast")
+    print(f"✅ Created {entries_created} food entries for meal")
 
     # Verify entries were created
     today = datetime.now().strftime("%Y-%m-%d")
     daily_nutrition = food_logger.get_daily_nutrition(today)
-    breakfast_entries = daily_nutrition.meals.get("breakfast", [])
+    meal_entries = daily_nutrition.meals.get("meal", [])
 
-    print(f"Verified {len(breakfast_entries)} breakfast entries logged:")
-    for entry in breakfast_entries:
+    print(f"Verified {len(meal_entries)} meal entries logged:")
+    for entry in meal_entries:
         print(f"  - {entry.servings}x {entry.food_name}")
     print()
 

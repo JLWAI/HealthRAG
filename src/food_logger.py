@@ -40,7 +40,7 @@ class FoodEntry:
     protein_g: float
     carbs_g: float
     fat_g: float
-    meal_type: Optional[str] = None  # "breakfast", "lunch", "dinner", "snack"
+    meal_type: Optional[str] = None  # "meal" or "snack"
     notes: Optional[str] = None
 
 
@@ -263,7 +263,7 @@ class FoodLogger:
             food_id: ID of food from foods table
             servings: Number of servings consumed
             log_date: Date of consumption (defaults to today)
-            meal_type: "breakfast", "lunch", "dinner", "snack"
+            meal_type: "meal" or "snack"
             notes: Optional notes
 
         Returns:
@@ -487,7 +487,7 @@ class FoodLogger:
         Args:
             source_date: Date to copy from (ISO format)
             target_date: Date to copy to (defaults to today)
-            meal_types: Only copy specific meals (e.g., ["breakfast", "lunch"])
+            meal_types: Only copy specific meals (e.g., ["meal"])
                        If None, copies all meals
 
         Returns:
@@ -564,17 +564,10 @@ class FoodLogger:
         Auto-detect meal type based on current time.
 
         SMART DEFAULT: Saves user one click per entry.
+        Returns "meal" during day (5 AM - 9 PM), "snack" late night.
         """
         hour = datetime.now().hour
-
-        if 5 <= hour < 11:
-            return "breakfast"
-        elif 11 <= hour < 15:
-            return "lunch"
-        elif 15 <= hour < 18:
-            return "snack"
-        else:
-            return "dinner"
+        return "meal" if 5 <= hour < 21 else "snack"
 
     def _row_to_food(self, row) -> Food:
         """Convert database row to Food object"""
@@ -614,11 +607,11 @@ if __name__ == "__main__":
     rice = logger.search_foods("rice")[0]
     broccoli = logger.search_foods("broccoli")[0]
 
-    logger.log_food(chicken.food_id, servings=2.0, meal_type="lunch")
-    logger.log_food(rice.food_id, servings=1.5, meal_type="lunch")
-    logger.log_food(broccoli.food_id, servings=1.0, meal_type="lunch")
+    logger.log_food(chicken.food_id, servings=2.0, meal_type="meal")
+    logger.log_food(rice.food_id, servings=1.5, meal_type="meal")
+    logger.log_food(broccoli.food_id, servings=1.0, meal_type="meal")
 
-    print(f"✅ Logged lunch: 2 servings chicken, 1.5 cups rice, 1 cup broccoli\n")
+    print(f"✅ Logged meal: 2 servings chicken, 1.5 cups rice, 1 cup broccoli\n")
 
     # Test 3: Daily summary
     print("TEST 3: Daily nutrition summary")

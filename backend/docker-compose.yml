@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  healthrag-db:
+    image: postgres:15-alpine
+    container_name: healthrag-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: healthrag
+      POSTGRES_USER: healthrag
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - healthrag-db-data:/var/lib/postgresql/data
+    networks:
+      - healthrag-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthrag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  healthrag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthrag-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"  # Expose on local network
+    environment:
+      # Database
+      DATABASE_URL: postgresql://healthrag:${DB_PASSWORD}@healthrag-db:5432/healthrag
+
+      # Supabase Auth
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+
+      # JWT Configuration
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+
+      # API Configuration
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      ENVIRONMENT: production
+
+      # CORS Origins (local + remote access)
+      CORS_ORIGINS: http://localhost:3000,http://192.168.0.64:3000,https://${DOMAIN}
+
+      # Food APIs
+      USDA_FDC_API_KEY: ${USDA_FDC_API_KEY:-}
+      OFF_API_BASE_URL: https://world.openfoodfacts.org
+    depends_on:
+      healthrag-db:
+        condition: service_healthy
+    networks:
+      - healthrag-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  healthrag-db-data:
+    driver: local
+
+networks:
+  healthrag-network:
+    driver: bridge

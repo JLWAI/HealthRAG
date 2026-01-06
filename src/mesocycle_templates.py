@@ -112,6 +112,71 @@ FULL_BODY_3X = MesocycleTemplate(
 
 
 # ============================================================================
+# FULL BODY 4X TEMPLATE (4x per week - Beginner Friendly)
+# ============================================================================
+
+FULL_BODY_4X = MesocycleTemplate(
+    name="full_body_4x",
+    display_name="Full Body 4x per Week",
+    split_type=TrainingSplit.FULL_BODY,
+    days_per_week=4,
+    workout_days=[
+        WorkoutDay(
+            name="Full Body A",
+            muscle_groups=[
+                MuscleGroup.CHEST, MuscleGroup.BACK, MuscleGroup.QUADS,
+                MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS
+            ],
+            priority_order=[
+                MuscleGroup.QUADS, MuscleGroup.CHEST, MuscleGroup.BACK,
+                MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS
+            ],
+            notes="Squat pattern, horizontal push/pull"
+        ),
+        WorkoutDay(
+            name="Full Body B",
+            muscle_groups=[
+                MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.BACK,
+                MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.BICEPS
+            ],
+            priority_order=[
+                MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.BACK,
+                MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.BICEPS
+            ],
+            notes="Hip hinge pattern, vertical pull"
+        ),
+        WorkoutDay(
+            name="Full Body C",
+            muscle_groups=[
+                MuscleGroup.QUADS, MuscleGroup.CHEST, MuscleGroup.BACK,
+                MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS
+            ],
+            priority_order=[
+                MuscleGroup.CHEST, MuscleGroup.QUADS, MuscleGroup.BACK,
+                MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.BICEPS
+            ],
+            notes="Bench focus, front squat variation"
+        ),
+        WorkoutDay(
+            name="Full Body D",
+            muscle_groups=[
+                MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.BACK,
+                MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS
+            ],
+            priority_order=[
+                MuscleGroup.BACK, MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS,
+                MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.BICEPS, MuscleGroup.TRICEPS
+            ],
+            notes="Deadlift focus, row variations"
+        )
+    ],
+    description="Full body 4x per week. Great for beginners wanting more frequency.",
+    best_for=["beginner", "4_days_available", "balanced_development", "strength"],
+    min_training_level="beginner"
+)
+
+
+# ============================================================================
 # UPPER/LOWER TEMPLATES (4x per week)
 # ============================================================================
 
@@ -155,8 +220,8 @@ UPPER_LOWER_4X = MesocycleTemplate(
         )
     ],
     description="Classic upper/lower split. Each muscle group trained 2x per week.",
-    best_for=["intermediate", "4_days_available", "balanced_development", "hypertrophy", "hypertrophy_focus"],
-    min_training_level="intermediate"
+    best_for=["beginner", "intermediate", "4_days_available", "balanced_development", "hypertrophy", "hypertrophy_focus"],
+    min_training_level="beginner"
 )
 
 
@@ -314,6 +379,7 @@ ARM_SPECIALIZATION = MesocycleTemplate(
 
 ALL_TEMPLATES = [
     FULL_BODY_3X,
+    FULL_BODY_4X,
     UPPER_LOWER_4X,
     PPL_6X,
     BRO_SPLIT_5X,

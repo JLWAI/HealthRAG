@@ -269,8 +269,9 @@ class ProgramGenerator:
                 workout_exercises.append(workout_ex)
                 total_sets += sets
 
-        # Estimate duration (7-8 min per set including rest)
-        estimated_duration = total_sets * 7.5
+        # Estimate duration (~2.5-3 min per set: 30-60s work + 1.5-2.5 min rest)
+        # Typical hypertrophy workout: 25 sets ≈ 60-75 min
+        estimated_duration = total_sets * 2.75
 
         return Workout(
             day_name=workout_day.name,

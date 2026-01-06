@@ -1,0 +1,1625 @@
+{
+  "info": {
+    "_postman_id": "healthrag-api-collection-v2",
+    "name": "HealthRAG Backend API",
+    "description": "Complete HealthRAG Backend API collection with 32 endpoints.\n\nUpdated: 2026-01-05\n\nNew in Week 5-6:\n- Sync Protocol (2 endpoints)\n- External Food APIs (3 endpoints: USDA FDC, Open Food Facts barcode, Open Food Facts search)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has correct structure\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('service');",
+                  "    pm.expect(jsonData).to.have.property('version');",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "    pm.expect(jsonData.service).to.eql('HealthRAG API');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Verify API is running and healthy."
+          },
+          "response": []
+        },
+        {
+          "name": "Root Endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has welcome message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('docs');",
+                  "    pm.expect(jsonData).to.have.property('health');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('token_type');",
+                  "    pm.expect(jsonData.token_type).to.eql('bearer');",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@healthrag.com\",\n  \"password\": \"SecurePass123!\",\n  \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@healthrag.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has user data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('user_id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.environment.set('user_id', jsonData.user_id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile Management",
+      "item": [
+        {
+          "name": "Create Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"TDEE and macros auto-calculated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('bmr');",
+                  "    pm.expect(jsonData).to.have.property('tdee');",
+                  "    pm.expect(jsonData).to.have.property('target_calories');",
+                  "    pm.expect(jsonData).to.have.property('target_protein_g');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@healthrag.com\",\n  \"name\": \"Test User\",\n  \"age\": 30,\n  \"sex\": \"male\",\n  \"height_inches\": 70,\n  \"current_weight_lbs\": 180,\n  \"goal_type\": \"cut\",\n  \"target_weight_lbs\": 170,\n  \"training_experience\": \"intermediate\",\n  \"equipment_access\": \"commercial_gym\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_weight_lbs\": 175\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Workouts",
+      "item": [
+        {
+          "name": "Create Workout Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Workout created with sets\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('sets');",
+                  "    pm.expect(jsonData.sets).to.be.an('array');",
+                  "    pm.expect(jsonData.sets.length).to.be.above(0);",
+                  "    pm.environment.set('workout_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-05\",\n  \"workout_name\": \"Upper A\",\n  \"sets\": [\n    {\n      \"set_number\": 1,\n      \"exercise_name\": \"Bench Press\",\n      \"weight_lbs\": 185,\n      \"reps_completed\": 8,\n      \"rir\": 2,\n      \"notes\": \"Felt strong\"\n    },\n    {\n      \"set_number\": 2,\n      \"exercise_name\": \"Bench Press\",\n      \"weight_lbs\": 185,\n      \"reps_completed\": 7,\n      \"rir\": 1\n    },\n    {\n      \"set_number\": 3,\n      \"exercise_name\": \"Rows\",\n      \"weight_lbs\": 135,\n      \"reps_completed\": 10,\n      \"rir\": 2\n    }\n  ],\n  \"notes\": \"Great session, PRed on bench\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/workouts/sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "workouts",
+                "sessions"
+              ]
+            },
+            "description": "Create a workout session with multiple sets. RIR = Reps in Reserve (0-3)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workout Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/workouts/sessions?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "workouts",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get recent workouts. Use start_date/end_date for date range filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workout Session by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Workout has sets\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sets');",
+                  "    pm.expect(jsonData.sets).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/workouts/sessions/{{workout_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "workouts",
+                "sessions",
+                "{{workout_id}}"
+              ]
+            },
+            "description": "Get specific workout by ID (saved from create response)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Workout Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/workouts/sessions/{{workout_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "workouts",
+                "sessions",
+                "{{workout_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Workout tracking endpoints - log sets, reps, weight, RIR"
+    },
+    {
+      "name": "Nutrition",
+      "item": [
+        {
+          "name": "Log Food Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Food entry created\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('food_name');",
+                  "    pm.expect(jsonData).to.have.property('calories');",
+                  "    pm.expect(jsonData).to.have.property('protein_g');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-05\",\n  \"food_name\": \"Chicken Breast\",\n  \"serving_size\": \"6 oz\",\n  \"serving_quantity\": 1.0,\n  \"calories\": 281,\n  \"protein_g\": 52.8,\n  \"carbs_g\": 0,\n  \"fat_g\": 6.1,\n  \"meal_type\": \"lunch\",\n  \"source\": \"manual\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/foods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "foods"
+              ]
+            },
+            "description": "Log a food entry with macros. Meal types: breakfast, lunch, dinner, snack."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Food Entries by Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/foods?log_date=2025-01-05",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "foods"
+              ],
+              "query": [
+                {
+                  "key": "log_date",
+                  "value": "2025-01-05"
+                }
+              ]
+            },
+            "description": "Get all food entries for a specific date."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daily Nutrition Totals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Daily totals calculated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('total_calories');",
+                  "    pm.expect(jsonData).to.have.property('total_protein_g');",
+                  "    pm.expect(jsonData).to.have.property('total_carbs_g');",
+                  "    pm.expect(jsonData).to.have.property('total_fat_g');",
+                  "    pm.expect(jsonData).to.have.property('entry_count');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/daily-totals?log_date=2025-01-05",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "daily-totals"
+              ],
+              "query": [
+                {
+                  "key": "log_date",
+                  "value": "2025-01-05"
+                }
+              ]
+            },
+            "description": "Get daily macro totals with meal breakdown. Omit log_date for today."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Foods",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Search results returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/search?q=chicken&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "chicken"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search foods database (includes starter foods: chicken, rice, eggs, etc.)."
+          },
+          "response": []
+        },
+        {
+          "name": "Copy Yesterday's Meals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Meals copied\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('detail');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/meals/copy-yesterday",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "meals",
+                "copy-yesterday"
+              ]
+            },
+            "description": "Copy all food entries from yesterday to today (quick logging)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Nutrition tracking endpoints - log foods, get daily totals, search"
+    },
+    {
+      "name": "Weight Tracking",
+      "item": [
+        {
+          "name": "Log Weight Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Weight logged with EWMA trend\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('weight_lbs');",
+                  "    pm.expect(jsonData).to.have.property('trend_weight_lbs');",
+                  "    pm.expect(jsonData.trend_weight_lbs).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-05\",\n  \"weight_lbs\": 185.2,\n  \"notes\": \"Morning weigh-in\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/weight/entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "weight",
+                "entries"
+              ]
+            },
+            "description": "Log weight entry. EWMA trend is auto-calculated (MacroFactor-style smoothing)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Weight Entries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/weight/entries?limit=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "weight",
+                "entries"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get weight history. Use start_date/end_date for filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Weight Trend",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Trend data includes changes\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('entries');",
+                  "    pm.expect(jsonData).to.have.property('ewma_alpha');",
+                  "    pm.expect(jsonData).to.have.property('latest_trend');",
+                  "    pm.expect(jsonData).to.have.property('weekly_change_lbs');",
+                  "    pm.expect(jsonData).to.have.property('monthly_change_lbs');",
+                  "    pm.expect(jsonData.ewma_alpha).to.eql(0.3);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/weight/trend?days=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "weight",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get weight trend with EWMA smoothing. Includes weekly/monthly changes from trend line."
+          },
+          "response": []
+        }
+      ],
+      "description": "Weight tracking with EWMA trend calculation (MacroFactor-style)"
+    },
+    {
+      "name": "Error Handling",
+      "item": [
+        {
+          "name": "Get Profile - No Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Profile - Duplicate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@healthrag.com\",\n  \"name\": \"Test User\",\n  \"age\": 30,\n  \"sex\": \"male\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@healthrag.com\",\n  \"password\": \"WrongPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Sync Protocol",
+      "item": [
+        {
+          "name": "Pull Changes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/sync/changes?since=2025-01-05T00:00:00Z",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sync",
+                "changes"
+              ],
+              "query": [
+                {
+                  "key": "since",
+                  "value": "2025-01-05T00:00:00Z",
+                  "description": "ISO 8601 timestamp of last sync"
+                }
+              ]
+            },
+            "description": "Pull all changes from server since last sync. Returns workouts, food entries, weight entries, and profile updates modified after the given timestamp."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has sync data structure', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('workout_sessions');",
+                  "    pm.expect(jsonData).to.have.property('food_entries');",
+                  "    pm.expect(jsonData).to.have.property('weight_entries');",
+                  "    pm.expect(jsonData).to.have.property('sync_timestamp');",
+                  "});",
+                  "",
+                  "pm.test('Sync timestamp is ISO 8601 format', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.sync_timestamp).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Push Changes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_sessions\": [\n    {\n      \"id\": 1,\n      \"date\": \"2025-01-05\",\n      \"workout_name\": \"Upper A\",\n      \"updated_at\": \"2025-01-05T12:30:00Z\"\n    }\n  ],\n  \"food_entries\": [],\n  \"weight_entries\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sync/changes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sync",
+                "changes"
+              ]
+            },
+            "description": "Push local changes to server. Uses Last Write Wins conflict resolution based on updated_at timestamps."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData).to.have.property('conflicts');",
+                  "    pm.expect(jsonData).to.have.property('sync_timestamp');",
+                  "});",
+                  "",
+                  "pm.test('Conflicts array exists', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.conflicts).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. External Food APIs",
+      "item": [
+        {
+          "name": "Search USDA FDC",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/search/usda?q=chicken breast&limit=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "search",
+                "usda"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "chicken breast",
+                  "description": "Search query (min 2 characters)"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Max results (1-100, default 20)"
+                },
+                {
+                  "key": "data_type",
+                  "value": "Foundation",
+                  "description": "Optional: Foundation, SR Legacy, or Branded",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search USDA FoodData Central database (400K foods). Requires USDA_FDC_API_KEY environment variable. Free API key: https://fdc.nal.usda.gov/api-key-signup"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 501', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 501]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Response is array of foods', function () {",
+                  "        const foods = pm.response.json();",
+                  "        pm.expect(foods).to.be.an('array');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Foods have nutrition data', function () {",
+                  "        const foods = pm.response.json();",
+                  "        if (foods.length > 0) {",
+                  "            const food = foods[0];",
+                  "            pm.expect(food).to.have.property('food_name');",
+                  "            pm.expect(food).to.have.property('calories');",
+                  "            pm.expect(food).to.have.property('protein_g');",
+                  "            pm.expect(food.source).to.equal('usda_fdc');",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lookup Barcode (Open Food Facts)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/search/off/barcode/737628064502",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "search",
+                "off",
+                "barcode",
+                "737628064502"
+              ]
+            },
+            "description": "Lookup product by UPC/EAN barcode in Open Food Facts database (2.8M products). No API key required. Example barcode: 737628064502 (Thai Kitchen Rice Noodles)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Product has nutrition data', function () {",
+                  "        const product = pm.response.json();",
+                  "        pm.expect(product).to.have.property('food_name');",
+                  "        pm.expect(product).to.have.property('barcode');",
+                  "        pm.expect(product).to.have.property('calories');",
+                  "        pm.expect(product.source).to.equal('open_food_facts');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Open Food Facts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/nutrition/search/off?q=greek yogurt&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "nutrition",
+                "search",
+                "off"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "greek yogurt",
+                  "description": "Search query (min 2 characters)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Max results (1-100, default 20)"
+                }
+              ]
+            },
+            "description": "Search Open Food Facts database (2.8M products). No API key required. Crowd-sourced nutrition database with barcode support."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is array of products', function () {",
+                  "    const products = pm.response.json();",
+                  "    pm.expect(products).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Products have nutrition data', function () {",
+                  "    const products = pm.response.json();",
+                  "    if (products.length > 0) {",
+                  "        const product = products[0];",
+                  "        pm.expect(product).to.have.property('food_name');",
+                  "        pm.expect(product).to.have.property('calories');",
+                  "        pm.expect(product.source).to.equal('open_food_facts');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workout_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
