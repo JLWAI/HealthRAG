@@ -16,7 +16,6 @@ from datetime import date
 from models.schemas import (
     WorkoutSessionCreate,
     WorkoutSessionResponse,
-    WorkoutSetCreate,
     WorkoutSetResponse,
     TokenData
 )
