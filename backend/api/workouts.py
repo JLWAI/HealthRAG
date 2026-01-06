@@ -11,7 +11,7 @@ CRUD operations for workout tracking:
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
-from datetime import date, timedelta
+from datetime import date
 
 from models.schemas import (
     WorkoutSessionCreate,
