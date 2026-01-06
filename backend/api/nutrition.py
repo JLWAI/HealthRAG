@@ -33,7 +33,7 @@ from services.food_service import get_food_service, FoodService
 
 # Import external food API clients
 try:
-    from src.food_api_fdc import FDCAPIClient, FDCFood
+    from src.food_api_fdc import FDCAPIClient
     FDC_AVAILABLE = True
 except ImportError:
     FDC_AVAILABLE = False
