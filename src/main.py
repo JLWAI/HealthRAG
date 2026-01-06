@@ -11,7 +11,8 @@ from workout_coach import WorkoutCoach
 from autoregulation import AutoregulationEngine
 from program_export import export_program_to_excel, export_program_to_csv
 from program_manager import ProgramManager
-from exercise_database import get_exercises_by_muscle
+from exercise_database import get_exercises_by_muscle, get_exercise_by_name
+from exercise_alternatives import Location, find_alternatives_by_location, get_exercise_location
 from food_logger import FoodLogger
 from food_search_integrated import IntegratedFoodSearch
 from meal_templates import MealTemplateManager
@@ -24,6 +25,16 @@ import json
 import plotly.graph_objects as go
 
 load_dotenv()
+
+
+@st.cache_resource
+def get_rag_system(backend: str = "ollama"):
+    """
+    Cached RAG system initialization.
+    Using @st.cache_resource ensures the RAG system is only initialized once
+    across all sessions, not on every page reload.
+    """
+    return HealthRAG(backend=backend)
 
 
 def render_onboarding_wizard():
@@ -1730,7 +1741,7 @@ def render_nutrition_tracking():
             with col2:
                 template_meal = st.selectbox(
                     "Meal type",
-                    ["breakfast", "lunch", "dinner", "snack"],
+                    ["meal", "snack"],
                     key="suggest_template_meal"
                 )
 
@@ -1811,20 +1822,13 @@ def render_nutrition_tracking():
                     label_visibility="collapsed"
                 )
             with quick_search_col2:
-                # Determine meal type by time of day
+                # Determine meal type by time of day (meal during day, snack late night)
                 current_hour = datetime.now().hour
-                if 5 <= current_hour < 11:
-                    default_meal = "breakfast"
-                elif 11 <= current_hour < 15:
-                    default_meal = "lunch"
-                elif 15 <= current_hour < 20:
-                    default_meal = "dinner"
-                else:
-                    default_meal = "snack"
+                default_meal = "meal" if 5 <= current_hour < 21 else "snack"
                 inline_meal_type = st.selectbox(
                     "Meal",
-                    ["breakfast", "lunch", "dinner", "snack"],
-                    index=["breakfast", "lunch", "dinner", "snack"].index(default_meal),
+                    ["meal", "snack"],
+                    index=["meal", "snack"].index(default_meal),
                     key="inline_meal_type",
                     label_visibility="collapsed"
                 )
@@ -1863,7 +1867,7 @@ def render_nutrition_tracking():
 
             # Display meals
             st.markdown("#### Meals")
-            for meal_type in ["breakfast", "lunch", "dinner", "snack"]:
+            for meal_type in ["meal", "snack"]:
                 if meal_type in daily_nutrition.meals:
                     entries = daily_nutrition.meals[meal_type]
                     with st.expander(f"🍽️ {meal_type.title()} ({len(entries)} items)", expanded=True):
@@ -1972,8 +1976,8 @@ def render_nutrition_tracking():
                         with col2:
                             meal_type = st.selectbox(
                                 "Meal",
-                                ["breakfast", "lunch", "dinner", "snack"],
-                                index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                                ["meal", "snack"],
+                                index={"meal": 0, "snack": 1}.get(
                                     logger.guess_meal_type(), 1
                                 ),
                                 key=f"meal_{i}"
@@ -2065,8 +2069,8 @@ def render_nutrition_tracking():
                             with col2:
                                 meal_type = st.selectbox(
                                     "Meal",
-                                    ["breakfast", "lunch", "dinner", "snack"],
-                                    index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                                    ["meal", "snack"],
+                                    index={"meal": 0, "snack": 1}.get(
                                         logger.guess_meal_type(), 1
                                     ),
                                     key="camera_meal"
@@ -2132,8 +2136,8 @@ def render_nutrition_tracking():
                     with col2:
                         meal_type = st.selectbox(
                             "Meal",
-                            ["breakfast", "lunch", "dinner", "snack"],
-                            index={"breakfast": 0, "lunch": 1, "dinner": 2, "snack": 3}.get(
+                            ["meal", "snack"],
+                            index={"meal": 0, "snack": 1}.get(
                                 logger.guess_meal_type(), 1
                             ),
                             key="barcode_meal"
@@ -2212,7 +2216,7 @@ def render_nutrition_tracking():
         with st.expander("➕ Create New Template", expanded=False):
             template_name = st.text_input("Template Name", placeholder="e.g., Morning Shake")
             template_desc = st.text_area("Description (optional)", placeholder="Post-workout protein shake")
-            template_meal_type = st.selectbox("Meal Type", ["breakfast", "lunch", "dinner", "snack"], key="template_meal_type")
+            template_meal_type = st.selectbox("Meal Type", ["meal", "snack"], key="template_meal_type")
 
             st.markdown("**Add Foods to Template**")
             st.info("First, search and add foods to your database, then create a template from today's logged meals.")
@@ -2624,15 +2628,19 @@ def render_adaptive_tdee():
     # Calculate formula TDEE (Mifflin-St Jeor)
     from calculations import calculate_nutrition_plan
 
-    plan = calculate_nutrition_plan(
-        weight_lbs=info.weight_lbs,
-        height_inches=info.height_inches,
-        age=info.age,
-        sex=info.sex,
-        activity_level=info.activity_level,
-        phase=goals.phase,
-        training_level=profile.get_experience().training_level
-    )
+    # Build dictionaries for calculate_nutrition_plan
+    personal_info = {
+        'weight_lbs': info.weight_lbs,
+        'height_inches': info.height_inches,
+        'age': info.age,
+        'sex': info.sex,
+        'activity_level': info.activity_level
+    }
+    goals_dict = {
+        'phase': goals.phase
+    }
+
+    plan = calculate_nutrition_plan(personal_info, goals_dict)
 
     # Determine goal rate from phase
     if goals.phase == "cut":
@@ -2651,10 +2659,10 @@ def render_adaptive_tdee():
     insight = get_adaptive_tdee_insight(
         weight_tracker=weight_tracker,
         food_logger=food_logger,
-        formula_tdee=plan['tdee'],
+        formula_tdee=plan['tdee_maintenance'],
         goal_rate_lbs_week=goal_rate,
-        current_calories=plan['calories'],
-        current_protein_g=plan['protein_g'],
+        current_calories=plan['tdee_adjusted'],
+        current_protein_g=plan['macros']['protein_g'],
         phase=goals.phase,
         days=14
     )
@@ -3362,16 +3370,9 @@ def render_quick_daily_log():
                     st.error(f"Error: {e}")
 
     with col2:
-        # Determine meal type by time of day
+        # Determine meal type by time of day (meal during day, snack late night)
         current_hour = datetime.now().hour
-        if 5 <= current_hour < 11:
-            suggested_meal_type = "breakfast"
-        elif 11 <= current_hour < 15:
-            suggested_meal_type = "lunch"
-        elif 15 <= current_hour < 20:
-            suggested_meal_type = "dinner"
-        else:
-            suggested_meal_type = "snack"
+        suggested_meal_type = "meal" if 5 <= current_hour < 21 else "snack"
 
         st.markdown(f"**🍽️ Quick Add ({suggested_meal_type.title()})**")
 
@@ -3480,16 +3481,9 @@ def render_sidebar_quick_log():
     st.sidebar.markdown("**Quick Meals:**")
     template_manager = MealTemplateManager(db_path="data/food_log.db", food_logger=food_logger)
 
-    # Get time-appropriate templates
+    # Get time-appropriate templates (meal during day, snack late night)
     current_hour = datetime.now().hour
-    if 5 <= current_hour < 11:
-        meal_type = "breakfast"
-    elif 11 <= current_hour < 15:
-        meal_type = "lunch"
-    elif 15 <= current_hour < 20:
-        meal_type = "dinner"
-    else:
-        meal_type = "snack"
+    meal_type = "meal" if 5 <= current_hour < 21 else "snack"
 
     templates = template_manager.list_templates(meal_type=meal_type)
     if not templates:
@@ -3510,6 +3504,526 @@ def render_sidebar_quick_log():
                     st.sidebar.error(f"Error: {e}")
     else:
         st.sidebar.caption("No templates yet")
+
+
+# ==============================================
+# TWO-PAGE LAYOUT FUNCTIONS
+# ==============================================
+
+def render_today_page(profile: UserProfile):
+    """
+    TODAY page - focused on daily logging actions.
+
+    Compact layout for:
+    - Weight logging
+    - Food logging (today's meals)
+    - Today's workout (from current program)
+    - Daily summary metrics
+    """
+    st.header("📅 Today's Log")
+
+    # Initialize trackers
+    weight_tracker = WeightTracker(db_path="data/weights.db")
+    food_logger = FoodLogger(db_path="data/food_log.db")
+    template_manager = MealTemplateManager(db_path="data/food_log.db", food_logger=food_logger)
+
+    today = date.today().isoformat()
+    profile.load()
+
+    # Get today's data
+    today_weight = None
+    weights_today = weight_tracker.get_weights(start_date=today, end_date=today)
+    if weights_today:
+        today_weight = weights_today[0].weight_lbs
+
+    today_nutrition = food_logger.get_daily_nutrition(today)
+    today_calories = today_nutrition.total_calories if today_nutrition else 0
+    today_protein = today_nutrition.total_protein_g if today_nutrition else 0
+
+    # Get target calories from profile
+    personal_info = profile.profile_data.get('personal_info', {})
+    goals = profile.profile_data.get('goals', {})
+    if personal_info and goals:
+        plan = calculate_nutrition_plan(personal_info, goals)
+        target_calories = plan.get('tdee_adjusted', 2000)
+        target_protein = plan.get('macros', {}).get('protein_g', 150)
+    else:
+        target_calories = 2000
+        target_protein = 150
+
+    # ==============================================
+    # SECTION 1: Daily Status Summary (compact row)
+    # ==============================================
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        if today_weight:
+            st.metric("⚖️ Weight", f"{today_weight} lbs", delta=None)
+        else:
+            st.metric("⚖️ Weight", "Not logged", delta=None)
+
+    with col2:
+        cal_pct = int((today_calories / target_calories) * 100) if target_calories > 0 else 0
+        st.metric("🔥 Calories", f"{today_calories:,.0f}", delta=f"{cal_pct}% of {target_calories:,.0f}")
+
+    with col3:
+        protein_pct = int((today_protein / target_protein) * 100) if target_protein > 0 else 0
+        st.metric("🥩 Protein", f"{today_protein:.0f}g", delta=f"{protein_pct}% of {target_protein:.0f}g")
+
+    with col4:
+        # Streak calculation
+        all_weights = weight_tracker.get_weights(limit=30)
+        streak = 0
+        if all_weights:
+            check_date = date.today()
+            for entry in all_weights:
+                if entry.date == check_date.isoformat():
+                    streak += 1
+                    check_date -= timedelta(days=1)
+                else:
+                    break
+        st.metric("🔥 Streak", f"{streak} days" if streak > 0 else "Start today!")
+
+    st.markdown("---")
+
+    # ==============================================
+    # SECTION 2: Quick Actions (Log Weight + Quick Meal)
+    # ==============================================
+    col_weight, col_meal = st.columns(2)
+
+    with col_weight:
+        st.subheader("⚖️ Log Weight")
+        weight_input = st.number_input(
+            "Weight (lbs)",
+            min_value=50.0,
+            max_value=500.0,
+            value=today_weight if today_weight else float(personal_info.get('weight_lbs', 200)),
+            step=0.1,
+            key="today_weight_input"
+        )
+        if st.button("📊 Log Weight", key="today_log_weight", type="primary", use_container_width=True):
+            try:
+                weight_tracker.log_weight(weight_input, today)
+                st.success(f"✅ Logged {weight_input} lbs")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    with col_meal:
+        st.subheader("🍽️ Quick Add Meal")
+        templates = template_manager.list_templates()
+        if templates:
+            template_options = {f"{t.name} ({t.total_calories:.0f} cal)": t for t in templates[:8]}
+            selected_name = st.selectbox(
+                "Select template",
+                options=["-- Select a meal --"] + list(template_options.keys()),
+                key="today_meal_select"
+            )
+            if selected_name != "-- Select a meal --":
+                if st.button(f"➕ Log Meal", key="today_log_meal", type="primary", use_container_width=True):
+                    try:
+                        template = template_options[selected_name]
+                        template_manager.log_template(template.template_id, today)
+                        st.success(f"✅ Logged {template.name}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+        else:
+            st.info("No meal templates yet. Create one in the Progress → Nutrition section.")
+
+    st.markdown("---")
+
+    # ==============================================
+    # SECTION 3: Today's Food Log
+    # ==============================================
+    st.subheader("🍽️ Today's Food")
+
+    if today_nutrition and today_nutrition.entry_count > 0:
+        # Show today's meals grouped
+        for meal_type, entries in today_nutrition.meals.items():
+            if entries:
+                meal_cals = sum(e.calories for e in entries)
+                with st.expander(f"**{meal_type.title()}** - {meal_cals:.0f} cal ({len(entries)} items)", expanded=False):
+                    for entry in entries:
+                        col_food, col_cals, col_delete = st.columns([4, 1, 1])
+                        with col_food:
+                            st.write(f"• {entry.servings}x {entry.food_name}")
+                        with col_cals:
+                            st.write(f"{entry.calories:.0f} cal")
+                        with col_delete:
+                            if st.button("🗑️", key=f"del_{entry.entry_id}", help="Delete this entry"):
+                                try:
+                                    food_logger.delete_food_entry(entry.entry_id)
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error: {e}")
+
+        # Save as template option
+        st.markdown("---")
+        col_save, col_name = st.columns([1, 2])
+        with col_name:
+            new_template_name = st.text_input("Template name", placeholder="e.g., My Usual Lunch", key="today_template_name")
+        with col_save:
+            st.write("")  # Spacing
+            if st.button("💾 Save Today as Template", key="today_save_template"):
+                if new_template_name:
+                    # Get all entries and create template
+                    all_entries = []
+                    for entries in today_nutrition.meals.values():
+                        all_entries.extend(entries)
+                    if all_entries:
+                        foods_with_servings = [(e.food_id, e.servings) for e in all_entries]
+                        try:
+                            template_manager.create_template(
+                                name=new_template_name,
+                                foods_with_servings=foods_with_servings,
+                                meal_type="meal"
+                            )
+                            st.success(f"✅ Saved as '{new_template_name}'")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                else:
+                    st.warning("Enter a template name first")
+    else:
+        st.info("No food logged today. Use Quick Add above or search below.")
+
+    # Food search (compact)
+    with st.expander("🔍 Search & Add Food", expanded=False):
+        search_query = st.text_input("Search foods", placeholder="e.g., chicken breast, greek yogurt", key="today_food_search")
+        if search_query:
+            food_search = IntegratedFoodSearch(food_logger)
+            results = food_search.search_by_name(search_query, limit=10)
+            if results:
+                for i, result in enumerate(results[:5]):
+                    col_info, col_serv, col_add = st.columns([3, 1, 1])
+                    with col_info:
+                        st.write(f"**{result.name[:40]}** ({result.source})")
+                        st.caption(f"{result.calories:.0f} cal | {result.protein_g:.0f}g P | {result.serving_size}")
+                    with col_serv:
+                        servings = st.number_input("Srv", min_value=0.25, max_value=10.0, value=1.0, step=0.25, key=f"today_srv_{i}")
+                    with col_add:
+                        if st.button("➕", key=f"today_add_{i}"):
+                            try:
+                                # Add to database if not already there
+                                food_id = food_search.add_result_to_database(result)
+                                food_logger.log_food(food_id, servings=servings, meal_type="meal", log_date=today)
+                                st.success(f"✅ Added {result.name[:20]}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error: {e}")
+            else:
+                st.info("No results found. Try a different search term.")
+
+    st.markdown("---")
+
+    # ==============================================
+    # SECTION 4: Today's Workout
+    # ==============================================
+    st.subheader("🏋️ Today's Workout")
+
+    # Load current program
+    program_manager = ProgramManager()
+    current_program = program_manager.get_active_program()
+
+    if current_program:
+        # Handle both nested and flat structure
+        program = current_program.get('program', current_program)
+        current_week = current_program.get('current_week', 1)
+
+        # Get today's scheduled workout (or let user pick)
+        # weeks is a list of week objects, not a dict
+        weeks = program.get('weeks', [])
+        week_data = next((w for w in weeks if w.get('week_number') == current_week), {})
+        workout_days = week_data.get('workouts', [])
+
+        if workout_days:
+            # Workout and location selection in columns
+            col_workout, col_location = st.columns([2, 1])
+
+            with col_workout:
+                workout_names = [w.get('day_name', w.get('name', f"Workout {i+1}")) for i, w in enumerate(workout_days)]
+                selected_workout_name = st.selectbox(
+                    "Select workout",
+                    options=workout_names,
+                    key="today_workout_select"
+                )
+                selected_idx = workout_names.index(selected_workout_name)
+                selected_workout = workout_days[selected_idx]
+
+            with col_location:
+                # Per-workout location selector
+                location_options = {
+                    "🏠 Home Gym": Location.HOME,
+                    "🏋️ Planet Fitness": Location.PLANET_FITNESS,
+                }
+                selected_location_name = st.selectbox(
+                    "Today's location",
+                    options=list(location_options.keys()),
+                    key="today_workout_location",
+                    help="Select where you're working out today to see equipment-appropriate exercises"
+                )
+                today_location = location_options[selected_location_name]
+
+            # Show workout summary
+            exercises = selected_workout.get('exercises', [])
+            total_sets = sum(e.get('sets', 0) for e in exercises)
+
+            st.markdown(f"**{selected_workout_name}** - {len(exercises)} exercises, {total_sets} sets")
+
+            with st.expander("📋 View & Swap Exercises", expanded=False):
+                st.caption("💡 Click an exercise to see alternatives you can swap to")
+
+                # Initialize exercise swaps in session state
+                if 'exercise_swaps' not in st.session_state:
+                    st.session_state.exercise_swaps = {}
+
+                for i, ex in enumerate(exercises):
+                    ex_name = ex.get('name', ex.get('exercise', 'Unknown'))
+                    tier = ex.get('tier', '')
+                    sets_reps = f"{ex.get('sets', 0)}x{ex.get('reps', ex.get('rep_range', '8-12'))}"
+
+                    # Check if user has swapped this exercise
+                    swap_key = f"swap_{selected_workout_name}_{i}"
+                    current_exercise = st.session_state.exercise_swaps.get(swap_key, ex_name)
+
+                    exercise_obj = get_exercise_by_name(current_exercise)
+                    if not exercise_obj:
+                        exercise_obj = get_exercise_by_name(ex_name)  # Fallback to original
+
+                    if exercise_obj:
+                        current_tier = exercise_obj.tier.value
+                        muscle = exercise_obj.primary_muscles[0] if exercise_obj.primary_muscles else None
+
+                        # Get alternatives for this muscle
+                        alternatives = []
+                        if muscle:
+                            alternatives = find_alternatives_by_location(
+                                exercise_obj, muscle
+                            )
+
+                        # Build options list: current + alternatives
+                        options = [f"{current_exercise} [{current_tier}]"]
+                        alt_map = {options[0]: current_exercise}
+
+                        for alt in alternatives[:5]:  # Show up to 5 alternatives
+                            if alt.exercise.display_name != current_exercise:
+                                opt = f"{alt.exercise.display_name} [{alt.exercise.tier.value}]"
+                                options.append(opt)
+                                alt_map[opt] = alt.exercise.display_name
+
+                        # Show exercise with swap dropdown
+                        col_ex, col_swap = st.columns([3, 2])
+
+                        with col_ex:
+                            loc_icon = "🏠" if today_location == Location.HOME else "🏋️"
+                            tier_color = {"S+": "🟣", "S": "🔵", "A": "🟢", "B": "🟡", "C": "🟠"}.get(current_tier, "⚪")
+                            st.markdown(f"{loc_icon} **{current_exercise}** {tier_color}`{current_tier}` - {sets_reps}")
+
+                        with col_swap:
+                            if len(options) > 1:
+                                selected = st.selectbox(
+                                    "Swap to",
+                                    options=options,
+                                    key=f"swap_select_{i}",
+                                    label_visibility="collapsed"
+                                )
+                                if alt_map.get(selected) != current_exercise:
+                                    st.session_state.exercise_swaps[swap_key] = alt_map[selected]
+                                    st.rerun()
+                            else:
+                                st.caption("No alternatives")
+                    else:
+                        st.write(f"• {ex_name} [{tier}] - {sets_reps}")
+
+            # Quick workout logging
+            with st.expander("📝 Log Workout", expanded=True):
+                render_today_workout_logging(selected_workout, today_location)
+        else:
+            st.info("No workouts scheduled for this week.")
+    else:
+        st.info("No training program yet. Go to Progress → Training Program to generate one.")
+
+
+def render_today_workout_logging(workout: dict, location: Location = Location.HOME):
+    """Compact workout logging for Today page."""
+    workout_logger = WorkoutLogger(db_path="data/workouts.db")
+    today = date.today().isoformat()
+    workout_name = workout.get('day_name', workout.get('name', 'Workout'))
+
+    exercises = workout.get('exercises', [])
+
+    # Build exercise list using user swaps (from View & Swap section)
+    location_exercises = []
+    for i, ex in enumerate(exercises):
+        ex_name = ex.get('name', ex.get('exercise', 'Unknown'))
+
+        # Check if user swapped this exercise
+        swap_key = f"swap_{workout_name}_{i}"
+        if 'exercise_swaps' in st.session_state and swap_key in st.session_state.exercise_swaps:
+            # Use swapped exercise
+            location_exercises.append(st.session_state.exercise_swaps[swap_key])
+        else:
+            # Use original or location-appropriate alternative
+            exercise_obj = get_exercise_by_name(ex_name)
+            if exercise_obj:
+                ex_location = get_exercise_location(exercise_obj)
+                if ex_location == location or ex_location == Location.BOTH or ex_location is None:
+                    location_exercises.append(ex_name)
+                else:
+                    # Need alternative for this location
+                    alternatives = find_alternatives_by_location(
+                        exercise_obj,
+                        exercise_obj.primary_muscles[0]
+                    )
+                    if alternatives:
+                        location_exercises.append(alternatives[0].exercise.display_name)
+                    else:
+                        location_exercises.append(ex_name)
+            else:
+                location_exercises.append(ex_name)
+
+    if not exercises:
+        st.info("No exercises in this workout")
+        return
+
+    # Build exercise info map (name -> sets, reps, rir from program)
+    exercise_targets = {}
+    for i, ex in enumerate(exercises):
+        ex_name = location_exercises[i] if i < len(location_exercises) else ex.get('name', ex.get('exercise', 'Unknown'))
+        target_sets = ex.get('sets', 3)
+        target_reps = ex.get('reps', ex.get('rep_range', '8-12'))
+        target_rir = ex.get('rir', 2)
+        exercise_targets[ex_name] = {
+            'sets': target_sets,
+            'reps': target_reps,
+            'rir': target_rir
+        }
+
+    # Initialize session state for sets
+    if 'today_logged_sets' not in st.session_state:
+        st.session_state.today_logged_sets = []
+
+    # Show exercise list with targets and progress
+    st.markdown("**Today's Exercises:**")
+    for ex_name, targets in exercise_targets.items():
+        logged_count = sum(1 for s in st.session_state.today_logged_sets if s['exercise'] == ex_name)
+        target_sets = targets['sets']
+        progress = f"{logged_count}/{target_sets}"
+        status = "✅" if logged_count >= target_sets else f"🔲 {progress}"
+        st.caption(f"{status} **{ex_name}** - {target_sets} sets × {targets['reps']} @ RIR {targets['rir']}")
+
+    st.markdown("---")
+    st.markdown("**Log a set:**")
+
+    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+
+    with col1:
+        selected_exercise = st.selectbox("Exercise", location_exercises, key="today_ex_select")
+
+    # Get target values for selected exercise
+    selected_targets = exercise_targets.get(selected_exercise, {'sets': 3, 'reps': '8-12', 'rir': 2})
+    # Parse rep range to get default (use lower bound)
+    try:
+        default_reps = int(str(selected_targets['reps']).split('-')[0].replace(' reps', ''))
+    except:
+        default_reps = 8
+
+    with col2:
+        weight = st.number_input("lbs", min_value=0.0, max_value=1000.0, value=100.0, step=5.0, key="today_weight")
+
+    with col3:
+        reps = st.number_input("Reps", min_value=1, max_value=50, value=default_reps, key="today_reps")
+
+    with col4:
+        rir = st.selectbox("RIR", [0, 1, 2, 3, 4], index=selected_targets['rir'], key="today_rir")
+
+    if st.button("➕ Log Set", key="today_log_set", type="primary"):
+        set_data = {
+            'exercise': selected_exercise,
+            'weight': weight,
+            'reps': reps,
+            'rir': rir
+        }
+        st.session_state.today_logged_sets.append(set_data)
+        st.success(f"✅ {selected_exercise}: {weight} lbs × {reps} @ RIR {rir}")
+        st.rerun()
+
+    # Show logged sets
+    if st.session_state.today_logged_sets:
+        st.markdown("**Logged sets today:**")
+        for i, s in enumerate(st.session_state.today_logged_sets):
+            st.write(f"{i+1}. {s['exercise']}: {s['weight']} lbs × {s['reps']} @ RIR {s['rir']}")
+
+        if st.button("💾 Save Workout", key="today_save_workout"):
+            try:
+                # Group sets by exercise and save
+                workout_log = WorkoutLog(
+                    name=workout.get('name', 'Today Workout'),
+                    date=today,
+                    exercises=[]
+                )
+                # Group by exercise
+                from collections import defaultdict
+                exercise_sets = defaultdict(list)
+                for s in st.session_state.today_logged_sets:
+                    exercise_sets[s['exercise']].append(WorkoutSet(
+                        weight_lbs=s['weight'],
+                        reps=s['reps'],
+                        rir=s['rir']
+                    ))
+
+                for ex_name, sets in exercise_sets.items():
+                    workout_log.exercises.append({
+                        'name': ex_name,
+                        'sets': sets
+                    })
+
+                workout_logger.log_workout(workout_log)
+                st.success("✅ Workout saved!")
+                st.session_state.today_logged_sets = []
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error saving workout: {e}")
+
+
+def render_progress_page(profile: UserProfile):
+    """
+    PROGRESS page - analytics, trends, and program management.
+
+    Contains:
+    - Nutrition plan overview
+    - Training program details
+    - Weight trends & charts
+    - Adaptive TDEE
+    - Body measurements
+    """
+    st.header("📈 Progress & Analytics")
+
+    # Sub-navigation for Progress sections
+    progress_tabs = st.tabs([
+        "🏃‍♂️ My Plan",
+        "💪 Training Program",
+        "🍽️ Nutrition",
+        "⚖️ Weight Trends",
+        "📏 Body Measurements"
+    ])
+
+    with progress_tabs[0]:
+        render_proactive_dashboard(profile)
+
+    with progress_tabs[1]:
+        render_training_program(profile)
+
+    with progress_tabs[2]:
+        render_nutrition_tracking()
+
+    with progress_tabs[3]:
+        render_weight_tracking()
+        st.markdown("---")
+        render_adaptive_tdee()
+
+    with progress_tabs[4]:
+        render_body_measurements()
 
 
 def main():
@@ -3556,7 +4070,8 @@ def main():
     if "rag_system" not in st.session_state:
         default_backend = "mlx" if MLX_AVAILABLE else "ollama"
         default_model = "mlx-community/Meta-Llama-3.1-70B-Instruct-4bit" if MLX_AVAILABLE else "llama3.1:70b"
-        st.session_state.rag_system = HealthRAG(backend=default_backend)
+        # Use cached RAG system to avoid re-initialization on every page load
+        st.session_state.rag_system = get_rag_system(backend=default_backend)
         st.session_state.current_model = default_model
         st.session_state.current_backend = default_backend
     
@@ -3599,20 +4114,49 @@ def main():
     # Sidebar quick-log widget (always visible)
     render_sidebar_quick_log()
 
-    # Quick Daily Log (prominent at top for easy tracking)
-    render_quick_daily_log()
+    # ==============================================
+    # TWO-PAGE LAYOUT: Today vs Progress
+    # ==============================================
 
-    # Proactive Dashboard (show plan automatically if profile exists)
-    if profile.exists():
-        render_proactive_dashboard(profile)
-        render_training_program(profile)
-        render_workout_logging()
-        render_nutrition_tracking()
-        render_weight_tracking()
-        render_adaptive_tdee()
-        render_body_measurements()
+    # Page selector - styled as prominent tabs at top
+    col_page1, col_page2, col_spacer = st.columns([1, 1, 3])
 
-    # Chat section header
+    with col_page1:
+        today_selected = st.button(
+            "📅 Today",
+            key="page_today",
+            type="primary" if st.session_state.get('current_page', 'today') == 'today' else "secondary",
+            use_container_width=True
+        )
+        if today_selected:
+            st.session_state.current_page = 'today'
+            st.rerun()
+
+    with col_page2:
+        progress_selected = st.button(
+            "📈 Progress",
+            key="page_progress",
+            type="primary" if st.session_state.get('current_page', 'today') == 'progress' else "secondary",
+            use_container_width=True
+        )
+        if progress_selected:
+            st.session_state.current_page = 'progress'
+            st.rerun()
+
+    # Initialize page state
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 'today'
+
+    st.markdown("---")
+
+    # Render appropriate page
+    if st.session_state.current_page == 'today':
+        render_today_page(profile)
+    else:
+        render_progress_page(profile)
+
+    # Chat section at bottom of both pages
+    st.markdown("---")
     st.subheader("💬 Chat with Your Coach")
 
     if "messages" not in st.session_state:

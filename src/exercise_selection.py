@@ -29,6 +29,91 @@ class ExerciseRecommendation:
     location_note: Optional[str] = None  # "Available at home" or "Requires Planet Fitness"
 
 
+# Movement patterns to detect variations (avoid selecting Cable + Dumbbell versions of same movement)
+# More specific patterns listed first (e.g., "preacher curl" before "curl")
+MOVEMENT_PATTERNS = [
+    # Shoulders - specific
+    "lateral raise",
+    "front raise",
+    "face pull",
+    "reverse fly",
+    "rear delt fly",
+    "y-raise",
+    "shoulder press",
+    "overhead press",
+    # Chest - specific
+    "incline press",
+    "decline press",
+    "flat press",
+    "chest press",
+    "bench press",
+    "cable fly",
+    "dumbbell fly",
+    "pec deck",
+    "fly",
+    "flye",
+    # Back - specific
+    "pulldown",
+    "pull down",
+    "pull-up",
+    "chin-up",
+    "seated row",
+    "cable row",
+    "barbell row",
+    "dumbbell row",
+    "t-bar row",
+    "pullover",
+    # Triceps - specific
+    "pushdown",
+    "push down",
+    "overhead extension",
+    "tricep extension",
+    "skull crusher",
+    "close-grip bench",
+    "dip",
+    "kickback",
+    # Biceps - specific (allow different curl variations)
+    "preacher curl",
+    "spider curl",
+    "incline curl",
+    "hammer curl",
+    "bayesian curl",
+    "concentration curl",
+    # Generic curl only matches if no specific curl type
+    # Legs
+    "squat",
+    "leg press",
+    "leg extension",
+    "leg curl",
+    "romanian deadlift",
+    "hip thrust",
+    "calf raise",
+    "lunge",
+    "split squat",
+    # Other
+    "shrug",
+]
+
+
+def get_movement_pattern(exercise_name: str) -> Optional[str]:
+    """
+    Extract the base movement pattern from an exercise name.
+    E.g., "Cable Lateral Raise" and "Dumbbell Lateral Raise" -> "lateral raise"
+
+    Uses longest-match-first to ensure specific patterns match before generic ones.
+    """
+    name_lower = exercise_name.lower()
+
+    # Sort patterns by length (longest first) to match specific patterns before generic
+    sorted_patterns = sorted(MOVEMENT_PATTERNS, key=len, reverse=True)
+
+    for pattern in sorted_patterns:
+        if pattern in name_lower:
+            return pattern
+
+    return None
+
+
 class ExerciseSelector:
     """
     Smart exercise selection engine.
@@ -71,6 +156,7 @@ class ExerciseSelector:
 
         recommendations = []
         selected_names = set()  # Track selected to avoid duplicates
+        selected_patterns = set()  # Track movement patterns to avoid redundancy
 
         # Try each tier in priority order
         for tier in tier_priority:
@@ -86,6 +172,11 @@ class ExerciseSelector:
                 if ex.name in selected_names:
                     continue
 
+                # Check for duplicate movement pattern (e.g., Cable + Dumbbell Lateral Raise)
+                pattern = get_movement_pattern(ex.display_name)
+                if pattern and pattern in selected_patterns:
+                    continue  # Skip - already have this movement pattern
+
                 if self._has_required_equipment(ex) and self._appropriate_difficulty(ex):
                     available_exercises.append(ex)
 
@@ -93,6 +184,11 @@ class ExerciseSelector:
             for ex in available_exercises:
                 if len(recommendations) >= count:
                     break
+
+                # Double-check pattern isn't already selected (may have been added in inner loop)
+                pattern = get_movement_pattern(ex.display_name)
+                if pattern and pattern in selected_patterns:
+                    continue
 
                 # Find alternatives (same tier or one tier lower)
                 alternatives = self._find_alternatives(ex, tier)
@@ -115,6 +211,8 @@ class ExerciseSelector:
                 ))
 
                 selected_names.add(ex.name)
+                if pattern:
+                    selected_patterns.add(pattern)
 
         # If still not enough, add from next tier down
         if len(recommendations) < count:
@@ -125,6 +223,12 @@ class ExerciseSelector:
             for ex in lower_exercises:
                 if len(recommendations) >= count:
                     break
+
+                # Check for duplicate movement pattern
+                pattern = get_movement_pattern(ex.display_name)
+                if pattern and pattern in selected_patterns:
+                    continue
+
                 if ex.name not in selected_names and self._has_required_equipment(ex):
                     recommendations.append(ExerciseRecommendation(
                         exercise=ex,
@@ -133,6 +237,8 @@ class ExerciseSelector:
                         location_note=self._get_location_note(ex)
                     ))
                     selected_names.add(ex.name)
+                    if pattern:
+                        selected_patterns.add(pattern)
 
         return recommendations
 

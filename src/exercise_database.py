@@ -737,10 +737,23 @@ def get_exercises_by_equipment(available_equipment: List[str], muscle: Optional[
 
 
 def get_exercise_by_name(name: str) -> Optional[Exercise]:
-    """Get exercise by internal name"""
+    """Get exercise by internal name or display name"""
+    # First try exact match on internal name
     for ex in ALL_EXERCISES:
         if ex.name == name:
             return ex
+
+    # Then try exact match on display name
+    for ex in ALL_EXERCISES:
+        if ex.display_name == name:
+            return ex
+
+    # Finally try case-insensitive match on display name
+    name_lower = name.lower()
+    for ex in ALL_EXERCISES:
+        if ex.display_name.lower() == name_lower:
+            return ex
+
     return None
 
 
