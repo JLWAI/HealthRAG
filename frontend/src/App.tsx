@@ -57,12 +57,24 @@ function AppContent() {
             <span>HealthRAG</span>
           </div>
           <div className="flex-1" />
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-4">
             <button
               onClick={() => setCurrentPage('today')}
               className={`text-sm font-medium transition-colors ${currentPage === 'today' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Today
+            </button>
+            <button
+              onClick={() => setCurrentPage('food')}
+              className={`text-sm font-medium transition-colors ${currentPage === 'food' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Food
+            </button>
+            <button
+              onClick={() => setCurrentPage('workout')}
+              className={`text-sm font-medium transition-colors ${currentPage === 'workout' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Workout
             </button>
             <button
               onClick={() => setCurrentPage('progress')}

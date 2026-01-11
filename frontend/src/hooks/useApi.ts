@@ -103,7 +103,26 @@ export function useFoodSearch(query: string) {
     queryFn: async () => {
       if (!query || query.length < 2) return []
       const { data } = await api.searchFood(query)
-      return data
+      // Transform API response to frontend format
+      return (data as Array<{
+        food_name: string
+        serving_size: string
+        calories: number
+        protein_g: number
+        carbs_g: number
+        fat_g: number
+        source: string
+        external_id: string
+      }>).map(item => ({
+        id: item.external_id || item.food_name,
+        name: item.food_name,
+        serving_size: item.serving_size,
+        calories: item.calories,
+        protein: item.protein_g,
+        carbs: item.carbs_g,
+        fat: item.fat_g,
+        source: item.source as 'fdc' | 'off' | 'custom',
+      }))
     },
     enabled: query.length >= 2,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
@@ -115,7 +134,19 @@ export function useLogFood() {
 
   return useMutation({
     mutationFn: async (data: Omit<FoodEntry, 'id' | 'logged_at'>) => {
-      const response = await api.logFood(data)
+      // Transform frontend format to backend format
+      const backendData = {
+        date: new Date().toISOString().split('T')[0],
+        meal_type: data.meal_type,
+        food_name: data.food_name,
+        serving_size: '1 serving',
+        serving_quantity: data.servings,
+        calories: data.calories,
+        protein_g: data.protein,
+        carbs_g: data.carbs,
+        fat_g: data.fat,
+      }
+      const response = await api.logFood(backendData as unknown as Omit<FoodEntry, 'id' | 'logged_at'>)
       return response.data
     },
     onSuccess: () => {

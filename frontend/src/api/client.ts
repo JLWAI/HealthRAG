@@ -145,11 +145,11 @@ export const api = {
   searchFood: (query: string) =>
     apiClient.get<FoodItem[]>(`/api/nutrition/search?q=${encodeURIComponent(query)}`),
   logFood: (data: Omit<FoodEntry, 'id' | 'logged_at'>) =>
-    apiClient.post<FoodEntry>('/api/nutrition/log', data),
+    apiClient.post<FoodEntry>('/api/nutrition/foods', data),
   getDailyNutrition: (date?: string) =>
-    apiClient.get<DailyNutrition>(`/api/nutrition/daily${date ? `?date=${date}` : ''}`),
+    apiClient.get<DailyNutrition>(`/api/nutrition/daily-totals${date ? `?date=${date}` : ''}`),
   getFoodLog: (date?: string) =>
-    apiClient.get<FoodEntry[]>(`/api/nutrition/log${date ? `?date=${date}` : ''}`),
+    apiClient.get<FoodEntry[]>(`/api/nutrition/foods${date ? `?date=${date}` : ''}`),
 
   // Workouts (placeholder for Phase C)
   getWorkouts: () => apiClient.get('/api/workouts'),
