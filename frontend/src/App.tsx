@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Dashboard } from '@/components/Dashboard'
+import { NutritionPage } from '@/components/NutritionPage'
 import './index.css'
+
+type Page = 'today' | 'food' | 'workout' | 'progress'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -17,6 +21,7 @@ const queryClient = new QueryClient({
 // App content component that uses auth
 function AppContent() {
   const { isLoading, isAuthenticated, user } = useAuth()
+  const [currentPage, setCurrentPage] = useState<Page>('today')
 
   if (isLoading) {
     return (
@@ -24,6 +29,22 @@ function AppContent() {
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     )
+  }
+
+  // Render current page
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'today':
+        return <Dashboard />
+      case 'food':
+        return <NutritionPage />
+      case 'workout':
+        return <div className="text-center text-muted-foreground py-12">Workout page coming in Phase C</div>
+      case 'progress':
+        return <div className="text-center text-muted-foreground py-12">Progress page coming soon</div>
+      default:
+        return <Dashboard />
+    }
   }
 
   return (
@@ -37,24 +58,23 @@ function AppContent() {
           </div>
           <div className="flex-1" />
           <nav className="flex items-center gap-2">
-            <a
-              href="#"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            <button
+              onClick={() => setCurrentPage('today')}
+              className={`text-sm font-medium transition-colors ${currentPage === 'today' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Today
-            </a>
-            <a
-              href="#"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            </button>
+            <button
+              onClick={() => setCurrentPage('progress')}
+              className={`text-sm font-medium transition-colors ${currentPage === 'progress' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Progress
-            </a>
-            <a
-              href="#"
+            </button>
+            <button
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Settings
-            </a>
+            </button>
             {isAuthenticated && user && (
               <span className="text-xs text-muted-foreground ml-2">
                 {user.email}
@@ -66,40 +86,40 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="container py-6">
-        <Dashboard />
+        {renderPage()}
       </main>
 
       {/* Bottom Navigation (Mobile) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden">
         <div className="grid grid-cols-4 h-16">
-          <a
-            href="#"
-            className="flex flex-col items-center justify-center text-xs font-medium text-primary"
+          <button
+            onClick={() => setCurrentPage('today')}
+            className={`flex flex-col items-center justify-center text-xs font-medium ${currentPage === 'today' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <span className="text-lg mb-1">📊</span>
             Today
-          </a>
-          <a
-            href="#"
-            className="flex flex-col items-center justify-center text-xs font-medium text-muted-foreground"
+          </button>
+          <button
+            onClick={() => setCurrentPage('food')}
+            className={`flex flex-col items-center justify-center text-xs font-medium ${currentPage === 'food' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <span className="text-lg mb-1">🍽️</span>
             Food
-          </a>
-          <a
-            href="#"
-            className="flex flex-col items-center justify-center text-xs font-medium text-muted-foreground"
+          </button>
+          <button
+            onClick={() => setCurrentPage('workout')}
+            className={`flex flex-col items-center justify-center text-xs font-medium ${currentPage === 'workout' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <span className="text-lg mb-1">🏋️</span>
             Workout
-          </a>
-          <a
-            href="#"
-            className="flex flex-col items-center justify-center text-xs font-medium text-muted-foreground"
+          </button>
+          <button
+            onClick={() => setCurrentPage('progress')}
+            className={`flex flex-col items-center justify-center text-xs font-medium ${currentPage === 'progress' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <span className="text-lg mb-1">📈</span>
             Progress
-          </a>
+          </button>
         </div>
       </nav>
 
