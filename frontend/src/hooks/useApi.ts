@@ -18,8 +18,16 @@ export function useProfile() {
   return useQuery({
     queryKey: queryKeys.profile,
     queryFn: async () => {
-      const { data } = await api.getProfile()
-      return data
+      try {
+        const { data } = await api.getProfile()
+        return data
+      } catch (error) {
+        // Return null for 404 (profile not found) - not an error state
+        if ((error as { response?: { status?: number } })?.response?.status === 404) {
+          return null
+        }
+        throw error
+      }
     },
   })
 }
@@ -40,7 +48,14 @@ export function useWeightTrend(days?: number) {
     queryKey: queryKeys.weightTrend(days),
     queryFn: async () => {
       const { data } = await api.getWeightTrend(days)
-      return data
+      // API returns { entries: [...], ewma_alpha, latest_trend, ... }
+      // Transform to array format expected by frontend
+      const entries = (data as { entries?: Array<{ date: string; weight_lbs: number; trend_weight_lbs: number }> })?.entries || []
+      return entries.map(entry => ({
+        date: entry.date,
+        weight_lbs: entry.weight_lbs,
+        trend_weight: entry.trend_weight_lbs,
+      }))
     },
   })
 }

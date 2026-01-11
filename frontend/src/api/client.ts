@@ -135,9 +135,9 @@ export const api = {
 
   // Weight tracking
   getWeights: (days?: number) =>
-    apiClient.get<WeightEntry[]>(`/api/weight${days ? `?days=${days}` : ''}`),
+    apiClient.get<WeightEntry[]>(`/api/weight/entries${days ? `?days=${days}` : ''}`),
   logWeight: (data: { weight_lbs: number; date?: string; notes?: string }) =>
-    apiClient.post<WeightEntry>('/api/weight', data),
+    apiClient.post<WeightEntry>('/api/weight/entries', data),
   getWeightTrend: (days?: number) =>
     apiClient.get<WeightTrend[]>(`/api/weight/trend${days ? `?days=${days}` : ''}`),
 

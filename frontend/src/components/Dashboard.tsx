@@ -144,14 +144,22 @@ export function Dashboard() {
     )
   }
 
+  // Show welcome message if no profile exists yet
+  const hasProfile = profile !== null
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">
-          {profile?.name ? `Hi, ${profile.name}!` : 'HealthRAG'}
+          {hasProfile && profile?.name ? `Hi, ${profile.name}!` : 'Welcome to HealthRAG'}
         </h1>
         <p className="text-muted-foreground">{formattedDate}</p>
+        {!hasProfile && (
+          <p className="text-sm text-yellow-600 mt-2">
+            No profile found. Create one to get personalized recommendations.
+          </p>
+        )}
       </div>
 
       {/* Key Metrics */}
