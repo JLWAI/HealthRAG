@@ -151,6 +151,14 @@ try:
 except Exception as e:
     failed_endpoints.append(f"nutrition: {e}")
 
+# Meal Template endpoints
+try:
+    from api import templates
+    app.include_router(templates.router, prefix="/api/templates", tags=["Meal Templates"])
+    loaded_endpoints.append("templates")
+except Exception as e:
+    failed_endpoints.append(f"templates: {e}")
+
 # Sync endpoints
 try:
     from api import sync
@@ -158,6 +166,14 @@ try:
     loaded_endpoints.append("sync")
 except Exception as e:
     failed_endpoints.append(f"sync: {e}")
+
+# Chat / RAG endpoints
+try:
+    from api import chat
+    app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+    loaded_endpoints.append("chat")
+except Exception as e:
+    failed_endpoints.append(f"chat: {e}")
 
 
 if __name__ == "__main__":

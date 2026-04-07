@@ -6,6 +6,12 @@ services:
     image: postgres:15-alpine
     container_name: healthrag-db
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
     environment:
       POSTGRES_DB: healthrag
       POSTGRES_USER: healthrag
@@ -54,6 +60,12 @@ services:
       # Food APIs
       USDA_FDC_API_KEY: ${USDA_FDC_API_KEY:-}
       OFF_API_BASE_URL: https://world.openfoodfacts.org
+
+      # RAG / Ollama (CT 101)
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.0.211:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+    volumes:
+      - /opt/healthrag/data:/app/data:ro  # shared vectorstore (read-only)
     depends_on:
       healthrag-db:
         condition: service_healthy

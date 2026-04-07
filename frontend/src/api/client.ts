@@ -118,6 +118,38 @@ export interface FoodEntry {
   logged_at: string
 }
 
+export interface TemplateFoodItem {
+  food_id: number
+  food_name: string
+  servings: number
+  serving_size: string
+  calories: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+}
+
+export interface MealTemplate {
+  template_id: number
+  name: string
+  description?: string
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  foods: TemplateFoodItem[]
+  total_calories: number
+  total_protein_g: number
+  total_carbs_g: number
+  total_fat_g: number
+  created_at: string
+  last_used?: string
+  use_count: number
+}
+
+export interface MealTemplateCreate {
+  name: string
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  description?: string
+}
+
 // API Functions
 export const api = {
   // Health check
@@ -144,12 +176,28 @@ export const api = {
   // Nutrition
   searchFood: (query: string) =>
     apiClient.get<FoodItem[]>(`/api/nutrition/search?q=${encodeURIComponent(query)}`),
+  getRecentFoods: (days: number = 14, limit: number = 10) =>
+    apiClient.get<FoodItem[]>(`/api/nutrition/recent?days=${days}&limit=${limit}`),
   logFood: (data: Omit<FoodEntry, 'id' | 'logged_at'>) =>
     apiClient.post<FoodEntry>('/api/nutrition/foods', data),
+  deleteFood: (id: number) =>
+    apiClient.delete(`/api/nutrition/foods/${id}`),
   getDailyNutrition: (date?: string) =>
     apiClient.get<DailyNutrition>(`/api/nutrition/daily-totals${date ? `?date=${date}` : ''}`),
   getFoodLog: (date?: string) =>
     apiClient.get<FoodEntry[]>(`/api/nutrition/foods${date ? `?date=${date}` : ''}`),
+
+  // Meal Templates
+  getTemplates: (mealType?: string, sortBy: string = 'recent') =>
+    apiClient.get<MealTemplate[]>(`/api/templates?${mealType ? `meal_type=${mealType}&` : ''}sort_by=${sortBy}`),
+  getTemplate: (id: number) =>
+    apiClient.get<MealTemplate>(`/api/templates/${id}`),
+  createTemplate: (data: MealTemplateCreate) =>
+    apiClient.post<MealTemplate>('/api/templates', data),
+  logTemplate: (id: number, multiplier: number = 1.0, date?: string) =>
+    apiClient.post(`/api/templates/${id}/log?multiplier=${multiplier}${date ? `&date=${date}` : ''}`),
+  deleteTemplate: (id: number) =>
+    apiClient.delete(`/api/templates/${id}`),
 
   // Workouts (placeholder for Phase C)
   getWorkouts: () => apiClient.get('/api/workouts'),

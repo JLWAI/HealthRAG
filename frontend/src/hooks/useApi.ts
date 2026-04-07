@@ -10,6 +10,8 @@ export const queryKeys = {
   dailyNutrition: (date?: string) => ['dailyNutrition', date] as const,
   foodLog: (date?: string) => ['foodLog', date] as const,
   foodSearch: (query: string) => ['foodSearch', query] as const,
+  mealTemplates: (mealType?: string, sortBy?: string) => ['mealTemplates', mealType, sortBy] as const,
+  mealTemplate: (id: number) => ['mealTemplate', id] as const,
   workouts: ['workouts'] as const,
 }
 
@@ -129,6 +131,36 @@ export function useFoodSearch(query: string) {
   })
 }
 
+export function useRecentFoods(days: number = 14, limit: number = 10) {
+  return useQuery({
+    queryKey: ['recentFoods', days, limit],
+    queryFn: async () => {
+      const { data } = await api.getRecentFoods(days, limit)
+      // Transform API response to frontend format
+      return (data as Array<{
+        food_name: string
+        serving_size: string
+        calories: number
+        protein_g: number
+        carbs_g: number
+        fat_g: number
+        source: string
+        external_id: string
+      }>).map(item => ({
+        id: item.external_id || item.food_name,
+        name: item.food_name,
+        serving_size: item.serving_size,
+        calories: item.calories,
+        protein: item.protein_g,
+        carbs: item.carbs_g,
+        fat: item.fat_g,
+        source: item.source as 'fdc' | 'off' | 'custom',
+      }))
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  })
+}
+
 export function useLogFood() {
   const queryClient = useQueryClient()
 
@@ -153,6 +185,92 @@ export function useLogFood() {
       // Invalidate nutrition queries to refetch
       queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] })
       queryClient.invalidateQueries({ queryKey: ['foodLog'] })
+    },
+  })
+}
+
+export function useDeleteFood() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.deleteFood(id)
+      return response.data
+    },
+    onSuccess: () => {
+      // Invalidate nutrition queries to refetch
+      queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] })
+      queryClient.invalidateQueries({ queryKey: ['foodLog'] })
+    },
+  })
+}
+
+// Meal Template hooks
+export function useMealTemplates(mealType?: string, sortBy: string = 'recent') {
+  return useQuery({
+    queryKey: queryKeys.mealTemplates(mealType, sortBy),
+    queryFn: async () => {
+      const { data } = await api.getTemplates(mealType, sortBy)
+      return data
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  })
+}
+
+export function useMealTemplate(id: number) {
+  return useQuery({
+    queryKey: queryKeys.mealTemplate(id),
+    queryFn: async () => {
+      const { data } = await api.getTemplate(id)
+      return data
+    },
+    enabled: id > 0,
+  })
+}
+
+export function useCreateTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: { name: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; description?: string }) => {
+      const response = await api.createTemplate(data)
+      return response.data
+    },
+    onSuccess: () => {
+      // Invalidate template queries to refetch
+      queryClient.invalidateQueries({ queryKey: ['mealTemplates'] })
+    },
+  })
+}
+
+export function useLogTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, multiplier = 1.0, date }: { id: number; multiplier?: number; date?: string }) => {
+      const response = await api.logTemplate(id, multiplier, date)
+      return response.data
+    },
+    onSuccess: () => {
+      // Invalidate nutrition and template queries
+      queryClient.invalidateQueries({ queryKey: ['dailyNutrition'] })
+      queryClient.invalidateQueries({ queryKey: ['foodLog'] })
+      queryClient.invalidateQueries({ queryKey: ['mealTemplates'] })
+    },
+  })
+}
+
+export function useDeleteTemplate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.deleteTemplate(id)
+      return response.data
+    },
+    onSuccess: () => {
+      // Invalidate template queries to refetch
+      queryClient.invalidateQueries({ queryKey: ['mealTemplates'] })
     },
   })
 }

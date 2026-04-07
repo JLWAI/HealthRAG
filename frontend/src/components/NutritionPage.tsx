@@ -2,6 +2,8 @@ import { Utensils } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FoodSearch } from '@/components/FoodSearch'
 import { DailyFoodLog } from '@/components/DailyFoodLog'
+import { RecentFoods } from '@/components/RecentFoods'
+import { MealTemplates } from '@/components/MealTemplates'
 import { useProfile, useDailyNutrition, useToday } from '@/hooks/useApi'
 
 // Macro Progress Bar
@@ -108,6 +110,12 @@ export function NutritionPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Recent Foods - Quick Add */}
+      <RecentFoods onFoodLogged={handleFoodLogged} />
+
+      {/* Meal Templates - One-Click Meals */}
+      <MealTemplates onTemplateLogged={handleFoodLogged} />
 
       {/* Food Search */}
       <Card>

@@ -84,21 +84,23 @@ test.describe('Food Logging', () => {
     await page.screenshot({ path: 'e2e/screenshots/food-quick-add.png' })
   })
 
-  test('meal type selector works', async ({ page }) => {
+  test('auto-detects meal type based on time', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Food', exact: true }).click()
 
-    // Should have meal type buttons
-    await expect(page.getByRole('button', { name: /breakfast/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /lunch/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /dinner/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /snack/i })).toBeVisible()
+    // Search for chicken to see the "Add to {meal}" button
+    await page.getByPlaceholder(/Search foods/i).fill('chicken')
+    await page.waitForTimeout(1500)
 
-    // Click dinner
-    await page.getByRole('button', { name: /dinner/i }).click()
+    // Click on result to see selected food card
+    await page.getByText(/Chicken Breast/i).first().click()
+    await page.waitForTimeout(500)
 
-    // Dinner should be selected (has default variant)
-    await page.screenshot({ path: 'e2e/screenshots/meal-type-selector.png' })
+    // Should show "Add to" button with auto-detected meal type
+    // Will be breakfast/lunch/dinner/snack based on current time
+    await expect(page.getByRole('button', { name: /Add to/i })).toBeVisible()
+
+    await page.screenshot({ path: 'e2e/screenshots/auto-meal-detection.png' })
   })
 })
 

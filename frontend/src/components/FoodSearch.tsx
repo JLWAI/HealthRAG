@@ -27,7 +27,7 @@ export function FoodSearch({ mealType, onFoodLogged }: FoodSearchProps) {
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)
   const [servings, setServings] = useState('1')
   const [showResults, setShowResults] = useState(false)
-  const [activeMealType, setActiveMealType] = useState<MealType>(mealType || getDefaultMealType())
+  const activeMealType = mealType || getDefaultMealType()
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
@@ -107,21 +107,6 @@ export function FoodSearch({ mealType, onFoodLogged }: FoodSearchProps) {
 
   return (
     <div className="space-y-4">
-      {/* Meal Type Selector */}
-      <div className="flex gap-1">
-        {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((type) => (
-          <Button
-            key={type}
-            variant={activeMealType === type ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveMealType(type)}
-            className="capitalize flex-1"
-          >
-            {type}
-          </Button>
-        ))}
-      </div>
-
       {/* Search Input */}
       <div className="relative">
         <div className="relative">

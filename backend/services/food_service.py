@@ -15,6 +15,7 @@ src_path = Path(__file__).parent.parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
 from food_logger import FoodLogger, Food, FoodEntry, DailyNutrition
+from meal_templates import MealTemplateManager, MealTemplate
 
 
 class FoodService:
@@ -33,6 +34,7 @@ class FoodService:
             db_path: Path to SQLite food log database
         """
         self.logger = FoodLogger(db_path)
+        self.template_manager = MealTemplateManager(db_path, self.logger)
 
     def search_foods(
         self,
@@ -231,6 +233,134 @@ class FoodService:
             copied_count += 1
 
         return copied_count
+
+    def delete_food_entry(self, user_id: str, entry_id: int) -> None:
+        """
+        Delete a food entry.
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            entry_id: Food entry ID to delete
+
+        Raises:
+            ValueError: If entry doesn't exist
+        """
+        # Future: Add user ownership check
+        self.logger.delete_entry(entry_id)
+
+    def get_recent_foods(self, user_id: str, days: int = 14, limit: int = 10) -> List[Food]:
+        """
+        Get most frequently logged foods from recent days.
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            days: Look back this many days (default 14)
+            limit: Max foods to return (default 10)
+
+        Returns:
+            List of Food objects, ordered by frequency (most common first)
+        """
+        # Future: Add user_id filtering
+        return self.logger.get_recent_foods(days, limit)
+
+    # Meal Template Operations
+
+    def list_templates(
+        self,
+        user_id: str,
+        meal_type: Optional[str] = None,
+        sort_by: str = "recent"
+    ) -> List[MealTemplate]:
+        """
+        List meal templates, optionally filtered by meal type.
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            meal_type: Filter by meal type (breakfast, lunch, dinner, snack)
+            sort_by: "recent", "frequent", or "name"
+
+        Returns:
+            List of MealTemplate objects
+        """
+        # Future: Add user_id filtering
+        return self.template_manager.list_templates(meal_type, sort_by)
+
+    def get_template(self, user_id: str, template_id: int) -> Optional[MealTemplate]:
+        """
+        Get template by ID with all foods and calculated totals.
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            template_id: Template ID
+
+        Returns:
+            MealTemplate or None if not found
+        """
+        # Future: Add user ownership check
+        return self.template_manager.get_template(template_id)
+
+    def create_template_from_today(
+        self,
+        user_id: str,
+        name: str,
+        meal_type: str,
+        description: Optional[str] = None
+    ) -> int:
+        """
+        Create template from today's logged foods for a specific meal type.
+
+        Args:
+            user_id: User UUID
+            name: Template name
+            meal_type: breakfast, lunch, dinner, or snack
+            description: Optional description
+
+        Returns:
+            Template ID
+        """
+        today = date.today().isoformat()
+        return self.template_manager.create_template_from_date(
+            name=name,
+            source_date=today,
+            meal_type=meal_type,
+            description=description
+        )
+
+    def log_template(
+        self,
+        user_id: str,
+        template_id: int,
+        log_date: Optional[str] = None,
+        multiplier: float = 1.0
+    ) -> int:
+        """
+        Log all foods from template (one-click logging).
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            template_id: Template to log
+            log_date: Date to log foods (defaults to today)
+            multiplier: Multiply all servings (e.g., 0.5 for half portions)
+
+        Returns:
+            Number of food entries created
+        """
+        # Future: Add user ownership check
+        return self.template_manager.log_template(template_id, log_date, multiplier)
+
+    def delete_template(self, user_id: str, template_id: int) -> bool:
+        """
+        Delete a meal template.
+
+        Args:
+            user_id: User UUID (for future multi-user support)
+            template_id: Template to delete
+
+        Returns:
+            True if deleted, False if not found
+        """
+        # Future: Add user ownership check
+        return self.template_manager.delete_template(template_id)
 
 
 # Singleton instance

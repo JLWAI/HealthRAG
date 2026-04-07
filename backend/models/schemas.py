@@ -303,6 +303,78 @@ class SignupRequest(BaseModel):
 
 
 # ============================================
+# Meal Template Schemas
+# ============================================
+
+class TemplateFoodItem(BaseModel):
+    """Food item within a meal template"""
+    food_id: int
+    food_name: str
+    servings: float = Field(gt=0)
+    serving_size: str
+    calories: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+
+    class Config:
+        from_attributes = True
+
+
+class MealTemplateBase(BaseModel):
+    """Base schema for meal template"""
+    name: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = None
+    meal_type: str = Field(pattern="^(breakfast|lunch|dinner|snack)$")
+
+
+class MealTemplateCreate(BaseModel):
+    """Schema for creating template from today's meal"""
+    name: str = Field(min_length=1, max_length=100)
+    meal_type: str = Field(pattern="^(breakfast|lunch|dinner|snack)$")
+    description: Optional[str] = None
+
+
+class MealTemplateResponse(MealTemplateBase):
+    """Schema for meal template API response"""
+    template_id: int
+    foods: List[TemplateFoodItem]
+    total_calories: float
+    total_protein_g: float
+    total_carbs_g: float
+    total_fat_g: float
+    created_at: str
+    last_used: Optional[str] = None
+    use_count: int
+
+    class Config:
+        from_attributes = True
+
+
+class TemplateLogRequest(BaseModel):
+    """Schema for logging a template"""
+    template_id: int
+    date: Optional[str] = Field(None, pattern=r'^\d{4}-\d{2}-\d{2}$')  # YYYY-MM-DD
+    multiplier: float = Field(default=1.0, gt=0, le=10)  # Allow 0.1x to 10x servings
+
+
+# ============================================
+# Chat / RAG Schemas
+# ============================================
+
+class ChatQuery(BaseModel):
+    """Schema for a RAG chat query"""
+    question: str = Field(min_length=1, max_length=2000)
+
+
+class ChatResponse(BaseModel):
+    """Schema for a RAG chat response"""
+    response: str
+    response_time: float
+    sources: List[str] = []
+
+
+# ============================================
 # Generic API Response
 # ============================================
 

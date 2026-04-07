@@ -1,7 +1,7 @@
 import { Utensils, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useFoodLog, useDailyNutrition, useToday } from '@/hooks/useApi'
+import { useFoodLog, useDailyNutrition, useToday, useDeleteFood } from '@/hooks/useApi'
 import type { FoodEntry } from '@/api/client'
 
 interface MealSectionProps {
@@ -58,6 +58,7 @@ export function DailyFoodLog() {
   const today = useToday()
   const { data: foodLog, isLoading } = useFoodLog(today)
   const { data: nutrition } = useDailyNutrition(today)
+  const deleteFood = useDeleteFood()
 
   // Group entries by meal type
   const mealGroups = {
@@ -68,8 +69,7 @@ export function DailyFoodLog() {
   }
 
   const handleDelete = (id: number) => {
-    // TODO: Implement delete mutation
-    console.log('Delete food entry:', id)
+    deleteFood.mutate(id)
   }
 
   if (isLoading) {
