@@ -26,7 +26,7 @@ def process_new_pdfs():
     
     # Initialize RAG system
     print("\n🚀 Initializing RAG system...")
-    rag = HealthRAG(backend="mlx")
+    rag = HealthRAG(backend="ollama")
     
     # Add documents to vectorstore
     print("\n📝 Processing and adding documents...")

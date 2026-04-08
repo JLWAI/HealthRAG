@@ -58,7 +58,9 @@ class MLXModel:
 
 
 class OllamaLLM:
-    def __init__(self, model: str = "llama3.1:8b", base_url: str = "http://localhost:11434"):
+    def __init__(self, model: str = "llama3.1:8b", base_url: str = None):
+        if base_url is None:
+            base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.model = model
         self.base_url = base_url
     
