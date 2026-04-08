@@ -343,18 +343,28 @@ docker compose -f docker-compose.yml up -d
 
 ### Backup Data
 
+Use the included backup script for on-demand or scheduled backups:
+
 ```bash
 # On CT 100
 cd /opt/healthrag
 
-# Backup user data (profiles, workout logs, food logs, vectorstore)
-tar -czf healthrag-backup-$(date +%Y%m%d).tar.gz data/
+# Run backup manually
+./scripts/backup-healthrag.sh
 
-# Copy to Proxmox host for safekeeping
-scp healthrag-backup-*.tar.gz root@192.168.0.201:/var/lib/vz/dump/
+# Use a custom backup location
+BACKUP_DIR=/backups/healthrag ./scripts/backup-healthrag.sh
+```
 
-# OR copy to homelab backups directory
-# scp healthrag-backup-*.tar.gz root@192.168.0.201:/backups/healthrag/
+The script backs up:
+- SQLite databases (workouts.db, food_log.db, body_measurements.db, user_profile.json)
+- PostgreSQL database (via pg_dump from healthrag-db container)
+- Retains 30 days of backups, auto-cleans older files
+
+To copy backups off-box for safekeeping:
+
+```bash
+scp /opt/healthrag/backups/healthrag-*.tar.gz root@192.168.0.201:/var/lib/vz/dump/
 ```
 
 ### Rebuild VectorStore
@@ -613,10 +623,21 @@ crontab -e
 
 ### Automated Backups
 
+Use the included backup script for daily automated backups:
+
 ```bash
-# Add to crontab on CT 100
-0 2 * * * cd /opt/healthrag && tar -czf /backups/healthrag-$(date +\%Y\%m\%d).tar.gz data/ && find /backups -name "healthrag-*.tar.gz" -mtime +30 -delete
+# Run manually
+./scripts/backup-healthrag.sh
+
+# Set up daily cron job (runs at 2 AM)
+crontab -e
+# Add: 0 2 * * * cd /opt/healthrag && ./scripts/backup-healthrag.sh >> /var/log/healthrag-backup.log 2>&1
 ```
+
+The script backs up:
+- SQLite databases (workouts.db, food_log.db, body_measurements.db, user_profile.json)
+- PostgreSQL database (via pg_dump from healthrag-db container)
+- Retains 30 days of backups, auto-cleans older files
 
 ### Resource Monitoring
 
