@@ -1,5 +1,9 @@
 # Homelab Deployment Conversion Summary
 
+> **Note**: This is a historical record of the migration. The main `docker-compose.yml`
+> and `Dockerfile` at the project root are now homelab-first. See `docs/HOMELAB_DEPLOYMENT.md`
+> for the current deployment guide.
+
 **Date**: January 5, 2026
 **Change**: Converted backend deployment from Render.com cloud to homelab self-hosting
 

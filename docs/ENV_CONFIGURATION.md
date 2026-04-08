@@ -39,7 +39,7 @@ HealthRAG uses environment variables to configure different deployment scenarios
 | **Local Dev (MLX)** | `http://localhost:11434` | Default, Ollama installed locally |
 | **Homelab Production** | `http://192.168.0.211:11434` | Shared Ollama on CT 101 |
 
-**Setting in docker-compose.homelab.yml:**
+**Setting in docker-compose.yml:**
 ```yaml
 services:
   healthrag:
@@ -52,7 +52,7 @@ services:
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 ```
 
-**Note:** For homelab, this is set in `docker-compose.homelab.yml`, not in `.env` file.
+**Note:** For homelab, this is set in `docker-compose.yml`, not in `.env` file.
 
 ---
 
@@ -126,9 +126,9 @@ FDC_API_KEY = os.getenv("USDA_FDC_API_KEY")
 # For LOCAL development (Docker/MLX):
 # OLLAMA_BASE_URL=http://localhost:11434  # Default, no need to set
 
-# For HOMELAB deployment (set in docker-compose.homelab.yml):
+# For HOMELAB deployment (set in docker-compose.yml):
 # OLLAMA_BASE_URL=http://192.168.0.211:11434  # CT 101 Ollama service
-# Note: This is configured in docker-compose.homelab.yml, not needed here
+# Note: This is configured in docker-compose.yml, not needed here
 
 # =================================================================
 # USDA FOODDATA CENTRAL API (Food Database)
@@ -229,7 +229,7 @@ nano data/.env
 - Ollama: Shared service on CT 101 (192.168.0.211:11434)
 - Models: Loaded once on CT 101, shared by all services
 - Data: Persistent on CT 100 `/opt/healthrag/data/`
-- OLLAMA_BASE_URL: Set in `docker-compose.homelab.yml` (not .env)
+- OLLAMA_BASE_URL: Set in `docker-compose.yml` (not .env)
 
 **Verify .env on homelab:**
 ```bash
@@ -307,13 +307,13 @@ chown root:root /opt/healthrag/data/.env
 1. **Verify OLLAMA_BASE_URL is correct:**
    ```bash
    # On CT 100
-   docker compose -f docker-compose.homelab.yml exec healthrag env | grep OLLAMA
+   docker compose -f docker-compose.yml exec healthrag env | grep OLLAMA
    # Expected: OLLAMA_BASE_URL=http://192.168.0.211:11434
    ```
 
 2. **Test Ollama connectivity from container:**
    ```bash
-   docker compose -f docker-compose.homelab.yml exec healthrag \
+   docker compose -f docker-compose.yml exec healthrag \
      curl http://192.168.0.211:11434/api/tags
    ```
 
@@ -336,7 +336,7 @@ chown root:root /opt/healthrag/data/.env
 1. **Verify API key is set:**
    ```bash
    # On CT 100
-   docker compose -f docker-compose.homelab.yml exec healthrag \
+   docker compose -f docker-compose.yml exec healthrag \
      python3 -c "import os; print(os.getenv('USDA_FDC_API_KEY', 'NOT SET'))"
    ```
 
@@ -373,7 +373,7 @@ scp data/.env root@192.168.0.210:/opt/healthrag/data/.env
 
 # Restart container to load new .env
 ssh root@192.168.0.210 \
-  'cd /opt/healthrag && docker compose -f docker-compose.homelab.yml restart'
+  'cd /opt/healthrag && docker compose -f docker-compose.yml restart'
 ```
 
 ---
@@ -410,7 +410,7 @@ if not NEW_API_KEY:
     raise ValueError("NEW_API_KEY not set in environment")
 ```
 
-### Step 5: Update docker-compose.homelab.yml (if needed)
+### Step 5: Update docker-compose.yml (if needed)
 
 ```yaml
 services:

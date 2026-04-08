@@ -3,13 +3,13 @@ Workout API Endpoints.
 
 CRUD operations for workout tracking:
 - POST /api/workouts/sessions - Create workout session
-- POST /api/workouts/sets - Log individual set
 - GET /api/workouts/sessions - Get workout sessions
 - GET /api/workouts/sessions/{id} - Get specific session
 - DELETE /api/workouts/sessions/{id} - Delete session
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 
@@ -19,6 +19,7 @@ from models.schemas import (
     WorkoutSetResponse,
     TokenData
 )
+from models.database import get_db
 from api.auth import get_current_user
 from services.workout_service import get_workout_service, WorkoutService
 
@@ -29,6 +30,7 @@ router = APIRouter()
 async def create_workout_session(
     request: WorkoutSessionCreate,
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     workout_service: WorkoutService = Depends(get_workout_service)
 ):
     """
@@ -39,67 +41,39 @@ async def create_workout_session(
 
     Returns:
         WorkoutSessionResponse with workout_id and all sets
-
-    Example:
-        ```json
-        {
-          "date": "2025-01-05",
-          "workout_name": "Upper A",
-          "sets": [
-            {
-              "set_number": 1,
-              "exercise_name": "Bench Press",
-              "weight_lbs": 185,
-              "reps_completed": 8,
-              "rir": 2,
-              "notes": "Felt strong"
-            }
-          ]
-        }
-        ```
     """
     try:
-        # Create workout session
-        workout_id = workout_service.create_workout_session(
+        session = workout_service.create_workout_session(
+            db=db,
             user_id=current_user.user_id,
-            date=request.date,
+            workout_date=request.date,
             workout_name=request.workout_name or "Workout",
             sets=[s.dict() for s in request.sets],
             notes=request.notes
         )
 
-        # Retrieve created workout
-        workout = workout_service.get_workout_session(workout_id, current_user.user_id)
-
-        if not workout:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Workout created but failed to retrieve"
-            )
-
-        # Convert to response format
         sets = [
             WorkoutSetResponse(
-                id=i,
-                session_id=workout_id,
-                set_number=i + 1,
+                id=s.id,
+                session_id=session.id,
+                set_number=s.set_number,
                 exercise_name=s.exercise_name,
                 weight_lbs=s.weight_lbs,
-                reps_completed=s.reps,
+                reps_completed=s.reps_completed,
                 rir=s.rir,
                 notes=s.notes,
-                timestamp=date.today().isoformat()
+                timestamp=s.timestamp.isoformat() if s.timestamp else date.today().isoformat()
             )
-            for i, s in enumerate(workout.sets)
+            for s in session.sets
         ]
 
         return WorkoutSessionResponse(
-            id=workout_id,
+            id=session.id,
             user_id=current_user.user_id,
-            date=workout.date,
-            workout_name=workout.workout_name,
-            notes=workout.notes,
-            created_at=date.today().isoformat(),
+            date=session.date,
+            workout_name=session.workout_name,
+            notes=session.notes,
+            created_at=session.created_at.isoformat() if session.created_at else date.today().isoformat(),
             sets=sets
         )
 
@@ -116,6 +90,7 @@ async def get_workout_sessions(
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     limit: int = Query(10, ge=1, le=100, description="Max results"),
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     workout_service: WorkoutService = Depends(get_workout_service)
 ):
     """
@@ -131,44 +106,43 @@ async def get_workout_sessions(
     """
     try:
         if start_date:
-            # Date range query
             workouts = workout_service.get_workouts_by_date_range(
+                db=db,
                 user_id=current_user.user_id,
                 start_date=start_date,
                 end_date=end_date
             )
         else:
-            # Recent workouts
             workouts = workout_service.get_recent_workouts(
+                db=db,
                 user_id=current_user.user_id,
                 limit=limit
             )
 
-        # Convert to response format
         responses = []
         for workout in workouts:
             sets = [
                 WorkoutSetResponse(
-                    id=i,
-                    session_id=workout.workout_id or 0,
-                    set_number=i + 1,
+                    id=s.id,
+                    session_id=workout.id,
+                    set_number=s.set_number,
                     exercise_name=s.exercise_name,
                     weight_lbs=s.weight_lbs,
-                    reps_completed=s.reps,
+                    reps_completed=s.reps_completed,
                     rir=s.rir,
                     notes=s.notes,
-                    timestamp=workout.date
+                    timestamp=s.timestamp.isoformat() if s.timestamp else workout.date
                 )
-                for i, s in enumerate(workout.sets)
+                for s in workout.sets
             ]
 
             responses.append(WorkoutSessionResponse(
-                id=workout.workout_id or 0,
+                id=workout.id,
                 user_id=current_user.user_id,
                 date=workout.date,
                 workout_name=workout.workout_name,
                 notes=workout.notes,
-                created_at=workout.date,
+                created_at=workout.created_at.isoformat() if workout.created_at else workout.date,
                 sets=sets
             ))
 
@@ -185,6 +159,7 @@ async def get_workout_sessions(
 async def get_workout_session(
     workout_id: int,
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     workout_service: WorkoutService = Depends(get_workout_service)
 ):
     """
@@ -195,11 +170,8 @@ async def get_workout_session(
 
     Returns:
         WorkoutSessionResponse with all sets
-
-    Raises:
-        HTTPException 404: If workout not found
     """
-    workout = workout_service.get_workout_session(workout_id, current_user.user_id)
+    workout = workout_service.get_workout_session(db, current_user.user_id, workout_id)
 
     if not workout:
         raise HTTPException(
@@ -207,20 +179,19 @@ async def get_workout_session(
             detail=f"Workout {workout_id} not found"
         )
 
-    # Convert to response format
     sets = [
         WorkoutSetResponse(
-            id=i,
+            id=s.id,
             session_id=workout_id,
-            set_number=i + 1,
+            set_number=s.set_number,
             exercise_name=s.exercise_name,
             weight_lbs=s.weight_lbs,
-            reps_completed=s.reps,
+            reps_completed=s.reps_completed,
             rir=s.rir,
             notes=s.notes,
-            timestamp=workout.date
+            timestamp=s.timestamp.isoformat() if s.timestamp else workout.date
         )
-        for i, s in enumerate(workout.sets)
+        for s in workout.sets
     ]
 
     return WorkoutSessionResponse(
@@ -229,7 +200,7 @@ async def get_workout_session(
         date=workout.date,
         workout_name=workout.workout_name,
         notes=workout.notes,
-        created_at=workout.date,
+        created_at=workout.created_at.isoformat() if workout.created_at else workout.date,
         sets=sets
     )
 
@@ -238,6 +209,7 @@ async def get_workout_session(
 async def delete_workout_session(
     workout_id: int,
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     workout_service: WorkoutService = Depends(get_workout_service)
 ):
     """
@@ -245,11 +217,8 @@ async def delete_workout_session(
 
     Args:
         workout_id: Workout database ID
-
-    Raises:
-        HTTPException 404: If workout not found
     """
-    deleted = workout_service.delete_workout_session(workout_id, current_user.user_id)
+    deleted = workout_service.delete_workout_session(db, current_user.user_id, workout_id)
 
     if not deleted:
         raise HTTPException(

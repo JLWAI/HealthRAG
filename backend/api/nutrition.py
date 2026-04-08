@@ -5,13 +5,13 @@ CRUD operations for food logging and nutrition tracking:
 - POST /api/nutrition/foods - Log food entry
 - GET /api/nutrition/foods - Get food entries by date
 - GET /api/nutrition/daily-totals - Get daily macro totals
-- GET /api/nutrition/search - Search foods database
 - POST /api/nutrition/meals/copy-yesterday - Copy yesterday's meals
 - GET /api/nutrition/search/usda - Search USDA FDC (400K foods)
 - GET /api/nutrition/search/off/barcode - Lookup Open Food Facts by barcode
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 import sys
@@ -28,6 +28,7 @@ from models.schemas import (
     MessageResponse,
     TokenData
 )
+from models.database import get_db
 from api.auth import get_current_user
 from services.food_service import get_food_service, FoodService
 
@@ -51,6 +52,7 @@ router = APIRouter()
 async def log_food_entry(
     request: FoodEntryCreate,
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     food_service: FoodService = Depends(get_food_service)
 ):
     """
@@ -78,47 +80,42 @@ async def log_food_entry(
         ```
     """
     try:
-        # Add food to database if not exists
-        food_id = food_service.add_food(
-            name=request.food_name,
-            serving_size=request.serving_size or "1 serving",
+        entry = food_service.log_food_entry(
+            db=db,
+            user_id=current_user.user_id,
+            food_name=request.food_name,
             calories=request.calories,
             protein_g=request.protein_g,
             carbs_g=request.carbs_g,
             fat_g=request.fat_g,
-            source=request.source or "manual"
-        )
-
-        # Log food entry
-        entry_id = food_service.log_food_entry(
-            user_id=current_user.user_id,
-            food_id=food_id,
-            servings=request.serving_quantity,
+            serving_size=request.serving_size,
+            serving_quantity=request.serving_quantity,
             log_date=request.date,
             meal_type=request.meal_type,
+            source=request.source,
+            barcode=request.barcode,
             notes=request.notes
         )
 
-        # Return response
         return FoodEntryResponse(
-            id=entry_id,
+            id=entry.id,
             user_id=current_user.user_id,
-            date=request.date,
-            meal_type=request.meal_type,
-            food_name=request.food_name,
-            serving_size=request.serving_size,
-            serving_quantity=request.serving_quantity,
-            calories=request.calories * request.serving_quantity,
-            protein_g=request.protein_g * request.serving_quantity,
-            carbs_g=request.carbs_g * request.serving_quantity,
-            fat_g=request.fat_g * request.serving_quantity,
-            fiber_g=request.fiber_g,
-            sugar_g=request.sugar_g,
-            sodium_mg=request.sodium_mg,
-            barcode=request.barcode,
-            source=request.source,
-            notes=request.notes,
-            timestamp=date.today().isoformat()
+            date=entry.date,
+            meal_type=entry.meal_type,
+            food_name=entry.food_name,
+            serving_size=entry.serving_size,
+            serving_quantity=entry.serving_quantity,
+            calories=entry.calories,
+            protein_g=entry.protein_g,
+            carbs_g=entry.carbs_g,
+            fat_g=entry.fat_g,
+            fiber_g=entry.fiber_g,
+            sugar_g=entry.sugar_g,
+            sodium_mg=entry.sodium_mg,
+            barcode=entry.barcode,
+            source=entry.source,
+            notes=entry.notes,
+            timestamp=entry.timestamp.isoformat() if entry.timestamp else date.today().isoformat()
         )
 
     except Exception as e:
@@ -132,6 +129,7 @@ async def log_food_entry(
 async def get_food_entries(
     log_date: str = Query(..., description="Date (YYYY-MM-DD)"),
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     food_service: FoodService = Depends(get_food_service)
 ):
     """
@@ -144,22 +142,28 @@ async def get_food_entries(
         List of FoodEntryResponse objects
     """
     try:
-        entries = food_service.get_food_entries_by_date(current_user.user_id, log_date)
+        entries = food_service.get_food_entries_by_date(db, current_user.user_id, log_date)
 
         return [
             FoodEntryResponse(
-                id=e.entry_id or 0,
+                id=e.id,
                 user_id=current_user.user_id,
                 date=e.date,
                 meal_type=e.meal_type,
                 food_name=e.food_name,
-                serving_size="",  # TODO: Get from food table
-                serving_quantity=e.servings,
+                serving_size=e.serving_size,
+                serving_quantity=e.serving_quantity,
                 calories=e.calories,
                 protein_g=e.protein_g,
                 carbs_g=e.carbs_g,
                 fat_g=e.fat_g,
-                timestamp=e.date
+                fiber_g=e.fiber_g,
+                sugar_g=e.sugar_g,
+                sodium_mg=e.sodium_mg,
+                barcode=e.barcode,
+                source=e.source,
+                notes=e.notes,
+                timestamp=e.timestamp.isoformat() if e.timestamp else e.date
             )
             for e in entries
         ]
@@ -175,6 +179,7 @@ async def get_food_entries(
 async def get_daily_nutrition_totals(
     log_date: Optional[str] = Query(None, description="Date (YYYY-MM-DD), defaults to today"),
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     food_service: FoodService = Depends(get_food_service)
 ):
     """
@@ -187,34 +192,34 @@ async def get_daily_nutrition_totals(
         DailyNutritionSummary with total macros and entries by meal
     """
     try:
-        daily_nutrition = food_service.get_daily_nutrition(current_user.user_id, log_date)
+        daily = food_service.get_daily_nutrition(db, current_user.user_id, log_date)
 
-        # Convert to response format
+        # Convert entries to response format
         all_entries = []
-        for entries in daily_nutrition.meals.values():
-            for e in entries:
+        for meal_entries in daily["meals"].values():
+            for e in meal_entries:
                 all_entries.append(FoodEntryResponse(
-                    id=e.entry_id or 0,
+                    id=e.id,
                     user_id=current_user.user_id,
                     date=e.date,
                     meal_type=e.meal_type,
                     food_name=e.food_name,
-                    serving_size="",  # TODO: Get from food table
-                    serving_quantity=e.servings,
+                    serving_size=e.serving_size,
+                    serving_quantity=e.serving_quantity,
                     calories=e.calories,
                     protein_g=e.protein_g,
                     carbs_g=e.carbs_g,
                     fat_g=e.fat_g,
-                    timestamp=e.date
+                    timestamp=e.timestamp.isoformat() if e.timestamp else e.date
                 ))
 
         return DailyNutritionSummary(
-            date=daily_nutrition.date,
-            total_calories=daily_nutrition.total_calories,
-            total_protein_g=daily_nutrition.total_protein_g,
-            total_carbs_g=daily_nutrition.total_carbs_g,
-            total_fat_g=daily_nutrition.total_fat_g,
-            entry_count=daily_nutrition.entry_count,
+            date=daily["date"],
+            total_calories=daily["total_calories"],
+            total_protein_g=daily["total_protein_g"],
+            total_carbs_g=daily["total_carbs_g"],
+            total_fat_g=daily["total_fat_g"],
+            entry_count=daily["entry_count"],
             entries=all_entries
         )
 
@@ -225,50 +230,10 @@ async def get_daily_nutrition_totals(
         )
 
 
-@router.get("/search", response_model=List[FoodSearchResult], tags=["Nutrition"])
-async def search_foods(
-    q: str = Query(..., min_length=2, description="Search query"),
-    limit: int = Query(20, ge=1, le=100, description="Max results"),
-    current_user: TokenData = Depends(get_current_user),
-    food_service: FoodService = Depends(get_food_service)
-):
-    """
-    Search for foods in database.
-
-    Query Parameters:
-        - q: Search query (min 2 characters)
-        - limit: Max results (1-100)
-
-    Returns:
-        List of FoodSearchResult objects
-    """
-    try:
-        foods = food_service.search_foods(q, limit)
-
-        return [
-            FoodSearchResult(
-                food_name=f.name,
-                serving_size=f.serving_size,
-                calories=f.calories,
-                protein_g=f.protein_g,
-                carbs_g=f.carbs_g,
-                fat_g=f.fat_g,
-                source=f.source,
-                external_id=str(f.food_id) if f.food_id else None
-            )
-            for f in foods
-        ]
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to search foods: {str(e)}"
-        )
-
-
 @router.post("/meals/copy-yesterday", response_model=MessageResponse, tags=["Nutrition"])
 async def copy_yesterday_meals(
     current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db),
     food_service: FoodService = Depends(get_food_service)
 ):
     """
@@ -278,7 +243,7 @@ async def copy_yesterday_meals(
         MessageResponse with count of entries copied
     """
     try:
-        count = food_service.copy_yesterday_meals(current_user.user_id)
+        count = food_service.copy_yesterday_meals(db, current_user.user_id)
 
         return MessageResponse(
             message="Yesterday's meals copied successfully",
@@ -312,9 +277,6 @@ async def search_usda_fdc(
 
     Returns:
         List of FoodSearchResult objects from USDA database
-
-    Example:
-        GET /api/nutrition/search/usda?q=chicken%20breast&limit=10
     """
     if not FDC_AVAILABLE:
         raise HTTPException(
@@ -323,23 +285,13 @@ async def search_usda_fdc(
         )
 
     try:
-        # Initialize FDC client (will check for API key)
         fdc_client = FDCAPIClient()
-
-        # Parse data_type filter
-        data_type_filter = None
-        if data_type:
-            data_type_filter = [data_type]
-
-        # Search USDA FDC
+        data_type_filter = [data_type] if data_type else None
         fdc_foods = fdc_client.search_and_parse(q, limit=limit, data_type=data_type_filter)
 
-        # Convert to FoodSearchResult format
         results = []
         for food in fdc_foods:
-            # FDC uses per-100g values, convert to serving if available
             serving_desc = food.household_serving or f"{food.serving_size or 100}g"
-
             results.append(FoodSearchResult(
                 food_name=food.description,
                 brand=food.brand_name,
@@ -359,7 +311,6 @@ async def search_usda_fdc(
         return results
 
     except ValueError as e:
-        # API key missing or invalid
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"USDA FDC API unavailable: {str(e)}. Add USDA_FDC_API_KEY to environment."
@@ -386,9 +337,6 @@ async def lookup_barcode_off(
 
     Returns:
         FoodSearchResult if found, 404 if not found
-
-    Example:
-        GET /api/nutrition/search/off/barcode/737628064502
     """
     if not OFF_AVAILABLE:
         raise HTTPException(
@@ -397,10 +345,7 @@ async def lookup_barcode_off(
         )
 
     try:
-        # Initialize OFF client (no API key needed)
         off_client = OFFAPIClient()
-
-        # Lookup barcode
         product = off_client.lookup_barcode(barcode)
 
         if not product:
@@ -409,8 +354,7 @@ async def lookup_barcode_off(
                 detail=f"Product with barcode '{barcode}' not found in Open Food Facts database"
             )
 
-        # Convert to FoodSearchResult format
-        result = FoodSearchResult(
+        return FoodSearchResult(
             food_name=product.product_name,
             brand=product.brands,
             serving_size=product.serving_size or "100g",
@@ -425,8 +369,6 @@ async def lookup_barcode_off(
             external_id=product.barcode,
             barcode=product.barcode
         )
-
-        return result
 
     except HTTPException:
         raise
@@ -454,9 +396,6 @@ async def search_open_food_facts(
 
     Returns:
         List of FoodSearchResult objects from Open Food Facts
-
-    Example:
-        GET /api/nutrition/search/off?q=greek%20yogurt&limit=10
     """
     if not OFF_AVAILABLE:
         raise HTTPException(
@@ -465,13 +404,9 @@ async def search_open_food_facts(
         )
 
     try:
-        # Initialize OFF client (no API key needed)
         off_client = OFFAPIClient()
-
-        # Search products
         products = off_client.search_and_parse(q, limit=limit)
 
-        # Convert to FoodSearchResult format
         results = []
         for product in products:
             results.append(FoodSearchResult(

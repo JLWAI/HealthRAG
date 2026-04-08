@@ -76,13 +76,13 @@ echo ""
 
 # Step 4: Build Docker image
 echo -e "${YELLOW}[4/6] Building Docker image on CT 100...${NC}"
-ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml build"
+ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml build"
 echo -e "${GREEN}✓ Docker image built successfully${NC}"
 echo ""
 
 # Step 5: Start container
 echo -e "${YELLOW}[5/6] Starting HealthRAG container...${NC}"
-ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml up -d"
+ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml up -d"
 echo -e "${GREEN}✓ Container started${NC}"
 echo ""
 
@@ -97,7 +97,7 @@ if [[ $CONTAINER_STATUS == *"Up"* ]]; then
 else
     echo -e "${RED}✗ Container not running. Check logs:${NC}"
     echo -e "  ssh ${DOCKER_USER}@${DOCKER_HOST}"
-    echo -e "  cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml logs"
+    echo -e "  cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml logs"
     exit 1
 fi
 
@@ -116,12 +116,12 @@ if [ "$PDF_COUNT" -gt 0 ]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Processing PDFs (this may take a while)...${NC}"
-        ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml exec healthrag python3 process_pdfs.py"
+        ssh ${DOCKER_USER}@${DOCKER_HOST} "cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml exec healthrag python3 process_pdfs.py"
         echo -e "${GREEN}✓ PDFs processed and vectorstore created${NC}"
     else
         echo -e "${YELLOW}Skipped PDF processing. You can run it later:${NC}"
         echo -e "  ssh ${DOCKER_USER}@${DOCKER_HOST}"
-        echo -e "  cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml exec healthrag python3 process_pdfs.py"
+        echo -e "  cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml exec healthrag python3 process_pdfs.py"
     fi
     echo ""
 fi
@@ -135,9 +135,9 @@ echo -e "${BLUE}Access HealthRAG:${NC}"
 echo -e "  Web UI: ${GREEN}http://${DOCKER_HOST}:8501${NC}"
 echo ""
 echo -e "${BLUE}Useful Commands:${NC}"
-echo -e "  View logs:    ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml logs -f'"
-echo -e "  Restart:      ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml restart'"
-echo -e "  Stop:         ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.homelab.yml down'"
+echo -e "  View logs:    ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml logs -f'"
+echo -e "  Restart:      ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml restart'"
+echo -e "  Stop:         ssh ${DOCKER_USER}@${DOCKER_HOST} 'cd ${DEPLOY_DIR} && docker compose -f docker-compose.yml down'"
 echo ""
 echo -e "${BLUE}Architecture:${NC}"
 echo -e "  HealthRAG:    CT 100 (${DOCKER_HOST}:8501)"

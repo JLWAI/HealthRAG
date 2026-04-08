@@ -1,180 +1,184 @@
 """
-Workout Service Layer - Wraps src/workout_logger.py for API use.
+Workout Service Layer - PostgreSQL-backed workout tracking.
 
-Provides database operations for workout tracking with user-scoped access.
-Integrates existing HealthRAG workout logging with FastAPI backend.
+Provides user-scoped database operations for workout tracking
+using SQLAlchemy models with proper user_id authorization.
 """
 
-import sys
-from pathlib import Path
 from typing import List, Optional
 from datetime import date, timedelta
+from sqlalchemy.orm import Session
 
-# Add src directory to path for imports
-src_path = Path(__file__).parent.parent.parent / "src"
-sys.path.insert(0, str(src_path))
-
-from workout_logger import WorkoutLogger, WorkoutLog, WorkoutSet
+from models.database import WorkoutSession, WorkoutSet
 
 
 class WorkoutService:
     """
     Service layer for workout operations.
 
-    Wraps WorkoutLogger to provide user-scoped access and
-    API-friendly interfaces for FastAPI endpoints.
+    Uses SQLAlchemy + PostgreSQL with user_id scoping on all queries.
     """
-
-    def __init__(self, db_path: str = "data/workouts.db"):
-        """
-        Initialize workout service with database path.
-
-        Args:
-            db_path: Path to SQLite workout database
-        """
-        self.logger = WorkoutLogger(db_path)
 
     def create_workout_session(
         self,
+        db: Session,
         user_id: str,
-        date: str,
+        workout_date: str,
         workout_name: str,
         sets: List[dict],
-        duration_minutes: int = 60,
-        overall_pump: int = 3,
-        overall_soreness: int = 3,
-        overall_difficulty: int = 3,
         notes: Optional[str] = None
-    ) -> int:
+    ) -> WorkoutSession:
         """
-        Create a new workout session.
+        Create a new workout session with sets.
 
         Args:
-            user_id: User UUID (for multi-user support)
-            date: Workout date (YYYY-MM-DD)
+            db: SQLAlchemy database session
+            user_id: User UUID
+            workout_date: Workout date (YYYY-MM-DD)
             workout_name: Name of workout (e.g., "Upper A", "Push Day")
-            sets: List of set dictionaries with keys:
+            sets: List of set dicts with keys:
                 - exercise_name (str)
                 - weight_lbs (float)
-                - reps (int)
-                - rir (int)
+                - reps_completed (int)
+                - rir (int, optional)
                 - notes (str, optional)
-            duration_minutes: Workout duration
-            overall_pump: Pump rating 1-5
-            overall_soreness: Soreness rating 1-5
-            overall_difficulty: Difficulty rating 1-5
             notes: Session notes
 
         Returns:
-            workout_id (int): Database ID of created workout
+            WorkoutSession object with sets
         """
-        # Convert dict sets to WorkoutSet objects
-        workout_sets = [
-            WorkoutSet(
+        session = WorkoutSession(
+            user_id=user_id,
+            date=workout_date,
+            workout_name=workout_name,
+            notes=notes
+        )
+        db.add(session)
+        db.flush()  # Get session ID for sets
+
+        for i, s in enumerate(sets, start=1):
+            workout_set = WorkoutSet(
+                session_id=session.id,
+                set_number=i,
                 exercise_name=s["exercise_name"],
                 weight_lbs=s["weight_lbs"],
-                reps=s["reps_completed"],
-                rir=s.get("rir", 2),  # Default RIR = 2
+                reps_completed=s["reps_completed"],
+                rir=s.get("rir"),
                 notes=s.get("notes")
             )
-            for s in sets
-        ]
+            db.add(workout_set)
 
-        # Create WorkoutLog object
-        workout = WorkoutLog(
-            workout_id=None,
-            date=date,
-            workout_name=workout_name,
-            sets=workout_sets,
-            duration_minutes=duration_minutes,
-            overall_pump=overall_pump,
-            overall_soreness=overall_soreness,
-            overall_difficulty=overall_difficulty,
-            notes=notes,
-            completed=True
-        )
+        db.commit()
+        db.refresh(session)
+        return session
 
-        # Log workout and return ID
-        return self.logger.log_workout(workout)
-
-    def get_workout_session(self, workout_id: int, user_id: str) -> Optional[WorkoutLog]:
+    def get_workout_session(
+        self,
+        db: Session,
+        user_id: str,
+        workout_id: int
+    ) -> Optional[WorkoutSession]:
         """
-        Retrieve a workout session by ID.
+        Retrieve a workout session by ID (user-scoped).
 
         Args:
+            db: SQLAlchemy database session
+            user_id: User UUID
             workout_id: Workout database ID
-            user_id: User UUID (for authorization)
 
         Returns:
-            WorkoutLog object or None if not found
+            WorkoutSession object or None if not found/not authorized
         """
-        # TODO: Add user_id authorization check
-        return self.logger.get_workout(workout_id)
+        return db.query(WorkoutSession).filter(
+            WorkoutSession.id == workout_id,
+            WorkoutSession.user_id == user_id
+        ).first()
 
     def get_workouts_by_date_range(
         self,
+        db: Session,
         user_id: str,
         start_date: str,
         end_date: Optional[str] = None
-    ) -> List[WorkoutLog]:
+    ) -> List[WorkoutSession]:
         """
         Get all workouts in a date range for a user.
 
         Args:
+            db: SQLAlchemy database session
             user_id: User UUID
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD), defaults to today
 
         Returns:
-            List of WorkoutLog objects
+            List of WorkoutSession objects
         """
         if end_date is None:
             end_date = date.today().isoformat()
 
-        # TODO: Add user_id filtering in query
-        return self.logger.get_workouts_by_date_range(start_date, end_date)
+        return db.query(WorkoutSession).filter(
+            WorkoutSession.user_id == user_id,
+            WorkoutSession.date >= start_date,
+            WorkoutSession.date <= end_date
+        ).order_by(WorkoutSession.date.desc()).all()
 
-    def get_recent_workouts(self, user_id: str, limit: int = 10) -> List[WorkoutLog]:
+    def get_recent_workouts(
+        self,
+        db: Session,
+        user_id: str,
+        limit: int = 10
+    ) -> List[WorkoutSession]:
         """
         Get most recent workouts for a user.
 
         Args:
+            db: SQLAlchemy database session
             user_id: User UUID
             limit: Number of workouts to return
 
         Returns:
-            List of WorkoutLog objects (most recent first)
+            List of WorkoutSession objects (most recent first)
         """
-        # TODO: Add user_id filtering in query
-        return self.logger.get_recent_workouts(limit)
+        return db.query(WorkoutSession).filter(
+            WorkoutSession.user_id == user_id
+        ).order_by(WorkoutSession.date.desc()).limit(limit).all()
 
-    def delete_workout_session(self, workout_id: int, user_id: str) -> bool:
+    def delete_workout_session(
+        self,
+        db: Session,
+        user_id: str,
+        workout_id: int
+    ) -> bool:
         """
-        Delete a workout session.
+        Delete a workout session and its sets (user-scoped).
 
         Args:
+            db: SQLAlchemy database session
+            user_id: User UUID
             workout_id: Workout database ID
-            user_id: User UUID (for authorization)
 
         Returns:
             True if deleted, False if not found
         """
-        # TODO: Add user_id authorization check
-        # TODO: Add delete method to WorkoutLogger
-        # For now, return False (not implemented)
-        return False
+        session = db.query(WorkoutSession).filter(
+            WorkoutSession.id == workout_id,
+            WorkoutSession.user_id == user_id
+        ).first()
+
+        if not session:
+            return False
+
+        db.delete(session)  # Cascade deletes sets
+        db.commit()
+        return True
 
 
 # Singleton instance
 _workout_service = None
 
-def get_workout_service() -> WorkoutService:
-    """
-    Get singleton workout service instance.
 
-    Returns:
-        WorkoutService instance
-    """
+def get_workout_service() -> WorkoutService:
+    """Get singleton workout service instance."""
     global _workout_service
     if _workout_service is None:
         _workout_service = WorkoutService()

@@ -187,7 +187,7 @@ EOF
 chmod 600 data/.env
 ```
 
-**Note:** Ollama URL is already set in `docker-compose.homelab.yml`:
+**Note:** Ollama URL is already set in `docker-compose.yml`:
 ```yaml
 environment:
   - OLLAMA_BASE_URL=http://192.168.0.211:11434
@@ -200,13 +200,13 @@ environment:
 cd /opt/healthrag
 
 # Build the container (lightweight, ~1GB image)
-docker compose -f docker-compose.homelab.yml build
+docker compose -f docker-compose.yml build
 
 # Start the service
-docker compose -f docker-compose.homelab.yml up -d
+docker compose -f docker-compose.yml up -d
 
 # Check logs
-docker compose -f docker-compose.homelab.yml logs -f healthrag
+docker compose -f docker-compose.yml logs -f healthrag
 ```
 
 **Expected Output:**
@@ -223,7 +223,7 @@ healthrag  | VectorStore loaded from data/vectorstore/
 cd /opt/healthrag
 
 # Execute inside the container to build vectorstore
-docker compose -f docker-compose.homelab.yml exec healthrag python3 process_pdfs.py
+docker compose -f docker-compose.yml exec healthrag python3 process_pdfs.py
 
 # This will:
 # - Load all PDFs from data/pdfs/ (28 files: RP, Nippard, BFFM)
@@ -256,10 +256,10 @@ curl http://192.168.0.210:8501/_stcore/health
 docker ps
 # Should show: healthrag container, port 8501, status Up
 
-docker compose -f docker-compose.homelab.yml ps
+docker compose -f docker-compose.yml ps
 # Should show: healthrag, state running
 
-docker compose -f docker-compose.homelab.yml logs --tail 50 healthrag
+docker compose -f docker-compose.yml logs --tail 50 healthrag
 # Check for errors
 ```
 
@@ -267,7 +267,7 @@ docker compose -f docker-compose.homelab.yml logs --tail 50 healthrag
 
 ```bash
 # From inside HealthRAG container
-docker compose -f docker-compose.homelab.yml exec healthrag \
+docker compose -f docker-compose.yml exec healthrag \
   curl http://192.168.0.211:11434/api/tags
 
 # Should return JSON with models: llama3.1:8b, qwen2.5-coder:14b
@@ -303,24 +303,24 @@ htop
 
 ```bash
 # Real-time logs
-docker compose -f docker-compose.homelab.yml logs -f healthrag
+docker compose -f docker-compose.yml logs -f healthrag
 
 # Last 100 lines
-docker compose -f docker-compose.homelab.yml logs --tail 100 healthrag
+docker compose -f docker-compose.yml logs --tail 100 healthrag
 
 # Filter for errors
-docker compose -f docker-compose.homelab.yml logs healthrag | grep -i error
+docker compose -f docker-compose.yml logs healthrag | grep -i error
 ```
 
 ### Restart Container
 
 ```bash
 # Restart HealthRAG
-docker compose -f docker-compose.homelab.yml restart healthrag
+docker compose -f docker-compose.yml restart healthrag
 
 # Full restart (rebuilds if needed)
-docker compose -f docker-compose.homelab.yml down
-docker compose -f docker-compose.homelab.yml up -d
+docker compose -f docker-compose.yml down
+docker compose -f docker-compose.yml up -d
 ```
 
 ### Update Application
@@ -333,9 +333,9 @@ cd /opt/healthrag
 git pull
 
 # Rebuild and restart
-docker compose -f docker-compose.homelab.yml down
-docker compose -f docker-compose.homelab.yml build --no-cache
-docker compose -f docker-compose.homelab.yml up -d
+docker compose -f docker-compose.yml down
+docker compose -f docker-compose.yml build --no-cache
+docker compose -f docker-compose.yml up -d
 
 # OR transfer updated files via SCP (from Mac)
 # Then rebuild as above
@@ -361,11 +361,11 @@ scp healthrag-backup-*.tar.gz root@192.168.0.201:/var/lib/vz/dump/
 
 ```bash
 # If PDFs change or vectorstore is corrupted
-docker compose -f docker-compose.homelab.yml exec healthrag rm -rf data/vectorstore/
-docker compose -f docker-compose.homelab.yml exec healthrag python3 process_pdfs.py
+docker compose -f docker-compose.yml exec healthrag rm -rf data/vectorstore/
+docker compose -f docker-compose.yml exec healthrag python3 process_pdfs.py
 
 # Restart container to reload
-docker compose -f docker-compose.homelab.yml restart healthrag
+docker compose -f docker-compose.yml restart healthrag
 ```
 
 ### Cleanup Old Images
@@ -384,19 +384,19 @@ docker system df
 
 ```bash
 # Check logs for errors
-docker compose -f docker-compose.homelab.yml logs healthrag
+docker compose -f docker-compose.yml logs healthrag
 
 # Common issues:
 # 1. Port 8501 already in use
 netstat -tulpn | grep 8501
-# Solution: Change port in docker-compose.homelab.yml or kill conflicting process
+# Solution: Change port in docker-compose.yml or kill conflicting process
 
 # 2. Data directory permissions
 ls -la data/
 # Solution: chmod -R 755 data/
 
 # 3. Missing requirements
-docker compose -f docker-compose.homelab.yml build --no-cache
+docker compose -f docker-compose.yml build --no-cache
 ```
 
 ### Can't Connect to Ollama
@@ -461,21 +461,21 @@ ollama serve &
 
 ```bash
 # Reset workout/food databases (WARNING: Deletes all logs)
-docker compose -f docker-compose.homelab.yml exec healthrag rm -f data/workouts.db data/food_log.db
+docker compose -f docker-compose.yml exec healthrag rm -f data/workouts.db data/food_log.db
 
 # Restart to recreate DBs
-docker compose -f docker-compose.homelab.yml restart healthrag
+docker compose -f docker-compose.yml restart healthrag
 
 # Verify DBs recreated
-docker compose -f docker-compose.homelab.yml exec healthrag ls -lh data/*.db
+docker compose -f docker-compose.yml exec healthrag ls -lh data/*.db
 ```
 
 ### VectorStore Errors
 
 ```bash
 # Rebuild from scratch
-docker compose -f docker-compose.homelab.yml exec healthrag rm -rf data/vectorstore/
-docker compose -f docker-compose.homelab.yml exec healthrag python3 process_pdfs.py
+docker compose -f docker-compose.yml exec healthrag rm -rf data/vectorstore/
+docker compose -f docker-compose.yml exec healthrag python3 process_pdfs.py
 
 # If PDFs are missing
 # Transfer from dev machine:
@@ -494,7 +494,7 @@ In the HealthRAG UI (Settings → Backend/Model):
 
 ### Container Resources
 
-Limit HealthRAG resources if needed (edit `docker-compose.homelab.yml`):
+Limit HealthRAG resources if needed (edit `docker-compose.yml`):
 
 ```yaml
 services:
@@ -608,7 +608,7 @@ FDC_API_KEY=your_secret_key_here
 crontab -e
 
 # Check HealthRAG every 5 minutes
-*/5 * * * * curl -f http://localhost:8501/_stcore/health || docker compose -f /opt/healthrag/docker-compose.homelab.yml restart healthrag
+*/5 * * * * curl -f http://localhost:8501/_stcore/health || docker compose -f /opt/healthrag/docker-compose.yml restart healthrag
 ```
 
 ### Automated Backups
@@ -623,7 +623,7 @@ crontab -e
 Consider integrating with Prometheus/Grafana if you set up monitoring:
 
 ```yaml
-# Add to docker-compose.homelab.yml
+# Add to docker-compose.yml
 services:
   healthrag:
     # ... existing config ...
@@ -674,8 +674,8 @@ services:
 - [ ] Verify Ollama running on CT 101 (192.168.0.211)
 - [ ] Transfer HealthRAG to CT 100 (192.168.0.210)
 - [ ] Copy PDFs to data/pdfs/ directory
-- [ ] Build Docker image: `docker compose -f docker-compose.homelab.yml build`
-- [ ] Start container: `docker compose -f docker-compose.homelab.yml up -d`
+- [ ] Build Docker image: `docker compose -f docker-compose.yml build`
+- [ ] Start container: `docker compose -f docker-compose.yml up -d`
 - [ ] Process PDFs: `docker compose exec healthrag python3 process_pdfs.py`
 - [ ] Access UI: http://192.168.0.210:8501
 - [ ] Create user profile and test query

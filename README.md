@@ -12,77 +12,57 @@ A completely **FREE**, **local** AI-powered health and fitness advisor that uses
 
 ## Quick Start
 
-### Option 1: Local Development (Python venv)
+### Option 1: Homelab Deployment (Recommended)
 
-**One-time setup:**
-```bash
-# Run the automated setup script (installs all dependencies)
-chmod +x setup_dependencies.sh
-./setup_dependencies.sh
-```
-
-**Daily usage:**
-```bash
-# Activate virtual environment (includes ZBar library path for barcode scanning)
-source activate_venv.sh
-
-# Start the application
-streamlit run src/main.py
-
-# Access at: http://localhost:8501
-```
-
-**To deactivate:**
-```bash
-deactivate
-```
-
-### Option 2: Docker (Cross-Platform, Recommended)
+**Deploy to homelab with shared Ollama service:**
 
 ```bash
-# Start everything with one command
-./start_healthrag.sh
-
-# Or manually:
-docker-compose up --build
-
-# Access at: http://localhost:8501
-```
-
-### Option 3: Local MLX (macOS Only - Faster)
-
-```bash
-# Run the setup script
-./run_local_mlx.sh
-
-# Or manually:
-source venv_mlx/bin/activate
-streamlit run src/main.py
-
-# Access at: http://localhost:8501
-```
-
-### Option 4: Homelab Deployment (Proxmox/Docker)
-
-**For self-hosted infrastructure with shared Ollama service:**
-
-```bash
-# One-command deployment to homelab
+# One-command deployment
 ./deploy-to-homelab.sh
 
-# Deploys to:
-# - CT 100 (Docker Host): HealthRAG container
-# - CT 101 (Ollama): Shared LLM service
-#
+# Or manually:
+docker-compose up -d
+
 # Access at: http://192.168.0.210:8501 (or your Docker host IP)
 ```
 
 **Architecture:** Microservices with shared Ollama backend
-- HealthRAG container: Lightweight (~2GB RAM), runs Streamlit UI
-- Ollama service: Centralized LLM inference for multiple services
-- Benefits: Resource efficient, consistent models, easy scaling
+- HealthRAG container: Lightweight (~2GB RAM), Streamlit UI
+- Ollama service: Shared LLM inference on CT 101 (192.168.0.211:11434)
+- Backend API: FastAPI + PostgreSQL on jwWinMin (192.168.0.64:8000)
 
-See **[docs/HOMELAB_DEPLOYMENT.md](docs/HOMELAB_DEPLOYMENT.md)** for detailed setup, troubleshooting, and architecture guide.
+See **[docs/HOMELAB_DEPLOYMENT.md](docs/HOMELAB_DEPLOYMENT.md)** for detailed setup guide.
+
+### Option 2: Local Development (Python venv)
+
+```bash
+# One-time setup
+chmod +x setup_dependencies.sh && ./setup_dependencies.sh
+
+# Daily usage
+source activate_venv.sh
+streamlit run src/main.py
+
+# Access at: http://localhost:8501
+```
+
+### Option 3: Local Dev with Bundled Ollama
+
+```bash
+# Includes Ollama container (no external dependency)
+docker-compose -f docker-compose.dev.yml up --build
+
+# Access at: http://localhost:8501
+```
+
+### Option 4: Local MLX (macOS Only - Faster)
+
+```bash
+./run_local_mlx.sh
+# Or: source venv_mlx/bin/activate && streamlit run src/main.py
+
+# Access at: http://localhost:8501
+```
 
 ## Adding Your Documents
 
@@ -115,21 +95,21 @@ Ask questions like:
 
 ```
 HealthRAG/
-├── src/
-│   ├── main.py              # Streamlit web interface
-│   └── rag_system.py        # Core RAG implementation
-├── data/
-│   ├── pdfs/                # Your PDF documents
-│   └── vectorstore/         # ChromaDB vector database
-├── config/
-│   └── settings.py          # Configuration settings
-├── Dockerfile               # Docker container setup
-├── docker-compose.yml       # Docker orchestration
-├── start_healthrag.sh       # Docker startup script
-├── run_local_mlx.sh         # MLX local setup
-├── process_pdfs.py          # PDF processing script
-├── requirements.txt         # Ollama dependencies
-└── requirements_local.txt   # MLX dependencies
+├── src/                       # Streamlit app + core modules (25 files)
+├── backend/                   # FastAPI backend (PostgreSQL, JWT auth)
+│   ├── api/                   # API routes (auth, nutrition, workouts, weight)
+│   ├── models/                # SQLAlchemy models + Pydantic schemas
+│   ├── services/              # Business logic (user-scoped, PostgreSQL-backed)
+│   └── docker-compose.yml     # Backend deployment (FastAPI + PostgreSQL)
+├── frontend/                  # React PWA (Vite + Tailwind)
+├── data/                      # Persistent data (vectorstore, PDFs, SQLite)
+├── config/settings.py         # Configuration settings
+├── Dockerfile                 # Homelab container (no bundled Ollama)
+├── docker-compose.yml         # Homelab deployment (shared Ollama)
+├── docker-compose.dev.yml     # Dev deployment (bundled Ollama)
+├── deploy-to-homelab.sh       # One-command homelab deploy script
+├── requirements.txt           # Python dependencies
+└── requirements_local.txt     # MLX dependencies (macOS only)
 ```
 
 ## Features

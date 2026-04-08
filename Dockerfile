@@ -1,12 +1,13 @@
 FROM python:3.11-slim
 
+# Homelab-optimized Dockerfile for HealthRAG
+# Uses shared Ollama service (no bundled Ollama)
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    libzbar0 \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Ollama
-RUN curl -fsSL https://ollama.ai/install.sh | sh
 
 # Set working directory
 WORKDIR /app
@@ -16,29 +17,19 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY src/ ./src/
+COPY config/ ./config/
+COPY process_pdfs.py .
 
-# Create data directories
+# Create data directories (will be mounted as volumes)
 RUN mkdir -p data/pdfs data/vectorstore
 
-# Expose ports
-EXPOSE 8501 11434
+# Expose Streamlit port only (Ollama is external)
+EXPOSE 8501
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-# Start Ollama server in background\n\
-ollama serve &\n\
-\n\
-# Wait for Ollama to be ready\n\
-sleep 5\n\
-\n\
-# Pull both models for testing\n\
-ollama pull llama3.1:70b\n\
-ollama pull llama3.1:8b\n\
-\n\
-# Start Streamlit app\n\
-streamlit run src/main.py --server.port 8501 --server.address 0.0.0.0' > /app/start.sh
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
 
-RUN chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+# Start Streamlit app
+CMD ["streamlit", "run", "src/main.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true"]

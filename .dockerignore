@@ -69,9 +69,8 @@ temp/
 
 # Docker files (not needed inside container)
 Dockerfile
-Dockerfile.homelab
 docker-compose.yml
-docker-compose.homelab.yml
+docker-compose.dev.yml
 .dockerignore
 
 # Scripts (not needed in container)

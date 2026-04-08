@@ -1,17 +1,32 @@
 version: '3.8'
 
+# HealthRAG Docker Compose - Homelab Deployment
+# Uses shared Ollama service (CT 101 @ 192.168.0.211:11434)
+#
+# Usage:
+#   docker-compose up -d              # Start HealthRAG
+#   docker-compose logs -f            # View logs
+#   docker-compose down               # Stop
+#
+# For local development with bundled Ollama, use docker-compose.dev.yml
+
 services:
   healthrag:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthrag
     ports:
-      - "8501:8501"  # Streamlit
-      - "11434:11434"  # Ollama
+      - "8501:8501"  # Streamlit UI
     volumes:
-      - ./data:/app/data
-      - ollama_data:/root/.ollama
+      - ./data:/app/data  # Persistent data (vectorstore, user profiles, DBs)
+      - ./data/pdfs:/app/data/pdfs:ro  # PDF knowledge base (read-only)
     environment:
-      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://192.168.0.211:11434}
     restart: unless-stopped
-
-volumes:
-  ollama_data:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
