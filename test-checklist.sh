@@ -3,7 +3,7 @@
 # HealthRAG Pre-Push Test Checklist
 #
 # Comprehensive local testing script to run before pushing to GitHub.
-# Ensures all tests pass before code is deployed to Render.com.
+# Ensures all tests pass before code is deployed to homelab.
 #
 # Usage:
 #   ./test-checklist.sh           # Run all tests
@@ -271,7 +271,7 @@ if [ $FAILURES -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo -e "${GREEN}✅ ALL TESTS PASSED!${NC}"
     echo ""
     echo -e "${GREEN}✓${NC} Safe to push to GitHub"
-    echo -e "${GREEN}✓${NC} Render will auto-deploy when pushed to main"
+    echo -e "${GREEN}✓${NC} Deploy to homelab: ./deploy-to-homelab.sh"
     echo ""
     echo -e "${CYAN}Next steps:${NC}"
     echo "  git add ."

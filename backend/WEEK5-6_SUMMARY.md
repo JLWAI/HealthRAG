@@ -65,21 +65,21 @@ Phase 5a backend implementation complete for sync protocol, external food APIs, 
 - Non-root user for security
 - Health check endpoint (`/health`)
 - 4 Uvicorn workers for production
-- Optimized for Render.com deployment
+- Optimized for Docker deployment (homelab)
 
 **Docker Ignore** (`backend/.dockerignore`):
 - Excludes unnecessary files from build (venv, .git, *.md)
 - Reduces image size and build time
 
-**Render Blueprint** (`backend/render.yaml`):
-- One-click deployment to Render.com
+**~~Render Blueprint~~** (`backend/render.yaml` — removed, now uses homelab Docker Compose):
+- ~~One-click deployment to Render.com~~ (replaced by homelab Docker Compose)
 - Web service + PostgreSQL database
 - Auto-generated JWT secret
 - Environment variable configuration
 - Free tier option (with limitations)
 
 **Deployment Documentation** (`backend/DEPLOYMENT.md`):
-- Quick deploy guide (Render.com Blueprint)
+- Quick deploy guide (homelab Docker Compose)
 - Manual setup instructions
 - Environment variable reference
 - Database migration guide
@@ -317,7 +317,7 @@ Per Phase 5a plan, all Week 5-6 tasks are complete:
 - ✅ **Open Food Facts Integration** (2.8M products, no API key)
 - ✅ **Barcode Lookup** (for mobile camera scanning)
 - ✅ **Dockerfile** (production-ready, multi-stage build)
-- ✅ **Render Blueprint** (one-click deployment)
+- ✅ **Deployment Config** (homelab Docker Compose)
 - ✅ **Deployment Documentation** (comprehensive guide)
 
 ## 🚀 Next Steps: Phase 5b (Mobile App Development)
@@ -334,7 +334,7 @@ Week 5-6 completes the backend API. Next phase is mobile app development:
 - Backend API is production-ready
 - All 32 endpoints functional and documented
 - Deployment guide complete
-- Can deploy to Render.com immediately
+- Can deploy to homelab immediately
 
 ## 📊 Total Progress
 
@@ -349,13 +349,13 @@ Week 5-6 completes the backend API. Next phase is mobile app development:
 - 3 external food API endpoints (added to `api/nutrition.py`)
 - 1 Dockerfile (`backend/Dockerfile`)
 - 1 Docker ignore (`.dockerignore`)
-- 1 Render blueprint (`render.yaml`)
+- 1 ~~Render blueprint~~ (`render.yaml` — removed, replaced by homelab Docker Compose)
 - 1 deployment guide (`DEPLOYMENT.md`)
 
 **Code Statistics:**
 - Sync protocol: ~350 lines (pull/push endpoints + conflict resolution)
 - Food APIs: ~200 lines (USDA + OFF integration)
-- Deployment files: ~150 lines (Dockerfile + Render config)
+- Deployment files: ~150 lines (Dockerfile + Docker Compose config)
 - Documentation: ~500 lines (deployment guide + this summary)
 
 **Total Endpoints: 32**
@@ -375,7 +375,7 @@ Week 5-6 completes the backend API. Next phase is mobile app development:
 - ✅ Open Food Facts integration working (no API key needed)
 - ✅ Barcode lookup functional for mobile scanning
 - ✅ Dockerfile builds successfully
-- ✅ Render blueprint validates
+- ✅ Docker Compose config validates
 - ✅ Deployment documentation complete
 - ✅ All endpoints documented with examples
 

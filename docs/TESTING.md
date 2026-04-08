@@ -2,7 +2,7 @@
 
 ## Overview
 
-HealthRAG uses a **local-first testing workflow** to ensure high quality deployments and minimize unnecessary Render.com deploys.
+HealthRAG uses a **local-first testing workflow** to ensure quality before deploying to homelab.
 
 **Philosophy**: Test everything locally before pushing. Only push to `main` when confident code is production-ready.
 
@@ -157,10 +157,10 @@ git merge feat/meal-templates
 ./test-checklist.sh
 
 # If all pass, push to main
-git push origin main  # ✅ Triggers Render deploy
+git push origin main  # ✅ Ready to deploy to homelab
 
-# Monitor deployment
-# https://dashboard.render.com
+# Deploy to homelab
+# Deploy: ./deploy-to-homelab.sh
 ```
 
 ---
@@ -178,7 +178,7 @@ git push origin main  # ✅ Triggers Render deploy
   - No console errors
 - **Feature is complete** (not WIP)
 - **Database migrations ready** (if applicable)
-- **Environment variables set** (in Render dashboard)
+- **Environment variables set** (in .env on homelab server)
 - **You're ready for it to go live**
 
 ### ❌ Don't Push to Main When:
@@ -282,7 +282,7 @@ git merge hotfix/database-error
 git push origin main  # ✅ Deploys immediately (~5 min)
 
 # 5. Monitor deployment
-# https://dashboard.render.com
+# Monitor: ssh root@192.168.0.210 'cd /opt/healthrag && docker compose logs -f'
 ```
 
 ---
@@ -324,21 +324,15 @@ docker-compose down
 
 ## 📊 Cost Optimization
 
-### Before Local-First Testing
+### Why Batch Changes?
 
-- **Pushes**: 5-10 times/day during active development
-- **Render builds**: 150-300 per month
-- **Build time**: 1,500+ minutes/month
-- **Cost**: $$$ (high)
+Homelab deploys are free, but batching changes is still good practice:
 
-### After Local-First Testing
+- **Less churn** - Fewer deploy cycles means fewer chances for partial/broken states
+- **Easier rollback** - One deploy per feature is simpler to revert than many small pushes
+- **Better testing** - Batching encourages running the full test suite before deploying
 
-- **Pushes to main**: 1-2 times/week (only when ready)
-- **Render builds**: 8-12 per month
-- **Build time**: 40-60 minutes/month
-- **Cost**: $ (96% reduction!)
-
-**Key insight**: Feature branches don't trigger Render deploys. Only pushes to `main` do.
+**Approach**: Develop on feature branches, run `./test-checklist.sh`, merge to `main`, then deploy once with `./deploy-to-homelab.sh`.
 
 ---
 
@@ -430,7 +424,7 @@ Before merging to `main`, verify:
 - [ ] Manual UI testing complete
 - [ ] No console errors in browser
 - [ ] Database migrations applied (if any)
-- [ ] Environment variables set in Render (if new ones)
+- [ ] Environment variables set in homelab .env (if new ones)
 - [ ] Documentation updated (if API changes)
 - [ ] Commit message is descriptive
 - [ ] Ready for feature to go live

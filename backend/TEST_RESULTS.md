@@ -111,7 +111,7 @@ Sample Result:
 | Open Food Facts Integration | ✅ Complete & Tested | Working with live API |
 | Barcode Lookup | ✅ Complete & Tested | Verified with real barcodes |
 | Dockerfile | ✅ Complete | Multi-stage build, production-ready |
-| Render.com Blueprint | ✅ Complete | One-click deployment configured |
+| Deployment Config | ✅ Complete | Homelab Docker Compose configured |
 | Deployment Documentation | ✅ Complete | Comprehensive guide with troubleshooting |
 
 ### Total Endpoints: 32
@@ -169,7 +169,7 @@ Sample Result:
 **Checklist**:
 - ✅ All 32 endpoints implemented
 - ✅ Dockerfile created and validated
-- ✅ Render.com blueprint configured
+- ✅ Homelab Docker Compose configured
 - ✅ Environment variable template (.env.example)
 - ✅ Deployment documentation complete
 - ✅ External API integrations working
@@ -179,10 +179,9 @@ Sample Result:
 
 ### Recommended Next Steps
 
-1. **Deploy to Render.com** (15 minutes)
-   - See `DEPLOYMENT.md` for complete guide
-   - Use Blueprint: https://dashboard.render.com/select-repo
-   - Set Supabase credentials in Render dashboard
+1. **Deploy to homelab** (5 minutes)
+   - Run `./deploy-to-homelab.sh`
+   - See `docs/HOMELAB_DEPLOYMENT.md` for complete guide
 
 2. **Test Full Stack** (30 minutes)
    - Signup/login flow
@@ -206,7 +205,7 @@ Sample Result:
 
 2. **Deployment Dependencies**
    - Supabase account (free tier available)
-   - Render.com account (free tier available)
+   - Homelab server with Docker (see docs/HOMELAB_DEPLOYMENT.md)
    - USDA FDC API key (optional, for food search)
 
 ## ✅ Conclusion
@@ -217,7 +216,7 @@ All deliverables implemented and validated:
 - ✅ Sync protocol (pull/push with Last Write Wins)
 - ✅ External food APIs (USDA FDC + Open Food Facts)
 - ✅ Barcode scanning support
-- ✅ Deployment infrastructure (Docker + Render.com)
+- ✅ Deployment infrastructure (Docker + homelab)
 - ✅ Comprehensive documentation
 
 **Testing Status**:
@@ -226,7 +225,7 @@ All deliverables implemented and validated:
 - Sync Protocol: **CODE READY**, needs deployment ⚠️
 
 **Ready for**:
-- Production deployment to Render.com
+- Production deployment to homelab
 - Mobile app integration (Phase 5b)
 - End-to-end testing with real users
 
