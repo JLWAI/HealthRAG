@@ -23,7 +23,7 @@ This file is part of a hierarchy of agent guidance documents:
 **Current Status** (as of January 2026):
 - Branch: `main`
 - Development Phase: Phase 4 ✅ COMPLETE
-- Codebase: 25 source files, 12,645 LOC
+- Codebase: 27 source files, ~20,000 LOC
 - Phases Complete: Phase 2 ✅ Phase 3 ✅ Phase 4 ✅
 - Phase 4 Progress: ✅ **100% COMPLETE** (nutrition tracking, adaptive TDEE, weight tracking, body measurements all done)
 
@@ -61,7 +61,7 @@ This file is part of a hierarchy of agent guidance documents:
 ### High-Level System Design
 
 ```
-Streamlit UI (main.py - 2,186 LOC)
+Streamlit UI (main.py - 4,234 LOC)
     ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ RAG System (rag_system.py)                                  │
@@ -138,7 +138,7 @@ Streamlit UI (main.py - 2,186 LOC)
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Core Components (25 Files, 12,645 LOC)
+### Core Components (27 Files, ~20,000 LOC)
 
 **1. RAG System** (`src/rag_system.py` - 276 LOC):
 - Dual backend support: Ollama (cross-platform) vs MLX (Apple Silicon native)
@@ -207,7 +207,7 @@ Streamlit UI (main.py - 2,186 LOC)
 - Automatic data sync with HealthRAG databases
 - Phase 5 feature completed early
 
-**9. Streamlit UI** (`src/main.py` - 2,603 LOC):
+**9. Streamlit UI** (`src/main.py` - 4,234 LOC):
 - Chat interface for RAG queries
 - Backend/model selection (MLX vs Ollama)
 - Profile creation wizard with Apple Health import
@@ -476,11 +476,11 @@ HealthRAG development is guided by **5 realistic user personas** and **12 core s
 
 ## Code Organization & Design Patterns
 
-### File Structure (25 source files, 12,645 LOC)
+### File Structure (27 source files, ~20,000 LOC)
 
 ```
 src/
-├── main.py                      # Streamlit UI (2,603 LOC) - Main application
+├── main.py                      # Streamlit UI (4,234 LOC) - Main application
 ├── rag_system.py                # Core RAG engine (276 LOC)
 ├── profile.py                   # User profile management (461 LOC)
 │
@@ -635,24 +635,25 @@ User asks: "How much protein do I need?"
 
 ### Git Workflow
 - **MANDATORY**: Always create feature branches (see parent CLAUDE.md for branch enforcement rules)
-- **Current Branch**: `feat/phase4-tracking-ui`
-- **Main Branch**: `main` (protected)
-- **Recent Branches**: `feat/phase3-program-generation` (merged), `feat/phase2-user-profile-system` (merged)
+- **Development**: Feature branches off `main`
+- **Main Branch**: `main`
+- **Deployment**: Homelab via `./deploy-to-homelab.sh`
 
-### Deployment Frequency Constraint ⚠️ CRITICAL
+### Homelab Deployment
 
-**Render.com deploys cost time and money. Target: ≤10 deploys per day, with one consolidated GitHub push per deploy cycle.**
+**Infrastructure**: Proxmox homelab (jwBeast) with shared Ollama service
+- **CT 100** (192.168.0.210): Docker host — HealthRAG container (Streamlit, ~2GB RAM)
+- **CT 101** (192.168.0.211): Shared Ollama — llama3.1:8b, qwen2.5-coder:14b (48GB RAM)
+- **jwWinMin** (192.168.0.64): FastAPI backend + PostgreSQL
+
+**Deploy**: `./deploy-to-homelab.sh` (or `docker compose up -d` on target host)
+**Cost**: ~$34/year (electricity + domain) vs $168/year former cloud (80% savings)
 
 **REQUIRED WORKFLOW:**
-1. **Test locally FIRST** - Run `./test-checklist.sh` before ANY push to GitHub
-2. **Batch commits** - Group related changes into ONE commit when possible
-3. **Combine updates before pushing** - Accumulate fixes locally and push/merge once per deploy so Render builds only once
-4. **Only push to main when confident** - Feature branches don't trigger deploys
-5. **One deploy per feature** - Avoid iterative "fix, push, fix, push" cycles on main
-
-**Cost Impact:**
-- Before local-first testing: 150-300 deploys/month ($$$$)
-- After local-first testing: 8-12 deploys/month ($) - 96% reduction!
+1. **Test locally FIRST** — Run `./test-checklist.sh` before ANY push to GitHub
+2. **Batch commits** — Group related changes before deploying
+3. **Deploy manually** — No auto-deploy on push (run `./deploy-to-homelab.sh`)
+4. **One deploy per feature** — Avoid iterative "fix, push, fix, push" cycles
 
 **See `docs/TESTING.md` for detailed local-first workflow.**
 
