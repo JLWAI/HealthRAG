@@ -64,6 +64,23 @@ docker-compose -f docker-compose.dev.yml up --build
 # Access at: http://localhost:8501
 ```
 
+## Which UI Should I Use?
+
+HealthRAG has two interfaces for different use cases:
+
+| | Streamlit (port 8501) | React PWA (port 3000) |
+|---|---|---|
+| **Best for** | AI coaching, program generation | Daily tracking on mobile |
+| **RAG chat** | ✅ Full AI coach with PDF sources | ❌ Not integrated |
+| **Tracking** | ✅ All (food, workouts, weight, body) | ⏳ Weight + macros only |
+| **Users** | Single user | Multi-user (JWT auth) |
+| **Device** | Desktop browser | Mobile-responsive |
+| **Status** | Production-ready | Phase A foundation (~60%) |
+
+**Streamlit** is the primary interface — use it for AI coaching conversations, program generation, and full-featured tracking.
+
+**React PWA** is under active development for lightweight, mobile-first daily logging. It connects to the FastAPI backend (port 8000) for multi-user support.
+
 ## Adding Your Documents
 
 1. Copy your PDF files to `data/pdfs/`
