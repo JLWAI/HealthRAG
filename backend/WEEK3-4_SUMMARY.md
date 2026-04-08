@@ -311,7 +311,7 @@ The final Week 5-6 tasks are:
    - Barcode lookup for mobile app
 
 3. **Deployment**:
-   - Deploy to Render.com with Dockerfile
+   - Deploy to homelab with Docker Compose
    - Setup environment variables
    - Configure PostgreSQL connection
    - Health check monitoring

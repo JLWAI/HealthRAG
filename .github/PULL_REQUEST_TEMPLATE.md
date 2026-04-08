@@ -49,7 +49,7 @@ Fixes # (issue number, if applicable)
 - [ ] Docker build succeeds (`docker-compose build`)
 - [ ] Docker containers start healthy (`docker-compose up -d`)
 - [ ] Database migrations applied (if applicable)
-- [ ] Environment variables configured in Render (if new ones added)
+- [ ] Environment variables configured on homelab (if new ones added)
 
 ### Code Quality
 
@@ -85,4 +85,4 @@ Fixes # (issue number, if applicable)
 
 ---
 
-**Before merging**: Ensure all tests pass and manual validation is complete. Merging to `main` will trigger automatic deployment to Render.com.
+**Before merging**: Ensure all tests pass and manual validation is complete. Deploy to homelab with `./deploy-to-homelab.sh`.
