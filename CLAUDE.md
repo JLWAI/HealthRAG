@@ -1,20 +1,15 @@
+@AGENTS.md
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 📚 Documentation Structure
 
-This file is part of a hierarchy of agent guidance documents:
-
-1. **Parent Level (applies to ALL JLWAI projects):**
-   - [`../AGENTS.md`](../AGENTS.md) - Universal agent contract (branch rules, iteration loop, test-first principles)
-   - [`../CLAUDE.md`](../CLAUDE.md) - Parent-level rules (branch enforcement hooks, workflow)
-
-2. **Project Level (HealthRAG-specific):**
-   - **`CLAUDE.md`** (this file) - Detailed HealthRAG development guidance
-   - [`AGENTS.md`](AGENTS.md) - Repository guidelines (build commands, coding style, testing)
-
-**All agents must read BOTH parent and project-level documentation.**
+- [`AGENTS.md`](AGENTS.md) is the canonical repository contract and is imported
+  above for Claude Code.
+- **`CLAUDE.md`** (this file) adds Claude-specific HealthRAG guidance.
+- User-level agent instructions continue to apply normally.
 
 ## Project Context
 

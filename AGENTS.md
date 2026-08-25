@@ -1,6 +1,9 @@
 # Repository Guidelines
 
-> **📚 Note**: This file provides high-level repository guidelines. For detailed HealthRAG-specific development guidance, architecture, and current phase status, see [`CLAUDE.md`](CLAUDE.md). All agents must also follow the universal rules in [`../AGENTS.md`](../AGENTS.md) and [`../CLAUDE.md`](../CLAUDE.md).
+> **📚 Note**: This file is the canonical repository contract. For detailed
+> HealthRAG-specific development guidance, architecture, and current phase
+> status, see [`CLAUDE.md`](CLAUDE.md). Claude Code imports this file from the
+> root `CLAUDE.md`; user-level agent instructions still apply normally.
 
 ## Project Structure & Module Organization
 Primary application logic lives in `src/`, with `main.py` driving the Streamlit UI, `rag_system.py` orchestrating retrieval, and specialist modules (e.g., `workout_coach.py`, `food_logger.py`) encapsulating domain features. Configuration defaults sit in `config/settings.py`. Persisted assets belong under `data/`: PDFs in `data/pdfs/`, embeddings in `data/vectorstore/`, and sample artifacts in `src/data/`. Add developer-facing notes to `docs/` so operational guidance stays centralized.
